@@ -106,8 +106,9 @@ export function AppHeader() {
                   key={l.to}
                   to={l.to}
                   onClick={() => setOpen(false)}
-                  className="rounded-md px-3 py-3 text-sm font-medium hover:bg-secondary"
+                  className="inline-flex items-center gap-2 rounded-md px-3 py-3 text-sm font-medium hover:bg-secondary"
                 >
+                  <l.icon className="h-4 w-4 text-primary-glow" />
                   {l.label}
                 </Link>
               ))}
