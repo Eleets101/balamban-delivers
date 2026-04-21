@@ -415,6 +415,69 @@ function RidePage() {
             value={pickup}
             onChange={(e) => setPickup(e.target.value)}
           />
+
+          {fallbackOptions.length > 0 && (
+            <div className="space-y-2 rounded-xl border border-warning/40 bg-warning/10 p-3">
+              <div className="flex items-start gap-2">
+                <Crosshair className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+                <p className="text-xs text-warning-foreground">
+                  <span className="font-semibold text-warning">Confirm pickup:</span>{" "}
+                  {fallbackReason}
+                </p>
+              </div>
+              <Select
+                value={fallbackChoice ?? undefined}
+                onValueChange={setFallbackChoice}
+              >
+                <SelectTrigger className="h-10 bg-background">
+                  <SelectValue placeholder="Choose nearest landmark" />
+                </SelectTrigger>
+                <SelectContent>
+                  {fallbackOptions.map((opt) => (
+                    <SelectItem key={opt.name} value={opt.name}>
+                      {opt.name}
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        ~{opt.distanceKm.toFixed(1)} km
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => {
+                    const chosen = fallbackOptions.find((o) => o.name === fallbackChoice);
+                    if (!chosen) return;
+                    setPickupCoords({ lat: chosen.lat, lng: chosen.lng });
+                    setPickup(chosen.name);
+                    setFallbackOptions([]);
+                    setFallbackReason(null);
+                    setFallbackChoice(null);
+                    toast.success(`Pickup pinned to ${chosen.name}.`);
+                  }}
+                  disabled={!fallbackChoice}
+                >
+                  Confirm pickup
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setFallbackOptions([]);
+                    setFallbackReason(null);
+                    setFallbackChoice(null);
+                  }}
+                >
+                  Pin manually
+                </Button>
+              </div>
+            </div>
+          )}
+
           <MapClientOnly>
             <MapPicker
               value={pickupCoords}
