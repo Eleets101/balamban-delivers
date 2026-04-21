@@ -73,7 +73,7 @@ function OrdersPage() {
     const load = async () => {
       const { data } = await supabase
         .from("orders")
-        .select("id, service_type, status, pickup_address, dropoff_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, rider_id, details, estimated_price, created_at")
+        .select("id, service_type, status, pickup_address, dropoff_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, rider_id, details, estimated_price, payment_method, payment_status, created_at")
         .eq("customer_id", user.id)
         .order("created_at", { ascending: false });
       setOrders((data as Order[]) ?? []);
