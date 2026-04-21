@@ -244,8 +244,8 @@ function RidePage() {
     return (
       <ServiceLayout
         icon={<Bike className="h-6 w-6" />}
-        title="Finding your rider…"
-        tagline="Pinging drivers near you. Hang tight."
+        title="Preparing your checkout…"
+        tagline="We're locking in your fare. You'll choose how to pay next."
       >
         <div className="flex flex-col items-center justify-center py-10 text-center">
           <div className="relative">
@@ -260,8 +260,8 @@ function RidePage() {
               <Bike className="h-10 w-10" />
             </div>
           </div>
-          <p className="mt-8 font-display text-lg font-semibold">Looking for nearby riders</p>
-          <p className="mt-1 text-sm text-muted-foreground">Usually takes less than 30 seconds</p>
+          <p className="mt-8 font-display text-lg font-semibold">Confirming your ride</p>
+          <p className="mt-1 text-sm text-muted-foreground">Redirecting to secure payment…</p>
           <Loader2 className="mt-6 h-5 w-5 animate-spin text-muted-foreground" />
         </div>
       </ServiceLayout>
