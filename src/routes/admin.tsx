@@ -66,6 +66,9 @@ function AdminPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<AdminOrder[] | null>(null);
   const [userCount, setUserCount] = useState<number | null>(null);
+  const [profiles, setProfiles] = useState<ProfileRow[] | null>(null);
+  const [roles, setRoles] = useState<RoleRow[] | null>(null);
+  const [roleSearch, setRoleSearch] = useState("");
 
   const refresh = async () => {
     const { data } = await supabase
@@ -77,6 +80,15 @@ function AdminPage() {
 
     const { count } = await supabase.from("profiles").select("*", { count: "exact", head: true });
     setUserCount(count ?? 0);
+
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("id, full_name, phone, created_at")
+      .order("created_at", { ascending: false });
+    setProfiles((profileData as ProfileRow[]) ?? []);
+
+    const { data: roleData } = await supabase.from("user_roles").select("id, user_id, role");
+    setRoles((roleData as RoleRow[]) ?? []);
   };
 
   useEffect(() => {
@@ -98,6 +110,60 @@ function AdminPage() {
     toast.success(`Order marked ${STATUS_LABELS[status]}`);
     setOrders((prev) => prev?.map((o) => (o.id === id ? { ...o, status } : o)) ?? null);
   };
+
+  const addRole = async (userId: string, role: AppRole) => {
+    if (roles?.some((r) => r.user_id === userId && r.role === role)) {
+      toast.info("User already has this role.");
+      return;
+    }
+    const { data, error } = await supabase
+      .from("user_roles")
+      .insert({ user_id: userId, role })
+      .select("id, user_id, role")
+      .single();
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setRoles((prev) => [...(prev ?? []), data as RoleRow]);
+    toast.success(`Granted ${role}`);
+  };
+
+  const removeRole = async (roleId: string, role: AppRole, userId: string) => {
+    if (role === "admin" && userId === user?.id) {
+      toast.error("You can't remove your own admin role.");
+      return;
+    }
+    const { error } = await supabase.from("user_roles").delete().eq("id", roleId);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setRoles((prev) => prev?.filter((r) => r.id !== roleId) ?? null);
+    toast.success(`Removed ${role}`);
+  };
+
+  const rolesByUser = useMemo(() => {
+    const map = new Map<string, RoleRow[]>();
+    (roles ?? []).forEach((r) => {
+      const list = map.get(r.user_id) ?? [];
+      list.push(r);
+      map.set(r.user_id, list);
+    });
+    return map;
+  }, [roles]);
+
+  const filteredProfiles = useMemo(() => {
+    if (!profiles) return null;
+    const q = roleSearch.trim().toLowerCase();
+    if (!q) return profiles;
+    return profiles.filter(
+      (p) =>
+        p.full_name?.toLowerCase().includes(q) ||
+        p.phone?.toLowerCase().includes(q) ||
+        p.id.toLowerCase().includes(q),
+    );
+  }, [profiles, roleSearch]);
 
   if (loading) {
     return (
