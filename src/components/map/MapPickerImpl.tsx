@@ -20,10 +20,25 @@ const DEFAULT_CENTER: [number, number] = [10.4456, 123.7016];
 interface MapPickerProps {
   value: { lat: number; lng: number } | null;
   onChange: (coords: { lat: number; lng: number }) => void;
+  onAddressResolved?: (address: string) => void;
   height?: number;
 }
 
-export function MapPicker({ value, onChange, height = 260 }: MapPickerProps) {
+async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+      { headers: { Accept: "application/json" } },
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as { display_name?: string };
+    return data.display_name ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function MapPicker({ value, onChange, onAddressResolved, height = 260 }: MapPickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
