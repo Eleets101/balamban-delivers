@@ -88,16 +88,30 @@ export function OrderForm({
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
         <Label htmlFor="pickup">{pickupLabel}</Label>
-        <Input id="pickup" name="pickup" required placeholder={pickupPlaceholder} />
+        <Input
+          id="pickup"
+          name="pickup"
+          required
+          placeholder={pickupPlaceholder}
+          value={pickupAddress}
+          onChange={(e) => setPickupAddress(e.target.value)}
+        />
         <MapClientOnly>
-          <MapPicker value={pickupCoords} onChange={setPickupCoords} />
+          <MapPicker value={pickupCoords} onChange={setPickupCoords} onAddressResolved={setPickupAddress} />
         </MapClientOnly>
       </div>
       <div className="space-y-2">
         <Label htmlFor="dropoff">{dropoffLabel}</Label>
-        <Input id="dropoff" name="dropoff" required placeholder={dropoffPlaceholder} />
+        <Input
+          id="dropoff"
+          name="dropoff"
+          required
+          placeholder={dropoffPlaceholder}
+          value={dropoffAddress}
+          onChange={(e) => setDropoffAddress(e.target.value)}
+        />
         <MapClientOnly>
-          <MapPicker value={dropoffCoords} onChange={setDropoffCoords} />
+          <MapPicker value={dropoffCoords} onChange={setDropoffCoords} onAddressResolved={setDropoffAddress} />
         </MapClientOnly>
       </div>
       <div>
