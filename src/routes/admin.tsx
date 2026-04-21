@@ -269,6 +269,106 @@ function AdminPage() {
             </div>
           )}
         </div>
+
+        <div className="mt-12 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <UserCog className="h-6 w-6 text-primary-glow" />
+            <h2 className="font-display text-xl font-bold">User roles</h2>
+          </div>
+          <div className="relative w-full max-w-xs">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={roleSearch}
+              onChange={(e) => setRoleSearch(e.target.value)}
+              placeholder="Search by name, phone, or ID"
+              className="pl-9"
+            />
+          </div>
+        </div>
+
+        <div
+          className="mt-4 overflow-hidden rounded-2xl border border-border/60"
+          style={{ background: "var(--gradient-card)" }}
+        >
+          {filteredProfiles === null ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : filteredProfiles.length === 0 ? (
+            <p className="py-12 text-center text-sm text-muted-foreground">No users found.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b border-border/60 text-left text-xs uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-3">User</th>
+                    <th className="px-4 py-3">Current roles</th>
+                    <th className="px-4 py-3">Grant role</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProfiles.map((p) => {
+                    const userRoles = rolesByUser.get(p.id) ?? [];
+                    const heldRoles = new Set(userRoles.map((r) => r.role));
+                    const grantable = ALL_ROLES.filter((r) => !heldRoles.has(r));
+                    return (
+                      <tr key={p.id} className="border-b border-border/40 align-top last:border-0">
+                        <td className="px-4 py-3">
+                          <div className="font-medium">{p.full_name || "Unnamed"}</div>
+                          <div className="text-xs text-muted-foreground">{p.phone || "No phone"}</div>
+                          <div className="mt-1 font-mono text-[10px] text-muted-foreground/70">{p.id}</div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {userRoles.length === 0 ? (
+                            <span className="text-xs text-muted-foreground">No roles</span>
+                          ) : (
+                            <div className="flex flex-wrap gap-1.5">
+                              {userRoles.map((r) => (
+                                <Badge
+                                  key={r.id}
+                                  variant="outline"
+                                  className={`gap-1 border ${ROLE_BADGE[r.role]}`}
+                                >
+                                  {r.role}
+                                  <button
+                                    type="button"
+                                    onClick={() => removeRole(r.id, r.role, p.id)}
+                                    className="ml-0.5 rounded-full p-0.5 hover:bg-foreground/10"
+                                    aria-label={`Remove ${r.role}`}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {grantable.length === 0 ? (
+                            <span className="text-xs text-muted-foreground">All assigned</span>
+                          ) : (
+                            <Select onValueChange={(v) => addRole(p.id, v as AppRole)}>
+                              <SelectTrigger className="h-8 w-36">
+                                <SelectValue placeholder="Add role" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {grantable.map((r) => (
+                                  <SelectItem key={r} value={r}>
+                                    {r}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </PageShell>
   );
