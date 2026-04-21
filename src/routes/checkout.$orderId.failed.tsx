@@ -63,9 +63,11 @@ const REASON_COPY: Record<FailReason, { title: string; body: string }> = {
 };
 
 export const Route = createFileRoute("/checkout/$orderId/failed")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    reason: (search.reason as FailReason) || "unknown",
-  }),
+  validateSearch: (search: Record<string, unknown>): { reason: FailReason } => {
+    const raw = typeof search.reason === "string" ? search.reason : "";
+    const valid: FailReason[] = ["declined", "timeout", "insufficient", "cancelled", "unknown"];
+    return { reason: (valid as string[]).includes(raw) ? (raw as FailReason) : "unknown" };
+  },
   head: () => ({
     meta: [
       { title: "Payment failed — HatodGo" },
