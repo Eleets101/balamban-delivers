@@ -10,7 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { LiveTrackingMap } from "@/components/map/LiveTrackingMap.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
 import { SERVICE_LABELS, STATUS_LABELS, STATUS_COLORS, type OrderStatus, type ServiceType } from "@/lib/orders";
-import { estimateEta, etaTargetForStatus } from "@/lib/eta";
+import {
+  estimateEta,
+  etaTargetForStatus,
+  LOCATION_BUFFER_SIZE,
+  pushLocationSample,
+  smoothedSpeedMps,
+  type LocationSample,
+} from "@/lib/eta";
 
 export const Route = createFileRoute("/driver")({
   head: () => ({
