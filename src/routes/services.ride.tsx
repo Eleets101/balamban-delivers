@@ -102,6 +102,11 @@ function RidePage() {
   const [stage, setStage] = useState<Stage>("form");
   const [orderId, setOrderId] = useState<string | null>(null);
   const [locatingMe, setLocatingMe] = useState(false);
+  const [fallbackOptions, setFallbackOptions] = useState<
+    Array<{ name: string; lat: number; lng: number; distanceKm: number }>
+  >([]);
+  const [fallbackReason, setFallbackReason] = useState<string | null>(null);
+  const [fallbackChoice, setFallbackChoice] = useState<string | null>(null);
 
   const useMyLocation = () => {
     if (!("geolocation" in navigator)) {
