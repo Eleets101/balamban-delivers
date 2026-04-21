@@ -18,6 +18,9 @@ import { Route as ServicesRideRouteImport } from './routes/services.ride'
 import { Route as ServicesPadalaRouteImport } from './routes/services.padala'
 import { Route as ServicesPabiliRouteImport } from './routes/services.pabili'
 import { Route as ServicesFoodRouteImport } from './routes/services.food'
+import { Route as CheckoutOrderIdRouteImport } from './routes/checkout.$orderId'
+import { Route as CheckoutOrderIdSuccessRouteImport } from './routes/checkout.$orderId.success'
+import { Route as CheckoutOrderIdPayRouteImport } from './routes/checkout.$orderId.pay'
 
 const OrdersRoute = OrdersRouteImport.update({
   id: '/orders',
@@ -64,6 +67,21 @@ const ServicesFoodRoute = ServicesFoodRouteImport.update({
   path: '/services/food',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CheckoutOrderIdRoute = CheckoutOrderIdRouteImport.update({
+  id: '/checkout/$orderId',
+  path: '/checkout/$orderId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutOrderIdSuccessRoute = CheckoutOrderIdSuccessRouteImport.update({
+  id: '/success',
+  path: '/success',
+  getParentRoute: () => CheckoutOrderIdRoute,
+} as any)
+const CheckoutOrderIdPayRoute = CheckoutOrderIdPayRouteImport.update({
+  id: '/pay',
+  path: '/pay',
+  getParentRoute: () => CheckoutOrderIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -71,10 +89,13 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/driver': typeof DriverRoute
   '/orders': typeof OrdersRoute
+  '/checkout/$orderId': typeof CheckoutOrderIdRouteWithChildren
   '/services/food': typeof ServicesFoodRoute
   '/services/pabili': typeof ServicesPabiliRoute
   '/services/padala': typeof ServicesPadalaRoute
   '/services/ride': typeof ServicesRideRoute
+  '/checkout/$orderId/pay': typeof CheckoutOrderIdPayRoute
+  '/checkout/$orderId/success': typeof CheckoutOrderIdSuccessRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -82,10 +103,13 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/driver': typeof DriverRoute
   '/orders': typeof OrdersRoute
+  '/checkout/$orderId': typeof CheckoutOrderIdRouteWithChildren
   '/services/food': typeof ServicesFoodRoute
   '/services/pabili': typeof ServicesPabiliRoute
   '/services/padala': typeof ServicesPadalaRoute
   '/services/ride': typeof ServicesRideRoute
+  '/checkout/$orderId/pay': typeof CheckoutOrderIdPayRoute
+  '/checkout/$orderId/success': typeof CheckoutOrderIdSuccessRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -94,10 +118,13 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/driver': typeof DriverRoute
   '/orders': typeof OrdersRoute
+  '/checkout/$orderId': typeof CheckoutOrderIdRouteWithChildren
   '/services/food': typeof ServicesFoodRoute
   '/services/pabili': typeof ServicesPabiliRoute
   '/services/padala': typeof ServicesPadalaRoute
   '/services/ride': typeof ServicesRideRoute
+  '/checkout/$orderId/pay': typeof CheckoutOrderIdPayRoute
+  '/checkout/$orderId/success': typeof CheckoutOrderIdSuccessRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -107,10 +134,13 @@ export interface FileRouteTypes {
     | '/auth'
     | '/driver'
     | '/orders'
+    | '/checkout/$orderId'
     | '/services/food'
     | '/services/pabili'
     | '/services/padala'
     | '/services/ride'
+    | '/checkout/$orderId/pay'
+    | '/checkout/$orderId/success'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -118,10 +148,13 @@ export interface FileRouteTypes {
     | '/auth'
     | '/driver'
     | '/orders'
+    | '/checkout/$orderId'
     | '/services/food'
     | '/services/pabili'
     | '/services/padala'
     | '/services/ride'
+    | '/checkout/$orderId/pay'
+    | '/checkout/$orderId/success'
   id:
     | '__root__'
     | '/'
@@ -129,10 +162,13 @@ export interface FileRouteTypes {
     | '/auth'
     | '/driver'
     | '/orders'
+    | '/checkout/$orderId'
     | '/services/food'
     | '/services/pabili'
     | '/services/padala'
     | '/services/ride'
+    | '/checkout/$orderId/pay'
+    | '/checkout/$orderId/success'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -141,6 +177,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   DriverRoute: typeof DriverRoute
   OrdersRoute: typeof OrdersRoute
+  CheckoutOrderIdRoute: typeof CheckoutOrderIdRouteWithChildren
   ServicesFoodRoute: typeof ServicesFoodRoute
   ServicesPabiliRoute: typeof ServicesPabiliRoute
   ServicesPadalaRoute: typeof ServicesPadalaRoute
@@ -212,8 +249,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesFoodRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/checkout/$orderId': {
+      id: '/checkout/$orderId'
+      path: '/checkout/$orderId'
+      fullPath: '/checkout/$orderId'
+      preLoaderRoute: typeof CheckoutOrderIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout/$orderId/success': {
+      id: '/checkout/$orderId/success'
+      path: '/success'
+      fullPath: '/checkout/$orderId/success'
+      preLoaderRoute: typeof CheckoutOrderIdSuccessRouteImport
+      parentRoute: typeof CheckoutOrderIdRoute
+    }
+    '/checkout/$orderId/pay': {
+      id: '/checkout/$orderId/pay'
+      path: '/pay'
+      fullPath: '/checkout/$orderId/pay'
+      preLoaderRoute: typeof CheckoutOrderIdPayRouteImport
+      parentRoute: typeof CheckoutOrderIdRoute
+    }
   }
 }
+
+interface CheckoutOrderIdRouteChildren {
+  CheckoutOrderIdPayRoute: typeof CheckoutOrderIdPayRoute
+  CheckoutOrderIdSuccessRoute: typeof CheckoutOrderIdSuccessRoute
+}
+
+const CheckoutOrderIdRouteChildren: CheckoutOrderIdRouteChildren = {
+  CheckoutOrderIdPayRoute: CheckoutOrderIdPayRoute,
+  CheckoutOrderIdSuccessRoute: CheckoutOrderIdSuccessRoute,
+}
+
+const CheckoutOrderIdRouteWithChildren = CheckoutOrderIdRoute._addFileChildren(
+  CheckoutOrderIdRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -221,6 +293,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   DriverRoute: DriverRoute,
   OrdersRoute: OrdersRoute,
+  CheckoutOrderIdRoute: CheckoutOrderIdRouteWithChildren,
   ServicesFoodRoute: ServicesFoodRoute,
   ServicesPabiliRoute: ServicesPabiliRoute,
   ServicesPadalaRoute: ServicesPadalaRoute,

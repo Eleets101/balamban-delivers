@@ -35,8 +35,17 @@ interface Order {
   rider_id: string | null;
   details: OrderDetails;
   estimated_price: number | null;
+  payment_method: string;
+  payment_status: "pending" | "paid" | "cod" | "failed";
   created_at: string;
 }
+
+const PAYMENT_BADGES: Record<Order["payment_status"], { label: string; className: string }> = {
+  pending: { label: "Payment pending", className: "bg-warning/15 text-warning border-warning/30" },
+  paid: { label: "Paid", className: "bg-success/15 text-success border-success/30" },
+  cod: { label: "Cash on delivery", className: "bg-accent/15 text-accent-foreground border-accent/30" },
+  failed: { label: "Payment failed", className: "bg-destructive/15 text-destructive border-destructive/30" },
+};
 
 export const Route = createFileRoute("/orders")({
   head: () => ({
@@ -64,7 +73,7 @@ function OrdersPage() {
     const load = async () => {
       const { data } = await supabase
         .from("orders")
-        .select("id, service_type, status, pickup_address, dropoff_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, rider_id, details, estimated_price, created_at")
+        .select("id, service_type, status, pickup_address, dropoff_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, rider_id, details, estimated_price, payment_method, payment_status, created_at")
         .eq("customer_id", user.id)
         .order("created_at", { ascending: false });
       setOrders((data as Order[]) ?? []);
@@ -127,10 +136,13 @@ function OrdersPage() {
                     style={{ background: "var(--gradient-card)", boxShadow: "var(--shadow-card)" }}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="font-display text-base font-semibold">{SERVICE_LABELS[o.service_type]}</span>
                         <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[o.status]}`}>
                           {STATUS_LABELS[o.status]}
+                        </span>
+                        <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${PAYMENT_BADGES[o.payment_status].className}`}>
+                          {PAYMENT_BADGES[o.payment_status].label}
                         </span>
                       </div>
                       <span className="text-xs text-muted-foreground">
@@ -192,7 +204,14 @@ function OrdersPage() {
                     )}
 
                     {o.status === "pending" && (
-                      <div className="mt-4 flex justify-end">
+                      <div className="mt-4 flex flex-wrap justify-end gap-2">
+                        {o.payment_status === "pending" && (
+                          <Button asChild type="button" size="sm">
+                            <Link to="/checkout/$orderId" params={{ orderId: o.id }}>
+                              Pay now <ArrowRight className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        )}
                         <Button
                           type="button"
                           variant="outline"
