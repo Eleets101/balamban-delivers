@@ -57,6 +57,7 @@ export function useAuth() {
     ...state,
     isAuthenticated: !!state.user,
     isAdmin: state.roles.includes("admin"),
+    isRider: state.roles.includes("rider"),
     signOut: () => supabase.auth.signOut(),
   };
 }
