@@ -149,9 +149,11 @@ export function MapPicker({ value, onChange, onAddressResolved, height = 260 }: 
       />
       <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
         <span>
-          {value
-            ? `Pinned: ${value.lat.toFixed(5)}, ${value.lng.toFixed(5)}`
-            : "Tap the map to pin a location"}
+          {resolving
+            ? "Resolving address…"
+            : value
+              ? `Pinned: ${value.lat.toFixed(5)}, ${value.lng.toFixed(5)}`
+              : "Tap the map to pin a location"}
         </span>
         <Button type="button" variant="outline" size="sm" onClick={useCurrent} disabled={locating}>
           {locating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Crosshair className="h-3.5 w-3.5" />}
