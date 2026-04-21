@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useId, useMemo, useRef } from "react";
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -58,10 +58,18 @@ export function LiveTrackingMap({ pickup, dropoff, driver, height = 320 }: LiveT
   ] : [];
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const mapId = useId();
 
   return (
     <div ref={containerRef} className="overflow-hidden rounded-xl border border-border/60" style={{ height }}>
-      <MapContainer center={center} zoom={14} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
+      <MapContainer
+        key={mapId}
+        id={`map-track-${mapId.replace(/:/g, "")}`}
+        center={center}
+        zoom={14}
+        style={{ height: "100%", width: "100%" }}
+        scrollWheelZoom
+      >
         <TileLayer
           attribution='&copy; OpenStreetMap'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
