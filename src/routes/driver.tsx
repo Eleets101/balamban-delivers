@@ -58,11 +58,24 @@ function DriverPage() {
   const [sharing, setSharing] = useState(false);
   const [myCoords, setMyCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [myHistory, setMyHistory] = useState<LocationSample[]>([]);
+  const [adaptive, setAdaptive] = useState(true);
+  const [, setTick] = useState(0);
   const watchIdRef = useRef<number | null>(null);
   const activeOrderIdRef = useRef<string | null>(null);
 
   const allowed = isRider || isAdmin;
   const mySmoothedMps = smoothedSpeedMps(myHistory);
+  const myVariance = speedVariance(myHistory);
+  const refreshSec = Math.round((adaptive ? adaptiveRefreshMs(myVariance) : 30_000) / 1000);
+  const isFastRefresh = adaptive && myVariance != null && myVariance >= 0.3;
+
+  // Adaptive ETA tick — recomputes ETA labels on a cadence driven by speed variance.
+  useEffect(() => {
+    if (!sharing) return;
+    const intervalMs = adaptive ? adaptiveRefreshMs(myVariance) : 30_000;
+    const id = window.setInterval(() => setTick((n) => n + 1), intervalMs);
+    return () => window.clearInterval(id);
+  }, [sharing, adaptive, myVariance]);
 
   const refresh = async () => {
     // Available (pending, no rider) + my assigned active orders
