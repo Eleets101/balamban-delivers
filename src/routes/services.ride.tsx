@@ -52,9 +52,7 @@ type Coords = { lat: number; lng: number } | null;
 type RideType = "standard" | "express";
 type Stage = "form" | "searching" | "found";
 
-const FARE_BASE = 30; // ₱
-const FARE_PER_KM_STANDARD = 12; // ₱
-const FARE_PER_KM_EXPRESS = 18; // ₱
+// Ride fare rates are defined centrally in src/lib/pricing.ts
 
 // Snap-to-landmark fallback. When GPS accuracy is poor or reverse geocoding
 // returns nothing, drop the pickup on the closest known mapped pin so the
@@ -187,14 +185,15 @@ function RidePage() {
 
   const distanceKm = useMemo(() => {
     if (!pickupCoords || !dropoffCoords) return null;
-    return haversineKm(pickupCoords, dropoffCoords);
+    return pricingHaversineKm(pickupCoords, dropoffCoords);
   }, [pickupCoords, dropoffCoords]);
 
-  const fare = useMemo(() => {
+  const fareBreakdown: FareBreakdown | null = useMemo(() => {
     if (distanceKm == null) return null;
-    const perKm = rideType === "express" ? FARE_PER_KM_EXPRESS : FARE_PER_KM_STANDARD;
-    return Math.max(FARE_BASE, Math.round(FARE_BASE + distanceKm * perKm));
+    return calculateRideFare(distanceKm, rideType);
   }, [distanceKm, rideType]);
+
+  const fare = fareBreakdown?.total ?? null;
 
   const tripEta = useMemo(() => {
     if (distanceKm == null) return null;
@@ -226,7 +225,12 @@ function RidePage() {
         pickup_lng: pickupCoords.lng,
         dropoff_lat: dropoffCoords.lat,
         dropoff_lng: dropoffCoords.lng,
-        details: { description: `Ride · ${rideType}`, ride_type: rideType, estimated_eta_min: tripEta },
+        details: {
+          description: `Ride · ${rideType}`,
+          ride_type: rideType,
+          estimated_eta_min: tripEta,
+          fare_breakdown: fareBreakdown,
+        },
         estimated_price: fare,
         payment_method: "pending",
       })
