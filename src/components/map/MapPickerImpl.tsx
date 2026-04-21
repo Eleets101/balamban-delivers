@@ -112,6 +112,21 @@ export function MapPicker({ value, onChange, onAddressResolved, height = 260 }: 
     map.setView(pos, Math.max(map.getZoom(), 15), { animate: true });
   }, [value]);
 
+  // Reverse geocode pinned location into a human-readable address
+  useEffect(() => {
+    if (!value || !onAddressResolvedRef.current) return;
+    let cancelled = false;
+    setResolving(true);
+    reverseGeocode(value.lat, value.lng).then((addr) => {
+      if (cancelled) return;
+      setResolving(false);
+      if (addr && onAddressResolvedRef.current) onAddressResolvedRef.current(addr);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [value]);
+
   const useCurrent = () => {
     if (!("geolocation" in navigator)) return;
     setLocating(true);
