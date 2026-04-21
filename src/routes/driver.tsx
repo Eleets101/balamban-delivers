@@ -10,7 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { LiveTrackingMap } from "@/components/map/LiveTrackingMap.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
 import { SERVICE_LABELS, STATUS_LABELS, STATUS_COLORS, type OrderStatus, type ServiceType } from "@/lib/orders";
-import { estimateEta, etaTargetForStatus } from "@/lib/eta";
+import {
+  estimateEta,
+  etaTargetForStatus,
+  LOCATION_BUFFER_SIZE,
+  pushLocationSample,
+  smoothedSpeedMps,
+  type LocationSample,
+} from "@/lib/eta";
 
 export const Route = createFileRoute("/driver")({
   head: () => ({
@@ -46,10 +53,12 @@ function DriverPage() {
   const [orders, setOrders] = useState<DriverOrder[] | null>(null);
   const [sharing, setSharing] = useState(false);
   const [myCoords, setMyCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [myHistory, setMyHistory] = useState<LocationSample[]>([]);
   const watchIdRef = useRef<number | null>(null);
   const activeOrderIdRef = useRef<string | null>(null);
 
   const allowed = isRider || isAdmin;
+  const mySmoothedMps = smoothedSpeedMps(myHistory);
 
   const refresh = async () => {
     // Available (pending, no rider) + my assigned active orders
@@ -122,7 +131,15 @@ function DriverPage() {
     const id = navigator.geolocation.watchPosition(
       async (pos) => {
         const c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const nowIso = new Date().toISOString();
         setMyCoords(c);
+        setMyHistory((prev) =>
+          pushLocationSample(
+            prev,
+            { lat: c.lat, lng: c.lng, speed: pos.coords.speed ?? null, updated_at: nowIso },
+            LOCATION_BUFFER_SIZE,
+          ),
+        );
         const { error } = await supabase.from("driver_locations").upsert(
           {
             rider_id: user.id,
@@ -132,7 +149,7 @@ function DriverPage() {
             heading: pos.coords.heading ?? null,
             speed: pos.coords.speed ?? null,
             accuracy: pos.coords.accuracy ?? null,
-            updated_at: new Date().toISOString(),
+            updated_at: nowIso,
           },
           { onConflict: "rider_id" },
         );
@@ -148,6 +165,7 @@ function DriverPage() {
     return () => {
       if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
+      setMyHistory([]);
     };
   }, [sharing, user]);
 
@@ -249,7 +267,7 @@ function DriverPage() {
                 const pickup = o.pickup_lat != null && o.pickup_lng != null ? { lat: o.pickup_lat, lng: o.pickup_lng } : null;
                 const dropoff = o.dropoff_lat != null && o.dropoff_lng != null ? { lat: o.dropoff_lat, lng: o.dropoff_lng } : null;
                 const target = etaTargetForStatus(o.status, pickup, dropoff);
-                const eta = myCoords && target ? estimateEta(myCoords, target.coords) : null;
+                const eta = myCoords && target ? estimateEta(myCoords, target.coords, { speedMps: mySmoothedMps }) : null;
                 return (
                   <article key={o.id} className="rounded-2xl border border-border/60 p-5" style={{ background: "var(--gradient-card)" }}>
                     <div className="flex flex-wrap items-center justify-between gap-3">

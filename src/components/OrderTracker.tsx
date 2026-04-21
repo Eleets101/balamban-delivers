@@ -4,7 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { LiveTrackingMap } from "@/components/map/LiveTrackingMap.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
 import { Button } from "@/components/ui/button";
-import { estimateEta, etaTargetForStatus } from "@/lib/eta";
+import {
+  estimateEta,
+  etaTargetForStatus,
+  LOCATION_BUFFER_SIZE,
+  pushLocationSample,
+  smoothedSpeedMps,
+  type LocationSample,
+} from "@/lib/eta";
 import { STATUS_LABELS, type OrderStatus } from "@/lib/orders";
 
 interface OrderTrackerProps {
@@ -39,6 +46,7 @@ const STATUS_INDEX: Record<OrderStatus, number> = {
 
 export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: OrderTrackerProps) {
   const [driver, setDriver] = useState<DriverLoc | null>(null);
+  const [history, setHistory] = useState<LocationSample[]>([]);
   const [tick, setTick] = useState(0); // forces ETA refresh every minute
 
   const isActive = status === "accepted" || status === "in_progress";
@@ -47,18 +55,22 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
   useEffect(() => {
     if (!isActive || !riderId) {
       setDriver(null);
+      setHistory([]);
       return;
     }
     let cancelled = false;
+    // Seed the buffer with the most recent samples so smoothing works on first paint.
     supabase
       .from("driver_locations")
       .select("lat, lng, speed, updated_at")
       .eq("order_id", orderId)
       .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      .limit(LOCATION_BUFFER_SIZE)
       .then(({ data }) => {
-        if (!cancelled && data) setDriver(data as DriverLoc);
+        if (cancelled || !data || data.length === 0) return;
+        const ordered = [...(data as DriverLoc[])].reverse(); // oldest → newest
+        setHistory(ordered);
+        setDriver(ordered[ordered.length - 1]);
       });
 
     const channel = supabase
@@ -69,12 +81,14 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
         (payload) => {
           const row = (payload.new ?? payload.old) as Partial<DriverLoc> | null;
           if (row?.lat != null && row?.lng != null) {
-            setDriver({
+            const sample: DriverLoc = {
               lat: row.lat,
               lng: row.lng,
               speed: row.speed ?? null,
               updated_at: row.updated_at ?? new Date().toISOString(),
-            });
+            };
+            setDriver(sample);
+            setHistory((prev) => pushLocationSample(prev, sample));
           }
         },
       )
@@ -94,11 +108,16 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
   }, [isActive]);
 
   const target = etaTargetForStatus(status, pickup, dropoff);
-  const eta = useMemo(
-    () => (driver && target ? estimateEta(driver, target.coords, { speedMps: driver.speed }) : null),
-    // tick included so the label refreshes
+  const smoothedMps = useMemo(
+    () => smoothedSpeedMps(history),
+    // tick included so stale samples drop out of the window over time
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [driver, target?.coords.lat, target?.coords.lng, target?.label, tick],
+    [history, tick],
+  );
+  const eta = useMemo(
+    () => (driver && target ? estimateEta(driver, target.coords, { speedMps: smoothedMps }) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [driver, target?.coords.lat, target?.coords.lng, target?.label, smoothedMps, tick],
   );
 
   const lastUpdated = useMemo(() => {
