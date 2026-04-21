@@ -24,11 +24,14 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
       return;
     }
     let cancelled = false;
-    // initial fetch
+    // Initial fetch — filter by order_id so the customer RLS policy
+    // ("Customers view driver location for own order") permits the read.
     supabase
       .from("driver_locations")
       .select("lat, lng")
-      .eq("rider_id", riderId)
+      .eq("order_id", orderId)
+      .order("updated_at", { ascending: false })
+      .limit(1)
       .maybeSingle()
       .then(({ data }) => {
         if (!cancelled && data) setDriver({ lat: data.lat, lng: data.lng });
@@ -38,7 +41,7 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
       .channel(`driver-loc-${orderId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "driver_locations", filter: `rider_id=eq.${riderId}` },
+        { event: "*", schema: "public", table: "driver_locations", filter: `order_id=eq.${orderId}` },
         (payload) => {
           const row = (payload.new ?? payload.old) as { lat?: number; lng?: number } | null;
           if (row?.lat != null && row?.lng != null) setDriver({ lat: row.lat, lng: row.lng });
