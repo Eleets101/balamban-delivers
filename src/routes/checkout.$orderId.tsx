@@ -9,6 +9,7 @@ import {
   Sparkles,
   ArrowRight,
   ArrowLeft,
+  Receipt,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
 import { SERVICE_LABELS, type ServiceType } from "@/lib/orders";
+import { isFareBreakdown, type FareBreakdown } from "@/lib/pricing";
 
 interface CheckoutOrder {
   id: string;
@@ -27,15 +29,8 @@ interface CheckoutOrder {
   payment_method: string;
   payment_status: "pending" | "paid" | "cod" | "failed";
   status: string;
-  details: { description?: string } | null;
+  details: Record<string, unknown> | null;
 }
-
-const DELIVERY_FEE_BY_SERVICE: Record<ServiceType, number> = {
-  ride: 0,
-  food: 25,
-  padali: 20,
-  pabili: 20,
-};
 
 export const Route = createFileRoute("/checkout/$orderId")({
   head: () => ({
@@ -94,9 +89,12 @@ function CheckoutPage() {
     return null;
   }
 
-  const fare = Number(order.estimated_price ?? 0);
-  const deliveryFee = DELIVERY_FEE_BY_SERVICE[order.service_type] ?? 0;
-  const total = fare + deliveryFee;
+  // Prefer the saved fare breakdown (new orders). Fall back to estimated_price
+  // for legacy orders created before the pricing engine landed.
+  const breakdown: FareBreakdown | null = isFareBreakdown(order.details?.fare_breakdown)
+    ? (order.details!.fare_breakdown as FareBreakdown)
+    : null;
+  const total = breakdown?.total ?? Number(order.estimated_price ?? 0);
 
   const chooseCOD = async () => {
     setBusy(true);
@@ -150,25 +148,35 @@ function CheckoutPage() {
             </div>
           </div>
 
-          <div className="mt-5 space-y-2 border-t border-border/60 pt-4 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">
-                {order.service_type === "ride" ? "Estimated fare" : "Service / budget"}
-              </span>
-              <span className="font-medium">₱{fare.toFixed(2)}</span>
+          {/* Fare breakdown */}
+          <div className="mt-5 border-t border-border/60 pt-4">
+            <div className="mb-2 flex items-center gap-2">
+              <Receipt className="h-4 w-4 text-primary-glow" />
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Fare breakdown
+              </p>
             </div>
-            {deliveryFee > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Delivery fee</span>
-                <span className="font-medium">₱{deliveryFee.toFixed(2)}</span>
+            <dl className="space-y-1.5 text-sm">
+              {breakdown ? (
+                breakdown.lines.map((line, i) => (
+                  <div key={i} className="flex items-center justify-between gap-3">
+                    <dt className="text-muted-foreground">{line.label}</dt>
+                    <dd className="font-medium">₱{line.amount.toFixed(2)}</dd>
+                  </div>
+                ))
+              ) : (
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">Estimated total</dt>
+                  <dd className="font-medium">₱{total.toFixed(2)}</dd>
+                </div>
+              )}
+              <div className="mt-2 flex items-center justify-between border-t border-border/60 pt-3">
+                <dt className="font-display text-base font-semibold">Total</dt>
+                <dd className="font-display text-xl font-bold text-primary-glow">
+                  ₱{total.toFixed(2)}
+                </dd>
               </div>
-            )}
-            <div className="flex items-center justify-between border-t border-border/60 pt-3">
-              <span className="font-display text-base font-semibold">Total</span>
-              <span className="font-display text-xl font-bold text-primary-glow">
-                ₱{total.toFixed(2)}
-              </span>
-            </div>
+            </dl>
           </div>
         </section>
 
