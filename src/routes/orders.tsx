@@ -204,7 +204,14 @@ function OrdersPage() {
                     )}
 
                     {o.status === "pending" && (
-                      <div className="mt-4 flex justify-end">
+                      <div className="mt-4 flex flex-wrap justify-end gap-2">
+                        {o.payment_status === "pending" && (
+                          <Button asChild type="button" size="sm">
+                            <Link to="/checkout/$orderId" params={{ orderId: o.id }}>
+                              Pay now <ArrowRight className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        )}
                         <Button
                           type="button"
                           variant="outline"
