@@ -131,7 +131,15 @@ function DriverPage() {
     const id = navigator.geolocation.watchPosition(
       async (pos) => {
         const c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const nowIso = new Date().toISOString();
         setMyCoords(c);
+        setMyHistory((prev) =>
+          pushLocationSample(
+            prev,
+            { lat: c.lat, lng: c.lng, speed: pos.coords.speed ?? null, updated_at: nowIso },
+            LOCATION_BUFFER_SIZE,
+          ),
+        );
         const { error } = await supabase.from("driver_locations").upsert(
           {
             rider_id: user.id,
@@ -141,7 +149,7 @@ function DriverPage() {
             heading: pos.coords.heading ?? null,
             speed: pos.coords.speed ?? null,
             accuracy: pos.coords.accuracy ?? null,
-            updated_at: new Date().toISOString(),
+            updated_at: nowIso,
           },
           { onConflict: "rider_id" },
         );
