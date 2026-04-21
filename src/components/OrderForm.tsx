@@ -27,35 +27,53 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+// Common local-brand misspellings we auto-correct before searching.
+const SPELLING_FIXES: Array<[RegExp, string]> = [
+  [/\bgiasano\b/gi, "Gaisano"],
+  [/\bjolibee\b/gi, "Jollibee"],
+  [/\bjolibe\b/gi, "Jollibee"],
+  [/\bmcdo\b/gi, "McDonald's"],
+  [/\bsavemore\b/gi, "Save More"],
+];
+
+function normalizeQuery(q: string): string {
+  let out = q.trim();
+  for (const [pattern, replacement] of SPELLING_FIXES) {
+    out = out.replace(pattern, replacement);
+  }
+  return out;
+}
+
 /**
  * Geocode a free-text query, picking the candidate closest to `near` if provided.
- * Falls back from local-viewbox → PH-wide if no results are found.
+ * Tries a cascade of strategies so typos and generic place names still resolve.
  */
 async function geocodeAddress(
-  query: string,
+  rawQuery: string,
   near: { lat: number; lng: number } | null,
 ): Promise<{ lat: number; lng: number; displayName: string } | null> {
   const bias = near ?? DEFAULT_BIAS;
+  const normalized = normalizeQuery(rawQuery);
 
-  const run = async (mode: "nearby" | "ph") => {
+  const fetchOnce = async (
+    q: string,
+    mode: "nearby" | "ph",
+  ): Promise<{ lat: number; lng: number; displayName: string } | null> => {
     const url = new URL("https://nominatim.openstreetmap.org/search");
     url.searchParams.set("format", "json");
-    url.searchParams.set("q", query);
-    url.searchParams.set("limit", "10");
+    url.searchParams.set("q", q);
+    url.searchParams.set("limit", "15");
     url.searchParams.set("countrycodes", "ph");
     if (mode === "nearby") {
-      // Build a ~1° viewbox around the bias (roughly ~110km) so nearby POIs win
       if (near) {
         const d = 0.5;
-        const left = bias.lng - d;
-        const right = bias.lng + d;
-        const top = bias.lat + d;
-        const bottom = bias.lat - d;
-        url.searchParams.set("viewbox", `${left},${top},${right},${bottom}`);
+        url.searchParams.set(
+          "viewbox",
+          `${bias.lng - d},${bias.lat + d},${bias.lng + d},${bias.lat - d}`,
+        );
       } else {
         url.searchParams.set("viewbox", DEFAULT_VIEWBOX);
       }
-      // Not strictly bounded — Nominatim prefers results inside the box but still returns outsiders ranked lower
     }
     const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
     if (!res.ok) return null;
@@ -65,20 +83,33 @@ async function geocodeAddress(
       display_name: string;
     }>;
     if (!data.length) return null;
-    // Choose the candidate closest to the bias point
-    const ranked = data
+    return data
       .map((h) => ({
         lat: parseFloat(h.lat),
         lng: parseFloat(h.lon),
         displayName: h.display_name,
       }))
       .map((h) => ({ ...h, distKm: haversineKm(bias, h) }))
-      .sort((a, b) => a.distKm - b.distKm);
-    return ranked[0];
+      .sort((a, b) => a.distKm - b.distKm)[0];
   };
 
+  // Build a cascade of query variants so a typo or extra words still resolve.
+  const broadened = normalized
+    .split(/\s+/)
+    .filter((t) => t.length >= 4)
+    .join(" ");
+  const variants = Array.from(
+    new Set(
+      [normalized, rawQuery.trim(), broadened].filter((v) => v.length > 0),
+    ),
+  );
+
   try {
-    return (await run("nearby")) ?? (await run("ph"));
+    for (const v of variants) {
+      const hit = (await fetchOnce(v, "nearby")) ?? (await fetchOnce(v, "ph"));
+      if (hit) return hit;
+    }
+    return null;
   } catch {
     return null;
   }
