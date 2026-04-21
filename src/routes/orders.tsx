@@ -1,12 +1,26 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Package, MapPin, ArrowRight } from "lucide-react";
+import { Loader2, Package, MapPin, ArrowRight, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
 import { OrderTracker } from "@/components/OrderTracker";
+import { CancelOrderDialog } from "@/components/CancelOrderDialog";
 import { SERVICE_LABELS, STATUS_LABELS, STATUS_COLORS, type OrderStatus, type ServiceType } from "@/lib/orders";
+
+interface CancellationDetails {
+  reason: string;
+  reason_label: string;
+  note: string | null;
+  cancelled_at: string;
+}
+
+interface OrderDetails {
+  description?: string;
+  cancellation?: CancellationDetails;
+  [key: string]: unknown;
+}
 
 interface Order {
   id: string;
@@ -19,7 +33,7 @@ interface Order {
   dropoff_lat: number | null;
   dropoff_lng: number | null;
   rider_id: string | null;
-  details: { description?: string };
+  details: OrderDetails;
   estimated_price: number | null;
   created_at: string;
 }
@@ -38,6 +52,7 @@ function OrdersPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[] | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Order | null>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -161,6 +176,34 @@ function OrdersPage() {
                         status={o.status}
                       />
                     )}
+
+                    {o.status === "cancelled" && o.details?.cancellation && (
+                      <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-destructive">
+                          Cancellation reason
+                        </p>
+                        <p className="mt-1 font-medium">{o.details.cancellation.reason_label}</p>
+                        {o.details.cancellation.note && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            “{o.details.cancellation.note}”
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {o.status === "pending" && (
+                      <div className="mt-4 flex justify-end">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => setCancelTarget(o)}
+                        >
+                          <X className="h-4 w-4" /> Cancel order
+                        </Button>
+                      </div>
+                    )}
                   </article>
                 );
               })}
@@ -168,6 +211,13 @@ function OrdersPage() {
           )}
         </div>
       </div>
+
+      <CancelOrderDialog
+        open={cancelTarget !== null}
+        onOpenChange={(next) => !next && setCancelTarget(null)}
+        orderId={cancelTarget?.id ?? ""}
+        existingDetails={cancelTarget?.details ?? null}
+      />
     </PageShell>
   );
 }
