@@ -1,10 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Loader2, Users, Package as PackageIcon, ShieldCheck, Clock, CheckCircle2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Loader2, Users, Package as PackageIcon, ShieldCheck, Clock, CheckCircle2, UserCog, X, Search } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -23,6 +26,27 @@ interface AdminOrder {
   dropoff_address: string;
   estimated_price: number | null;
   created_at: string;
+}
+
+type AppRole = "admin" | "rider" | "vendor" | "customer";
+const ALL_ROLES: AppRole[] = ["admin", "rider", "vendor", "customer"];
+const ROLE_BADGE: Record<AppRole, string> = {
+  admin: "bg-primary/20 text-primary-glow border-primary/30",
+  rider: "bg-blue-500/15 text-blue-300 border-blue-500/30",
+  vendor: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+  customer: "bg-muted text-muted-foreground border-border",
+};
+
+interface ProfileRow {
+  id: string;
+  full_name: string | null;
+  phone: string | null;
+  created_at: string;
+}
+interface RoleRow {
+  id: string;
+  user_id: string;
+  role: AppRole;
 }
 
 export const Route = createFileRoute("/admin")({
