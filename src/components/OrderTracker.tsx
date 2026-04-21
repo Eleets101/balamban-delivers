@@ -212,11 +212,12 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
               </Label>
             </div>
             <span
-              className={`flex items-center gap-1 ${isFastRefresh ? "text-primary-glow" : "text-muted-foreground"}`}
+              className={`flex items-center gap-2 ${isFastRefresh ? "text-primary-glow" : "text-muted-foreground"}`}
               aria-live="polite"
             >
               {isFastRefresh && <Zap className="h-3 w-3" />}
-              Refresh: {refreshSec}s
+              <span>Next update in {countdown}s</span>
+              <span className="text-muted-foreground/70">· every {refreshSec}s</span>
             </span>
           </div>
         </div>
