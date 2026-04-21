@@ -53,10 +53,12 @@ function DriverPage() {
   const [orders, setOrders] = useState<DriverOrder[] | null>(null);
   const [sharing, setSharing] = useState(false);
   const [myCoords, setMyCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [myHistory, setMyHistory] = useState<LocationSample[]>([]);
   const watchIdRef = useRef<number | null>(null);
   const activeOrderIdRef = useRef<string | null>(null);
 
   const allowed = isRider || isAdmin;
+  const mySmoothedMps = smoothedSpeedMps(myHistory);
 
   const refresh = async () => {
     // Available (pending, no rider) + my assigned active orders
