@@ -20,20 +20,38 @@ const DEFAULT_CENTER: [number, number] = [10.4456, 123.7016];
 interface MapPickerProps {
   value: { lat: number; lng: number } | null;
   onChange: (coords: { lat: number; lng: number }) => void;
+  onAddressResolved?: (address: string) => void;
   height?: number;
 }
 
-export function MapPicker({ value, onChange, height = 260 }: MapPickerProps) {
+async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+      { headers: { Accept: "application/json" } },
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as { display_name?: string };
+    return data.display_name ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function MapPicker({ value, onChange, onAddressResolved, height = 260 }: MapPickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const onChangeRef = useRef(onChange);
+  const onAddressResolvedRef = useRef(onAddressResolved);
   const [locating, setLocating] = useState(false);
+  const [resolving, setResolving] = useState(false);
 
-  // keep latest onChange without retriggering map setup
+  // keep latest callbacks without retriggering map setup
   useEffect(() => {
     onChangeRef.current = onChange;
-  }, [onChange]);
+    onAddressResolvedRef.current = onAddressResolved;
+  }, [onChange, onAddressResolved]);
 
   // Initialize map once on mount
   useEffect(() => {
@@ -94,6 +112,21 @@ export function MapPicker({ value, onChange, height = 260 }: MapPickerProps) {
     map.setView(pos, Math.max(map.getZoom(), 15), { animate: true });
   }, [value]);
 
+  // Reverse geocode pinned location into a human-readable address
+  useEffect(() => {
+    if (!value || !onAddressResolvedRef.current) return;
+    let cancelled = false;
+    setResolving(true);
+    reverseGeocode(value.lat, value.lng).then((addr) => {
+      if (cancelled) return;
+      setResolving(false);
+      if (addr && onAddressResolvedRef.current) onAddressResolvedRef.current(addr);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [value]);
+
   const useCurrent = () => {
     if (!("geolocation" in navigator)) return;
     setLocating(true);
@@ -116,9 +149,11 @@ export function MapPicker({ value, onChange, height = 260 }: MapPickerProps) {
       />
       <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
         <span>
-          {value
-            ? `Pinned: ${value.lat.toFixed(5)}, ${value.lng.toFixed(5)}`
-            : "Tap the map to pin a location"}
+          {resolving
+            ? "Resolving address…"
+            : value
+              ? `Pinned: ${value.lat.toFixed(5)}, ${value.lng.toFixed(5)}`
+              : "Tap the map to pin a location"}
         </span>
         <Button type="button" variant="outline" size="sm" onClick={useCurrent} disabled={locating}>
           {locating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Crosshair className="h-3.5 w-3.5" />}
