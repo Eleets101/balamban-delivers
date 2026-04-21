@@ -267,7 +267,7 @@ function DriverPage() {
                 const pickup = o.pickup_lat != null && o.pickup_lng != null ? { lat: o.pickup_lat, lng: o.pickup_lng } : null;
                 const dropoff = o.dropoff_lat != null && o.dropoff_lng != null ? { lat: o.dropoff_lat, lng: o.dropoff_lng } : null;
                 const target = etaTargetForStatus(o.status, pickup, dropoff);
-                const eta = myCoords && target ? estimateEta(myCoords, target.coords) : null;
+                const eta = myCoords && target ? estimateEta(myCoords, target.coords, { speedMps: mySmoothedMps }) : null;
                 return (
                   <article key={o.id} className="rounded-2xl border border-border/60 p-5" style={{ background: "var(--gradient-card)" }}>
                     <div className="flex flex-wrap items-center justify-between gap-3">
