@@ -17,10 +17,10 @@ export function AppHeader() {
   const [open, setOpen] = useState(false);
 
   const links = [
-    { to: "/services/food" as const, label: "Food" },
-    { to: "/services/padala" as const, label: "Padala" },
-    { to: "/services/pabili" as const, label: "Pabili" },
-    { to: "/services/ride" as const, label: "Ride" },
+    { to: "/services/food" as const, label: "Food (Pagkain)" },
+    { to: "/services/padala" as const, label: "Padala (Send)" },
+    { to: "/services/pabili" as const, label: "Pabili (Buy)" },
+    { to: "/services/ride" as const, label: "Ride (Sakay)" },
   ];
 
   const handleSignOut = async () => {

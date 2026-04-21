@@ -4,10 +4,10 @@ export type ServiceType = Database["public"]["Enums"]["service_type"];
 export type OrderStatus = Database["public"]["Enums"]["order_status"];
 
 export const SERVICE_LABELS: Record<ServiceType, string> = {
-  food: "Food Delivery",
-  padali: "Padala",
-  pabili: "Pabili",
-  ride: "Ride Booking",
+  food: "Food Delivery (Pagkain)",
+  padali: "Padala (Send)",
+  pabili: "Pabili (Buy for me)",
+  ride: "Ride Booking (Sakay)",
 };
 
 export const STATUS_LABELS: Record<OrderStatus, string> = {
