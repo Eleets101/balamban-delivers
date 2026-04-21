@@ -32,7 +32,7 @@ export function ServiceLayout({ icon, title, tagline, children }: ServiceLayoutP
         <div className="mx-auto max-w-lg px-6 py-20 text-center">
           <h1 className="font-display text-2xl font-bold">Sign in to continue</h1>
           <p className="mt-2 text-muted-foreground">
-            You need an account to place an order on HatodPH.
+            You need an account to place an order on HatodGo.
           </p>
           <div className="mt-6 flex justify-center gap-3">
             <Button asChild>

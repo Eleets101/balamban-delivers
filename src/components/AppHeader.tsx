@@ -38,7 +38,7 @@ export function AppHeader() {
           >
             H
           </div>
-          <span className="font-display text-lg font-bold tracking-tight">HatodPH</span>
+          <span className="font-display text-lg font-bold tracking-tight">HatodGo</span>
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">

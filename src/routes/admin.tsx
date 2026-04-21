@@ -51,8 +51,8 @@ interface RoleRow {
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Admin Dashboard — HatodPH" },
-      { name: "description", content: "Operations dashboard for HatodPH admins." },
+      { title: "Admin Dashboard — HatodGo" },
+      { name: "description", content: "Operations dashboard for HatodGo admins." },
     ],
   }),
   component: AdminPage,
@@ -203,7 +203,7 @@ function AdminPage() {
           <ShieldCheck className="h-7 w-7 text-primary-glow" />
           <h1 className="font-display text-3xl font-bold sm:text-4xl">Admin Dashboard</h1>
         </div>
-        <p className="mt-1 text-muted-foreground">Overview of HatodPH operations.</p>
+        <p className="mt-1 text-muted-foreground">Overview of HatodGo operations.</p>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard icon={<Users className="h-5 w-5" />} label="Users" value={userCount} />

@@ -6,7 +6,7 @@ import { OrderForm } from "@/components/OrderForm";
 export const Route = createFileRoute("/services/padala")({
   head: () => ({
     meta: [
-      { title: "Padala (Send) — Pickup & Drop-off — HatodPH" },
+      { title: "Padala (Send) — Pickup & Drop-off — HatodGo" },
       { name: "description", content: "Send (padala) documents or items across Balamban — same-day pickup and drop-off." },
     ],
   }),

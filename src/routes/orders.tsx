@@ -27,8 +27,8 @@ interface Order {
 export const Route = createFileRoute("/orders")({
   head: () => ({
     meta: [
-      { title: "My Orders — HatodPH" },
-      { name: "description", content: "Track your HatodPH orders and ride bookings." },
+      { title: "My Orders — HatodGo" },
+      { name: "description", content: "Track your HatodGo orders and ride bookings." },
     ],
   }),
   component: OrdersPage,
@@ -76,7 +76,7 @@ function OrdersPage() {
         <div className="flex items-end justify-between gap-4">
           <div>
             <h1 className="font-display text-3xl font-bold sm:text-4xl">My Orders</h1>
-            <p className="mt-1 text-muted-foreground">All your HatodPH orders in one place.</p>
+            <p className="mt-1 text-muted-foreground">All your HatodGo orders in one place.</p>
           </div>
           <Button asChild>
             <Link to="/">New order <ArrowRight className="h-4 w-4" /></Link>

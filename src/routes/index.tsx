@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "HatodPH — Hatod (Deliver), Padala (Send), Sakay (Ride) sa Balamban" },
+      { title: "HatodGo — Hatod (Deliver), Padala (Send), Sakay (Ride) sa Balamban" },
       { name: "description", content: "Order food, send packages (padala), request errands (pabili) or book a ride (sakay). One app for Balamban, Toledo and Asturias." },
-      { property: "og:title", content: "HatodPH — Your everyday hatod (delivery) app" },
+      { property: "og:title", content: "HatodGo — Your everyday hatod (delivery) app" },
       { property: "og:description", content: "Food delivery, padala (send), pabili (buy for me) and ride (sakay) booking for Cebu's west coast." },
     ],
   }),
@@ -69,7 +69,7 @@ function HomePage() {
             All in one app.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-            HatodPH brings food delivery, padala (send), pabili (buy for me) and ride (sakay) booking to Balamban and nearby towns —
+            HatodGo brings food delivery, padala (send), pabili (buy for me) and ride (sakay) booking to Balamban and nearby towns —
             sleek, simple, and built for our community.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
