@@ -229,7 +229,7 @@ function RidePage() {
           description: `Ride · ${rideType}`,
           ride_type: rideType,
           estimated_eta_min: tripEta,
-          fare_breakdown: fareBreakdown,
+          fare_breakdown: fareBreakdown as unknown as Record<string, unknown>,
         },
         estimated_price: fare,
         payment_method: "pending",
