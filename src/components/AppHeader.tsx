@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Menu, Package, ShieldCheck, LogOut, LogIn } from "lucide-react";
+import { Menu, Package, ShieldCheck, LogOut, LogIn, Bike } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/sheet";
 
 export function AppHeader() {
-  const { isAuthenticated, isAdmin, signOut } = useAuth();
+  const { isAuthenticated, isAdmin, isRider, signOut } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
@@ -62,6 +62,13 @@ export function AppHeader() {
                   <Package className="h-4 w-4" /> My Orders
                 </Link>
               </Button>
+              {(isRider || isAdmin) && (
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/driver">
+                    <Bike className="h-4 w-4" /> Driver
+                  </Link>
+                </Button>
+              )}
               {isAdmin && (
                 <Button variant="ghost" size="sm" asChild>
                   <Link to="/admin">
@@ -109,6 +116,11 @@ export function AppHeader() {
                   <Link to="/orders" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 text-sm font-medium hover:bg-secondary">
                     My Orders
                   </Link>
+                  {(isRider || isAdmin) && (
+                    <Link to="/driver" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 text-sm font-medium hover:bg-secondary">
+                      Driver Dashboard
+                    </Link>
+                  )}
                   {isAdmin && (
                     <Link to="/admin" onClick={() => setOpen(false)} className="rounded-md px-3 py-3 text-sm font-medium hover:bg-secondary">
                       Admin Dashboard

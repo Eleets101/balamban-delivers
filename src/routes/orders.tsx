@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
+import { OrderTracker } from "@/components/OrderTracker";
 import { SERVICE_LABELS, STATUS_LABELS, STATUS_COLORS, type OrderStatus, type ServiceType } from "@/lib/orders";
 
 interface Order {
@@ -13,6 +14,11 @@ interface Order {
   status: OrderStatus;
   pickup_address: string;
   dropoff_address: string;
+  pickup_lat: number | null;
+  pickup_lng: number | null;
+  dropoff_lat: number | null;
+  dropoff_lng: number | null;
+  rider_id: string | null;
   details: { description?: string };
   estimated_price: number | null;
   created_at: string;
@@ -39,12 +45,29 @@ function OrdersPage() {
       navigate({ to: "/auth" });
       return;
     }
-    supabase
-      .from("orders")
-      .select("id, service_type, status, pickup_address, dropoff_address, details, estimated_price, created_at")
-      .eq("customer_id", user.id)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => setOrders((data as Order[]) ?? []));
+
+    const load = async () => {
+      const { data } = await supabase
+        .from("orders")
+        .select("id, service_type, status, pickup_address, dropoff_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, rider_id, details, estimated_price, created_at")
+        .eq("customer_id", user.id)
+        .order("created_at", { ascending: false });
+      setOrders((data as Order[]) ?? []);
+    };
+    load();
+
+    const channel = supabase
+      .channel("orders-customer")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders", filter: `customer_id=eq.${user.id}` },
+        () => load(),
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, loading, navigate]);
 
   return (
@@ -79,54 +102,68 @@ function OrdersPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {orders.map((o) => (
-                <article
-                  key={o.id}
-                  className="rounded-2xl border border-border/60 p-5"
-                  style={{ background: "var(--gradient-card)", boxShadow: "var(--shadow-card)" }}
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className="font-display text-base font-semibold">{SERVICE_LABELS[o.service_type]}</span>
-                      <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[o.status]}`}>
-                        {STATUS_LABELS[o.status]}
+              {orders.map((o) => {
+                const pickup = o.pickup_lat != null && o.pickup_lng != null ? { lat: o.pickup_lat, lng: o.pickup_lng } : null;
+                const dropoff = o.dropoff_lat != null && o.dropoff_lng != null ? { lat: o.dropoff_lat, lng: o.dropoff_lng } : null;
+                return (
+                  <article
+                    key={o.id}
+                    className="rounded-2xl border border-border/60 p-5"
+                    style={{ background: "var(--gradient-card)", boxShadow: "var(--shadow-card)" }}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className="font-display text-base font-semibold">{SERVICE_LABELS[o.service_type]}</span>
+                        <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[o.status]}`}>
+                          {STATUS_LABELS[o.status]}
+                        </span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(o.created_at).toLocaleString()}
                       </span>
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(o.created_at).toLocaleString()}
-                    </span>
-                  </div>
 
-                  <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
-                    <div className="flex items-start gap-2">
-                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary-glow" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Pickup</p>
-                        <p className="font-medium">{o.pickup_address}</p>
+                    <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+                      <div className="flex items-start gap-2">
+                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary-glow" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Pickup</p>
+                          <p className="font-medium">{o.pickup_address}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Drop-off</p>
+                          <p className="font-medium">{o.dropoff_address}</p>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Drop-off</p>
-                        <p className="font-medium">{o.dropoff_address}</p>
-                      </div>
-                    </div>
-                  </div>
 
-                  {o.details?.description && (
-                    <p className="mt-3 rounded-lg bg-secondary/40 p-3 text-sm text-muted-foreground">
-                      {o.details.description}
-                    </p>
-                  )}
+                    {o.details?.description && (
+                      <p className="mt-3 rounded-lg bg-secondary/40 p-3 text-sm text-muted-foreground">
+                        {o.details.description}
+                      </p>
+                    )}
 
-                  {o.estimated_price !== null && (
-                    <p className="mt-3 text-sm">
-                      Estimated: <span className="font-semibold">₱{Number(o.estimated_price).toFixed(2)}</span>
-                    </p>
-                  )}
-                </article>
-              ))}
+                    {o.estimated_price !== null && (
+                      <p className="mt-3 text-sm">
+                        Estimated: <span className="font-semibold">₱{Number(o.estimated_price).toFixed(2)}</span>
+                      </p>
+                    )}
+
+                    {(pickup || dropoff) && (
+                      <OrderTracker
+                        orderId={o.id}
+                        riderId={o.rider_id}
+                        pickup={pickup}
+                        dropoff={dropoff}
+                        status={o.status}
+                      />
+                    )}
+                  </article>
+                );
+              })}
             </div>
           )}
         </div>
