@@ -134,7 +134,7 @@ export function OrderForm({
       </div>
 
       <div className="rounded-lg border border-border/60 bg-secondary/40 p-3 text-xs text-muted-foreground">
-        Payment: <span className="font-medium text-foreground">Cash on delivery</span> · GCash & online payments coming soon.
+        Payment: choose <span className="font-medium text-foreground">GCash, Maya, or Cash on delivery</span> at checkout.
       </div>
 
       <Button type="submit" className="w-full" size="lg" disabled={busy}>
