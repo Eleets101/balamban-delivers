@@ -44,6 +44,22 @@ const FARE_BASE = 30; // ₱
 const FARE_PER_KM_STANDARD = 12; // ₱
 const FARE_PER_KM_EXPRESS = 18; // ₱
 
+// Snap-to-landmark fallback. When GPS accuracy is poor or reverse geocoding
+// returns nothing, drop the pickup on the closest known mapped pin so the
+// rider always has a recognisable address to head to.
+const ACCURACY_THRESHOLD_M = 150;
+const KNOWN_LANDMARKS: Array<{ name: string; lat: number; lng: number }> = [
+  { name: "Balamban Public Market", lat: 10.4456, lng: 123.7016 },
+  { name: "Balamban Municipal Hall", lat: 10.4488, lng: 123.7029 },
+  { name: "Balamban Public Plaza", lat: 10.4471, lng: 123.7022 },
+  { name: "Gaisano Grand Balamban", lat: 10.4468, lng: 123.7041 },
+  { name: "Balamban District Hospital", lat: 10.4502, lng: 123.7068 },
+  { name: "Tubod Flowing Waters", lat: 10.4530, lng: 123.7110 },
+  { name: "Asturias Public Market", lat: 10.5667, lng: 123.7167 },
+  { name: "Toledo City Public Market", lat: 10.3778, lng: 123.6386 },
+  { name: "Toledo City Hall", lat: 10.3781, lng: 123.6403 },
+];
+
 function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371;
   const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -53,6 +69,19 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   const lat2 = toRad(b.lat);
   const h = Math.sin(dLat / 2) ** 2 + Math.sin(dLng / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
   return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+function nearestLandmark(coords: { lat: number; lng: number }) {
+  let best = KNOWN_LANDMARKS[0];
+  let bestKm = haversineKm(coords, best);
+  for (let i = 1; i < KNOWN_LANDMARKS.length; i++) {
+    const km = haversineKm(coords, KNOWN_LANDMARKS[i]);
+    if (km < bestKm) {
+      best = KNOWN_LANDMARKS[i];
+      bestKm = km;
+    }
+  }
+  return { ...best, distanceKm: bestKm };
 }
 
 const SAMPLE_DRIVER = {
