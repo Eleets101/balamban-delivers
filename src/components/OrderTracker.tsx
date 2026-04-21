@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Circle, MapPin, Navigation, Truck } from "lucide-react";
+import { Check, Circle, MapPin, Navigation, Truck, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { LiveTrackingMap } from "@/components/map/LiveTrackingMap.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
+  adaptiveRefreshMs,
   estimateEta,
   etaTargetForStatus,
   LOCATION_BUFFER_SIZE,
   pushLocationSample,
   smoothedSpeedMps,
+  speedVariance,
   type LocationSample,
 } from "@/lib/eta";
 import { STATUS_LABELS, type OrderStatus } from "@/lib/orders";
