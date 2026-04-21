@@ -46,6 +46,23 @@ function PayPage() {
     // Simulate provider processing
     await new Promise((r) => setTimeout(r, 1600));
 
+    // Simulate a ~20% failure rate from the e-wallet provider
+    const reasons = ["declined", "timeout", "insufficient"] as const;
+    const failed = Math.random() < 0.2;
+    if (failed) {
+      const reason = reasons[Math.floor(Math.random() * reasons.length)];
+      await supabase
+        .from("orders")
+        .update({ payment_method: choice, payment_status: "failed" })
+        .eq("id", orderId);
+      navigate({
+        to: "/checkout/$orderId/failed",
+        params: { orderId },
+        search: { reason },
+      });
+      return;
+    }
+
     const { error } = await supabase
       .from("orders")
       .update({ payment_method: choice, payment_status: "paid" })
