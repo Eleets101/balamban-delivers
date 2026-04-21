@@ -225,12 +225,12 @@ function RidePage() {
         pickup_lng: pickupCoords.lng,
         dropoff_lat: dropoffCoords.lat,
         dropoff_lng: dropoffCoords.lng,
-        details: {
+        details: JSON.parse(JSON.stringify({
           description: `Ride · ${rideType}`,
           ride_type: rideType,
           estimated_eta_min: tripEta,
-          fare_breakdown: fareBreakdown as unknown as Record<string, unknown>,
-        },
+          fare_breakdown: fareBreakdown,
+        })),
         estimated_price: fare,
         payment_method: "pending",
       })
