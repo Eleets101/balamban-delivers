@@ -44,6 +44,22 @@ const FARE_BASE = 30; // ₱
 const FARE_PER_KM_STANDARD = 12; // ₱
 const FARE_PER_KM_EXPRESS = 18; // ₱
 
+// Snap-to-landmark fallback. When GPS accuracy is poor or reverse geocoding
+// returns nothing, drop the pickup on the closest known mapped pin so the
+// rider always has a recognisable address to head to.
+const ACCURACY_THRESHOLD_M = 150;
+const KNOWN_LANDMARKS: Array<{ name: string; lat: number; lng: number }> = [
+  { name: "Balamban Public Market", lat: 10.4456, lng: 123.7016 },
+  { name: "Balamban Municipal Hall", lat: 10.4488, lng: 123.7029 },
+  { name: "Balamban Public Plaza", lat: 10.4471, lng: 123.7022 },
+  { name: "Gaisano Grand Balamban", lat: 10.4468, lng: 123.7041 },
+  { name: "Balamban District Hospital", lat: 10.4502, lng: 123.7068 },
+  { name: "Tubod Flowing Waters", lat: 10.4530, lng: 123.7110 },
+  { name: "Asturias Public Market", lat: 10.5667, lng: 123.7167 },
+  { name: "Toledo City Public Market", lat: 10.3778, lng: 123.6386 },
+  { name: "Toledo City Hall", lat: 10.3781, lng: 123.6403 },
+];
+
 function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371;
   const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -53,6 +69,19 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   const lat2 = toRad(b.lat);
   const h = Math.sin(dLat / 2) ** 2 + Math.sin(dLng / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
   return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+function nearestLandmark(coords: { lat: number; lng: number }) {
+  let best = KNOWN_LANDMARKS[0];
+  let bestKm = haversineKm(coords, best);
+  for (let i = 1; i < KNOWN_LANDMARKS.length; i++) {
+    const km = haversineKm(coords, KNOWN_LANDMARKS[i]);
+    if (km < bestKm) {
+      best = KNOWN_LANDMARKS[i];
+      bestKm = km;
+    }
+  }
+  return { ...best, distanceKm: bestKm };
 }
 
 const SAMPLE_DRIVER = {
@@ -84,22 +113,45 @@ function RidePage() {
     setLocatingMe(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setPickupCoords(coords);
-        // Reverse geocode for a friendly address (MapPicker also does this,
-        // but we kick it off here too so the input fills even before the map opens)
+        const rawCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const accuracy = pos.coords.accuracy ?? Infinity;
+        const lowAccuracy = accuracy > ACCURACY_THRESHOLD_M;
+
+        // Try reverse geocoding first
+        let resolvedAddress: string | null = null;
         try {
           const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.lat}&lon=${coords.lng}&zoom=18&addressdetails=1`,
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${rawCoords.lat}&lon=${rawCoords.lng}&zoom=18&addressdetails=1`,
             { headers: { Accept: "application/json" } },
           );
           if (res.ok) {
             const data = (await res.json()) as { display_name?: string };
-            if (data.display_name) setPickup(data.display_name);
+            const name = data.display_name?.trim();
+            if (name) resolvedAddress = name;
           }
         } catch {
-          // address fill is best-effort
+          // best-effort
         }
+
+        // Fall back to the nearest known landmark when GPS is fuzzy or
+        // reverse geocoding came back empty.
+        if (lowAccuracy || !resolvedAddress) {
+          const snap = nearestLandmark(rawCoords);
+          setPickupCoords({ lat: snap.lat, lng: snap.lng });
+          setPickup(snap.name);
+          setLocatingMe(false);
+          toast.message(
+            lowAccuracy
+              ? `GPS accuracy was ±${Math.round(accuracy)}m — pinned to nearest landmark`
+              : "Address unavailable — pinned to nearest landmark",
+            { description: `${snap.name} (~${snap.distanceKm.toFixed(1)} km away)` },
+          );
+          return;
+        }
+
+        // Good GPS + we have an address — use the live coordinates.
+        setPickupCoords(rawCoords);
+        setPickup(resolvedAddress);
         setLocatingMe(false);
         toast.success("Pickup pinned to your current location.");
       },
