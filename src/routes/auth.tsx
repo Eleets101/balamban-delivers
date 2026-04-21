@@ -66,7 +66,8 @@ function AuthPage() {
       toast.error(error.message);
       return;
     }
-    toast.success("Account created — you can sign in now.");
+    toast.success("Welcome to HatodPH!");
+    navigate({ to: "/orders" });
   };
 
   return (
