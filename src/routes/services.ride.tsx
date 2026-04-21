@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   PhoneCall,
   MessageSquare,
+  Crosshair,
 } from "lucide-react";
 import { ServiceLayout } from "@/components/ServiceLayout";
 import { Button } from "@/components/ui/button";
@@ -73,6 +74,46 @@ function RidePage() {
   const [rideType, setRideType] = useState<RideType>("standard");
   const [stage, setStage] = useState<Stage>("form");
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [locatingMe, setLocatingMe] = useState(false);
+
+  const useMyLocation = () => {
+    if (!("geolocation" in navigator)) {
+      toast.error("Geolocation isn't available on this device.");
+      return;
+    }
+    setLocatingMe(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setPickupCoords(coords);
+        // Reverse geocode for a friendly address (MapPicker also does this,
+        // but we kick it off here too so the input fills even before the map opens)
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.lat}&lon=${coords.lng}&zoom=18&addressdetails=1`,
+            { headers: { Accept: "application/json" } },
+          );
+          if (res.ok) {
+            const data = (await res.json()) as { display_name?: string };
+            if (data.display_name) setPickup(data.display_name);
+          }
+        } catch {
+          // address fill is best-effort
+        }
+        setLocatingMe(false);
+        toast.success("Pickup pinned to your current location.");
+      },
+      (err) => {
+        setLocatingMe(false);
+        toast.error(
+          err.code === err.PERMISSION_DENIED
+            ? "Location permission denied. Allow access in your browser settings."
+            : "Couldn't get your location. Try again or pin it on the map.",
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10_000 },
+    );
+  };
 
   const distanceKm = useMemo(() => {
     if (!pickupCoords || !dropoffCoords) return null;
@@ -290,9 +331,26 @@ function RidePage() {
 
         {/* Pickup */}
         <div className="space-y-2">
-          <Label htmlFor="pickup">
-            <MapPin className="mr-1 inline h-3.5 w-3.5 text-primary-glow" /> Pickup point
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="pickup">
+              <MapPin className="mr-1 inline h-3.5 w-3.5 text-primary-glow" /> Pickup point
+            </Label>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={useMyLocation}
+              disabled={locatingMe}
+              className="h-8 gap-1.5 text-xs"
+            >
+              {locatingMe ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Crosshair className="h-3.5 w-3.5 text-primary-glow" />
+              )}
+              {locatingMe ? "Locating…" : "Use my location"}
+            </Button>
+          </div>
           <Input
             id="pickup"
             placeholder="Where are you now?"
