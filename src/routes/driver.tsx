@@ -75,8 +75,31 @@ function DriverPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => refresh())
       .subscribe();
 
+    const notifChannel = supabase
+      .channel(`driver-notifs-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const n = payload.new as { type: string; title: string; body: string | null };
+          if (n.type === "order_cancelled") {
+            toast.warning(n.title, { description: n.body ?? undefined, duration: 10_000 });
+          } else {
+            toast(n.title, { description: n.body ?? undefined });
+          }
+          refresh();
+        },
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(notifChannel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, loading, allowed, navigate]);

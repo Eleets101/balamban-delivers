@@ -217,6 +217,9 @@ function OrdersPage() {
         onOpenChange={(next) => !next && setCancelTarget(null)}
         orderId={cancelTarget?.id ?? ""}
         existingDetails={cancelTarget?.details ?? null}
+        riderId={cancelTarget?.rider_id ?? null}
+        pickupAddress={cancelTarget?.pickup_address ?? null}
+        dropoffAddress={cancelTarget?.dropoff_address ?? null}
       />
     </PageShell>
   );
