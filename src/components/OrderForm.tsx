@@ -74,6 +74,30 @@ export function OrderForm({
   const [dropoffCoords, setDropoffCoords] = useState<Coords>(null);
   const [pickupAddress, setPickupAddress] = useState("");
   const [dropoffAddress, setDropoffAddress] = useState("");
+  const [searching, setSearching] = useState<null | "pickup" | "dropoff">(null);
+
+  const runSearch = async (which: "pickup" | "dropoff") => {
+    const query = (which === "pickup" ? pickupAddress : dropoffAddress).trim();
+    if (!query) {
+      toast.error("Type an address or place name first.");
+      return;
+    }
+    setSearching(which);
+    const hit = await geocodeAddress(query);
+    setSearching(null);
+    if (!hit) {
+      toast.error(`Couldn't find "${query}". Try a more specific name.`);
+      return;
+    }
+    if (which === "pickup") {
+      setPickupCoords({ lat: hit.lat, lng: hit.lng });
+      setPickupAddress(hit.displayName);
+    } else {
+      setDropoffCoords({ lat: hit.lat, lng: hit.lng });
+      setDropoffAddress(hit.displayName);
+    }
+    toast.success(`Pinned: ${hit.displayName.split(",").slice(0, 2).join(", ")}`);
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
