@@ -165,6 +165,7 @@ function DriverPage() {
     return () => {
       if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
+      setMyHistory([]);
     };
   }, [sharing, user]);
 
