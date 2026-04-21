@@ -1,12 +1,26 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Package, MapPin, ArrowRight } from "lucide-react";
+import { Loader2, Package, MapPin, ArrowRight, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
 import { OrderTracker } from "@/components/OrderTracker";
+import { CancelOrderDialog } from "@/components/CancelOrderDialog";
 import { SERVICE_LABELS, STATUS_LABELS, STATUS_COLORS, type OrderStatus, type ServiceType } from "@/lib/orders";
+
+interface CancellationDetails {
+  reason: string;
+  reason_label: string;
+  note: string | null;
+  cancelled_at: string;
+}
+
+interface OrderDetails {
+  description?: string;
+  cancellation?: CancellationDetails;
+  [key: string]: unknown;
+}
 
 interface Order {
   id: string;
@@ -19,7 +33,7 @@ interface Order {
   dropoff_lat: number | null;
   dropoff_lng: number | null;
   rider_id: string | null;
-  details: { description?: string };
+  details: OrderDetails;
   estimated_price: number | null;
   created_at: string;
 }
