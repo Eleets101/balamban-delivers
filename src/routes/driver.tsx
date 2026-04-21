@@ -1,21 +1,25 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Bike, Loader2, MapPin, Navigation, Power, ShieldAlert } from "lucide-react";
+import { Bike, Loader2, MapPin, Navigation, Power, ShieldAlert, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { LiveTrackingMap } from "@/components/map/LiveTrackingMap.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
 import { SERVICE_LABELS, STATUS_LABELS, STATUS_COLORS, type OrderStatus, type ServiceType } from "@/lib/orders";
 import {
+  adaptiveRefreshMs,
   estimateEta,
   etaTargetForStatus,
   LOCATION_BUFFER_SIZE,
   pushLocationSample,
   smoothedSpeedMps,
+  speedVariance,
   type LocationSample,
 } from "@/lib/eta";
 
@@ -54,11 +58,24 @@ function DriverPage() {
   const [sharing, setSharing] = useState(false);
   const [myCoords, setMyCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [myHistory, setMyHistory] = useState<LocationSample[]>([]);
+  const [adaptive, setAdaptive] = useState(true);
+  const [, setTick] = useState(0);
   const watchIdRef = useRef<number | null>(null);
   const activeOrderIdRef = useRef<string | null>(null);
 
   const allowed = isRider || isAdmin;
   const mySmoothedMps = smoothedSpeedMps(myHistory);
+  const myVariance = speedVariance(myHistory);
+  const refreshSec = Math.round((adaptive ? adaptiveRefreshMs(myVariance) : 30_000) / 1000);
+  const isFastRefresh = adaptive && myVariance != null && myVariance >= 0.3;
+
+  // Adaptive ETA tick — recomputes ETA labels on a cadence driven by speed variance.
+  useEffect(() => {
+    if (!sharing) return;
+    const intervalMs = adaptive ? adaptiveRefreshMs(myVariance) : 30_000;
+    const id = window.setInterval(() => setTick((n) => n + 1), intervalMs);
+    return () => window.clearInterval(id);
+  }, [sharing, adaptive, myVariance]);
 
   const refresh = async () => {
     // Available (pending, no rider) + my assigned active orders
@@ -246,13 +263,30 @@ function DriverPage() {
         </div>
 
         {sharing && (
-          <div className="mt-4 rounded-xl border border-primary/30 bg-primary/10 p-3 text-xs text-primary-glow">
-            Live: your location is being broadcast to assigned customers. Keep this tab open while driving.
-            {myCoords && (
-              <span className="ml-2 text-muted-foreground">
-                ({myCoords.lat.toFixed(5)}, {myCoords.lng.toFixed(5)})
+          <div className="mt-4 space-y-2 rounded-xl border border-primary/30 bg-primary/10 p-3 text-xs text-primary-glow">
+            <div>
+              Live: your location is being broadcast to assigned customers. Keep this tab open while driving.
+              {myCoords && (
+                <span className="ml-2 text-muted-foreground">
+                  ({myCoords.lat.toFixed(5)}, {myCoords.lng.toFixed(5)})
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-primary/20 pt-2">
+              <div className="flex items-center gap-2">
+                <Switch id="adaptive-eta-rider" checked={adaptive} onCheckedChange={setAdaptive} />
+                <Label htmlFor="adaptive-eta-rider" className="cursor-pointer text-xs font-medium text-foreground">
+                  Auto-refresh ETA faster on speed changes
+                </Label>
+              </div>
+              <span
+                className={`flex items-center gap-1 ${isFastRefresh ? "text-primary-glow" : "text-muted-foreground"}`}
+                aria-live="polite"
+              >
+                {isFastRefresh && <Zap className="h-3 w-3" />}
+                Refresh: {refreshSec}s
               </span>
-            )}
+            </div>
           </div>
         )}
 

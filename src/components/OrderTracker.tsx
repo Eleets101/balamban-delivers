@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Circle, MapPin, Navigation, Truck } from "lucide-react";
+import { Check, Circle, MapPin, Navigation, Truck, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { LiveTrackingMap } from "@/components/map/LiveTrackingMap.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
+  adaptiveRefreshMs,
   estimateEta,
   etaTargetForStatus,
   LOCATION_BUFFER_SIZE,
   pushLocationSample,
   smoothedSpeedMps,
+  speedVariance,
   type LocationSample,
 } from "@/lib/eta";
 import { STATUS_LABELS, type OrderStatus } from "@/lib/orders";
@@ -47,7 +51,8 @@ const STATUS_INDEX: Record<OrderStatus, number> = {
 export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: OrderTrackerProps) {
   const [driver, setDriver] = useState<DriverLoc | null>(null);
   const [history, setHistory] = useState<LocationSample[]>([]);
-  const [tick, setTick] = useState(0); // forces ETA refresh every minute
+  const [tick, setTick] = useState(0); // forces ETA refresh on each interval
+  const [adaptive, setAdaptive] = useState(true);
 
   const isActive = status === "accepted" || status === "in_progress";
   const isCancelled = status === "cancelled";
@@ -100,12 +105,20 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
     };
   }, [orderId, riderId, isActive]);
 
-  // Tick once a minute so the "last updated" + ETA labels stay fresh.
+  const variance = useMemo(
+    () => speedVariance(history),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [history, tick],
+  );
+
+  // Tick on an adaptive cadence based on recent speed variance.
+  // When the rider's speed is changing fast (high variance), refresh ETA more often.
   useEffect(() => {
     if (!isActive) return;
-    const id = window.setInterval(() => setTick((n) => n + 1), 30_000);
+    const intervalMs = adaptive ? adaptiveRefreshMs(variance) : 30_000;
+    const id = window.setInterval(() => setTick((n) => n + 1), intervalMs);
     return () => window.clearInterval(id);
-  }, [isActive]);
+  }, [isActive, adaptive, variance]);
 
   const target = etaTargetForStatus(status, pickup, dropoff);
   const smoothedMps = useMemo(
@@ -119,6 +132,9 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [driver, target?.coords.lat, target?.coords.lng, target?.label, smoothedMps, tick],
   );
+
+  const refreshSec = Math.round((adaptive ? adaptiveRefreshMs(variance) : 30_000) / 1000);
+  const isFastRefresh = adaptive && variance != null && variance >= 0.3;
 
   const lastUpdated = useMemo(() => {
     if (!driver) return null;
@@ -173,6 +189,21 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
               <Navigation className="h-4 w-4" /> Navigate to {target.label}
             </Button>
           )}
+          <div className="flex w-full items-center justify-between gap-3 border-t border-border/40 pt-3 text-xs">
+            <div className="flex items-center gap-2">
+              <Switch id="adaptive-eta" checked={adaptive} onCheckedChange={setAdaptive} />
+              <Label htmlFor="adaptive-eta" className="cursor-pointer text-xs font-medium">
+                Auto-refresh ETA faster on speed changes
+              </Label>
+            </div>
+            <span
+              className={`flex items-center gap-1 ${isFastRefresh ? "text-primary-glow" : "text-muted-foreground"}`}
+              aria-live="polite"
+            >
+              {isFastRefresh && <Zap className="h-3 w-3" />}
+              Refresh: {refreshSec}s
+            </span>
+          </div>
         </div>
       )}
 
