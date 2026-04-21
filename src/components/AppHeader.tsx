@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Menu, Package, ShieldCheck, LogOut, LogIn, Bike } from "lucide-react";
+import { Menu, Package, ShieldCheck, LogOut, LogIn, Bike, UtensilsCrossed, ShoppingBasket } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -17,10 +17,10 @@ export function AppHeader() {
   const [open, setOpen] = useState(false);
 
   const links = [
-    { to: "/services/food" as const, label: "Food (Pagkain)" },
-    { to: "/services/padala" as const, label: "Padala (Send)" },
-    { to: "/services/pabili" as const, label: "Pabili (Buy)" },
-    { to: "/services/ride" as const, label: "Ride (Sakay)" },
+    { to: "/services/food" as const, label: "Food", icon: UtensilsCrossed },
+    { to: "/services/padala" as const, label: "Padala", icon: Package },
+    { to: "/services/pabili" as const, label: "Pabili", icon: ShoppingBasket },
+    { to: "/services/ride" as const, label: "Ride", icon: Bike },
   ];
 
   const handleSignOut = async () => {
