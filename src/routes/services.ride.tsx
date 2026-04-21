@@ -136,25 +136,28 @@ function RidePage() {
           // best-effort
         }
 
-        // Fall back to the nearest known landmark when GPS is fuzzy or
-        // reverse geocoding came back empty.
+        // Fall back to a dropdown of the 3 nearest known landmarks when GPS
+        // is fuzzy or reverse geocoding came back empty. The user confirms
+        // which one to pin before we set the pickup.
         if (lowAccuracy || !resolvedAddress) {
-          const snap = nearestLandmark(rawCoords);
-          setPickupCoords({ lat: snap.lat, lng: snap.lng });
-          setPickup(snap.name);
-          setLocatingMe(false);
-          toast.message(
+          const options = nearestLandmarks(rawCoords, 3);
+          setFallbackOptions(options);
+          setFallbackChoice(options[0]?.name ?? null);
+          setFallbackReason(
             lowAccuracy
-              ? `GPS accuracy was ±${Math.round(accuracy)}m — pinned to nearest landmark`
-              : "Address unavailable — pinned to nearest landmark",
-            { description: `${snap.name} (~${snap.distanceKm.toFixed(1)} km away)` },
+              ? `GPS accuracy was ±${Math.round(accuracy)}m — pick the closest landmark to confirm your pickup.`
+              : "We couldn't resolve a street address — pick the closest landmark to confirm your pickup.",
           );
+          setLocatingMe(false);
           return;
         }
 
         // Good GPS + we have an address — use the live coordinates.
         setPickupCoords(rawCoords);
         setPickup(resolvedAddress);
+        setFallbackOptions([]);
+        setFallbackReason(null);
+        setFallbackChoice(null);
         setLocatingMe(false);
         toast.success("Pickup pinned to your current location.");
       },
