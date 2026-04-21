@@ -41,6 +41,8 @@ export function OrderForm({
   const [busy, setBusy] = useState(false);
   const [pickupCoords, setPickupCoords] = useState<Coords>(null);
   const [dropoffCoords, setDropoffCoords] = useState<Coords>(null);
+  const [pickupAddress, setPickupAddress] = useState("");
+  const [dropoffAddress, setDropoffAddress] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
