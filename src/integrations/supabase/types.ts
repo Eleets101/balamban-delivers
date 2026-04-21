@@ -14,17 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      driver_locations: {
+        Row: {
+          accuracy: number | null
+          heading: number | null
+          id: string
+          lat: number
+          lng: number
+          order_id: string | null
+          rider_id: string
+          speed: number | null
+          updated_at: string
+        }
+        Insert: {
+          accuracy?: number | null
+          heading?: number | null
+          id?: string
+          lat: number
+          lng: number
+          order_id?: string | null
+          rider_id: string
+          speed?: number | null
+          updated_at?: string
+        }
+        Update: {
+          accuracy?: number | null
+          heading?: number | null
+          id?: string
+          lat?: number
+          lng?: number
+          order_id?: string | null
+          rider_id?: string
+          speed?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           created_at: string
           customer_id: string
           details: Json
           dropoff_address: string
+          dropoff_lat: number | null
+          dropoff_lng: number | null
           estimated_price: number | null
           id: string
           notes: string | null
           payment_method: string
           pickup_address: string
+          pickup_lat: number | null
+          pickup_lng: number | null
           rider_id: string | null
           service_type: Database["public"]["Enums"]["service_type"]
           status: Database["public"]["Enums"]["order_status"]
@@ -35,11 +75,15 @@ export type Database = {
           customer_id: string
           details?: Json
           dropoff_address: string
+          dropoff_lat?: number | null
+          dropoff_lng?: number | null
           estimated_price?: number | null
           id?: string
           notes?: string | null
           payment_method?: string
           pickup_address: string
+          pickup_lat?: number | null
+          pickup_lng?: number | null
           rider_id?: string | null
           service_type: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["order_status"]
@@ -50,11 +94,15 @@ export type Database = {
           customer_id?: string
           details?: Json
           dropoff_address?: string
+          dropoff_lat?: number | null
+          dropoff_lng?: number | null
           estimated_price?: number | null
           id?: string
           notes?: string | null
           payment_method?: string
           pickup_address?: string
+          pickup_lat?: number | null
+          pickup_lng?: number | null
           rider_id?: string | null
           service_type?: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["order_status"]
