@@ -1,10 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Loader2, Users, Package as PackageIcon, ShieldCheck, Clock, CheckCircle2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Loader2, Users, Package as PackageIcon, ShieldCheck, Clock, CheckCircle2, UserCog, X, Search } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -25,6 +27,27 @@ interface AdminOrder {
   created_at: string;
 }
 
+type AppRole = "admin" | "rider" | "vendor" | "customer";
+const ALL_ROLES: AppRole[] = ["admin", "rider", "vendor", "customer"];
+const ROLE_BADGE: Record<AppRole, string> = {
+  admin: "bg-primary/20 text-primary-glow border-primary/30",
+  rider: "bg-blue-500/15 text-blue-300 border-blue-500/30",
+  vendor: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+  customer: "bg-muted text-muted-foreground border-border",
+};
+
+interface ProfileRow {
+  id: string;
+  full_name: string | null;
+  phone: string | null;
+  created_at: string;
+}
+interface RoleRow {
+  id: string;
+  user_id: string;
+  role: AppRole;
+}
+
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
@@ -42,6 +65,9 @@ function AdminPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<AdminOrder[] | null>(null);
   const [userCount, setUserCount] = useState<number | null>(null);
+  const [profiles, setProfiles] = useState<ProfileRow[] | null>(null);
+  const [roles, setRoles] = useState<RoleRow[] | null>(null);
+  const [roleSearch, setRoleSearch] = useState("");
 
   const refresh = async () => {
     const { data } = await supabase
@@ -53,6 +79,15 @@ function AdminPage() {
 
     const { count } = await supabase.from("profiles").select("*", { count: "exact", head: true });
     setUserCount(count ?? 0);
+
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("id, full_name, phone, created_at")
+      .order("created_at", { ascending: false });
+    setProfiles((profileData as ProfileRow[]) ?? []);
+
+    const { data: roleData } = await supabase.from("user_roles").select("id, user_id, role");
+    setRoles((roleData as RoleRow[]) ?? []);
   };
 
   useEffect(() => {
@@ -74,6 +109,60 @@ function AdminPage() {
     toast.success(`Order marked ${STATUS_LABELS[status]}`);
     setOrders((prev) => prev?.map((o) => (o.id === id ? { ...o, status } : o)) ?? null);
   };
+
+  const addRole = async (userId: string, role: AppRole) => {
+    if (roles?.some((r) => r.user_id === userId && r.role === role)) {
+      toast.info("User already has this role.");
+      return;
+    }
+    const { data, error } = await supabase
+      .from("user_roles")
+      .insert({ user_id: userId, role })
+      .select("id, user_id, role")
+      .single();
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setRoles((prev) => [...(prev ?? []), data as RoleRow]);
+    toast.success(`Granted ${role}`);
+  };
+
+  const removeRole = async (roleId: string, role: AppRole, userId: string) => {
+    if (role === "admin" && userId === user?.id) {
+      toast.error("You can't remove your own admin role.");
+      return;
+    }
+    const { error } = await supabase.from("user_roles").delete().eq("id", roleId);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setRoles((prev) => prev?.filter((r) => r.id !== roleId) ?? null);
+    toast.success(`Removed ${role}`);
+  };
+
+  const rolesByUser = useMemo(() => {
+    const map = new Map<string, RoleRow[]>();
+    (roles ?? []).forEach((r) => {
+      const list = map.get(r.user_id) ?? [];
+      list.push(r);
+      map.set(r.user_id, list);
+    });
+    return map;
+  }, [roles]);
+
+  const filteredProfiles = useMemo(() => {
+    if (!profiles) return null;
+    const q = roleSearch.trim().toLowerCase();
+    if (!q) return profiles;
+    return profiles.filter(
+      (p) =>
+        p.full_name?.toLowerCase().includes(q) ||
+        p.phone?.toLowerCase().includes(q) ||
+        p.id.toLowerCase().includes(q),
+    );
+  }, [profiles, roleSearch]);
 
   if (loading) {
     return (
@@ -174,6 +263,106 @@ function AdminPage() {
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-12 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <UserCog className="h-6 w-6 text-primary-glow" />
+            <h2 className="font-display text-xl font-bold">User roles</h2>
+          </div>
+          <div className="relative w-full max-w-xs">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={roleSearch}
+              onChange={(e) => setRoleSearch(e.target.value)}
+              placeholder="Search by name, phone, or ID"
+              className="pl-9"
+            />
+          </div>
+        </div>
+
+        <div
+          className="mt-4 overflow-hidden rounded-2xl border border-border/60"
+          style={{ background: "var(--gradient-card)" }}
+        >
+          {filteredProfiles === null ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : filteredProfiles.length === 0 ? (
+            <p className="py-12 text-center text-sm text-muted-foreground">No users found.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b border-border/60 text-left text-xs uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-3">User</th>
+                    <th className="px-4 py-3">Current roles</th>
+                    <th className="px-4 py-3">Grant role</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProfiles.map((p) => {
+                    const userRoles = rolesByUser.get(p.id) ?? [];
+                    const heldRoles = new Set(userRoles.map((r) => r.role));
+                    const grantable = ALL_ROLES.filter((r) => !heldRoles.has(r));
+                    return (
+                      <tr key={p.id} className="border-b border-border/40 align-top last:border-0">
+                        <td className="px-4 py-3">
+                          <div className="font-medium">{p.full_name || "Unnamed"}</div>
+                          <div className="text-xs text-muted-foreground">{p.phone || "No phone"}</div>
+                          <div className="mt-1 font-mono text-[10px] text-muted-foreground/70">{p.id}</div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {userRoles.length === 0 ? (
+                            <span className="text-xs text-muted-foreground">No roles</span>
+                          ) : (
+                            <div className="flex flex-wrap gap-1.5">
+                              {userRoles.map((r) => (
+                                <Badge
+                                  key={r.id}
+                                  variant="outline"
+                                  className={`gap-1 border ${ROLE_BADGE[r.role]}`}
+                                >
+                                  {r.role}
+                                  <button
+                                    type="button"
+                                    onClick={() => removeRole(r.id, r.role, p.id)}
+                                    className="ml-0.5 rounded-full p-0.5 hover:bg-foreground/10"
+                                    aria-label={`Remove ${r.role}`}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {grantable.length === 0 ? (
+                            <span className="text-xs text-muted-foreground">All assigned</span>
+                          ) : (
+                            <Select onValueChange={(v) => addRole(p.id, v as AppRole)}>
+                              <SelectTrigger className="h-8 w-36">
+                                <SelectValue placeholder="Add role" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {grantable.map((r) => (
+                                  <SelectItem key={r} value={r}>
+                                    {r}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
