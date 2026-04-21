@@ -1,0 +1,136 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Loader2, Package, MapPin, ArrowRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { PageShell } from "@/components/PageShell";
+import { Button } from "@/components/ui/button";
+import { SERVICE_LABELS, STATUS_LABELS, STATUS_COLORS, type OrderStatus, type ServiceType } from "@/lib/orders";
+
+interface Order {
+  id: string;
+  service_type: ServiceType;
+  status: OrderStatus;
+  pickup_address: string;
+  dropoff_address: string;
+  details: { description?: string };
+  estimated_price: number | null;
+  created_at: string;
+}
+
+export const Route = createFileRoute("/orders")({
+  head: () => ({
+    meta: [
+      { title: "My Orders — HatodPH" },
+      { name: "description", content: "Track your HatodPH orders and ride bookings." },
+    ],
+  }),
+  component: OrdersPage,
+});
+
+function OrdersPage() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const [orders, setOrders] = useState<Order[] | null>(null);
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      navigate({ to: "/auth" });
+      return;
+    }
+    supabase
+      .from("orders")
+      .select("id, service_type, status, pickup_address, dropoff_address, details, estimated_price, created_at")
+      .eq("customer_id", user.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => setOrders((data as Order[]) ?? []));
+  }, [user, loading, navigate]);
+
+  return (
+    <PageShell>
+      <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h1 className="font-display text-3xl font-bold sm:text-4xl">My Orders</h1>
+            <p className="mt-1 text-muted-foreground">All your HatodPH orders in one place.</p>
+          </div>
+          <Button asChild>
+            <Link to="/">New order <ArrowRight className="h-4 w-4" /></Link>
+          </Button>
+        </div>
+
+        <div className="mt-8">
+          {orders === null ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : orders.length === 0 ? (
+            <div
+              className="rounded-2xl border border-border/60 p-10 text-center"
+              style={{ background: "var(--gradient-card)" }}
+            >
+              <Package className="mx-auto h-10 w-10 text-muted-foreground" />
+              <h2 className="mt-4 font-display text-lg font-semibold">No orders yet</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Start by picking a service.</p>
+              <Button asChild className="mt-6">
+                <Link to="/">Browse services</Link>
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {orders.map((o) => (
+                <article
+                  key={o.id}
+                  className="rounded-2xl border border-border/60 p-5"
+                  style={{ background: "var(--gradient-card)", boxShadow: "var(--shadow-card)" }}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="font-display text-base font-semibold">{SERVICE_LABELS[o.service_type]}</span>
+                      <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[o.status]}`}>
+                        {STATUS_LABELS[o.status]}
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(o.created_at).toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+                    <div className="flex items-start gap-2">
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary-glow" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Pickup</p>
+                        <p className="font-medium">{o.pickup_address}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Drop-off</p>
+                        <p className="font-medium">{o.dropoff_address}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {o.details?.description && (
+                    <p className="mt-3 rounded-lg bg-secondary/40 p-3 text-sm text-muted-foreground">
+                      {o.details.description}
+                    </p>
+                  )}
+
+                  {o.estimated_price !== null && (
+                    <p className="mt-3 text-sm">
+                      Estimated: <span className="font-semibold">₱{Number(o.estimated_price).toFixed(2)}</span>
+                    </p>
+                  )}
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </PageShell>
+  );
+}
