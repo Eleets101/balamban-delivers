@@ -11,8 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in or sign up — HatodPH" },
-      { name: "description", content: "Create your HatodPH account to start ordering food, padala, pabili or rides." },
+      { title: "Sign in or sign up — HatodGo" },
+      { name: "description", content: "Create your HatodGo account to start ordering food, padala, pabili or rides." },
     ],
   }),
   component: AuthPage,
@@ -66,7 +66,7 @@ function AuthPage() {
       toast.error(error.message);
       return;
     }
-    toast.success("Welcome to HatodPH!");
+    toast.success("Welcome to HatodGo!");
     navigate({ to: "/orders" });
   };
 
@@ -79,7 +79,7 @@ function AuthPage() {
         >
           H
         </div>
-        <span className="font-display text-xl font-bold">HatodPH</span>
+        <span className="font-display text-xl font-bold">HatodGo</span>
       </Link>
 
       <div
@@ -134,7 +134,7 @@ function AuthPage() {
         </Tabs>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          By continuing you agree to HatodPH's terms of service.
+          By continuing you agree to HatodGo's terms of service.
         </p>
       </div>
     </div>

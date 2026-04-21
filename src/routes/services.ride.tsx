@@ -6,7 +6,7 @@ import { OrderForm } from "@/components/OrderForm";
 export const Route = createFileRoute("/services/ride")({
   head: () => ({
     meta: [
-      { title: "Book a ride (Sakay) — HatodPH" },
+      { title: "Book a ride (Sakay) — HatodGo" },
       { name: "description", content: "Book a habal-habal (motorcycle taxi) or motor ride within Balamban." },
     ],
   }),

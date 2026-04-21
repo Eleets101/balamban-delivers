@@ -6,7 +6,7 @@ import { OrderForm } from "@/components/OrderForm";
 export const Route = createFileRoute("/services/pabili")({
   head: () => ({
     meta: [
-      { title: "Pabili (Buy for me) — HatodPH" },
+      { title: "Pabili (Buy for me) — HatodGo" },
       { name: "description", content: "Pabili (buy for me) — need something from the store? Our riders will buy it for you." },
     ],
   }),

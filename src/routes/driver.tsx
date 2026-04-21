@@ -14,7 +14,7 @@ import { SERVICE_LABELS, STATUS_LABELS, STATUS_COLORS, type OrderStatus, type Se
 export const Route = createFileRoute("/driver")({
   head: () => ({
     meta: [
-      { title: "Driver Dashboard — HatodPH" },
+      { title: "Driver Dashboard — HatodGo" },
       { name: "description", content: "Accept orders, share live location, and navigate to customers." },
     ],
   }),

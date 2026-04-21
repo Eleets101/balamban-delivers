@@ -30,10 +30,10 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "HatodPH — Food, Padala, Pabili & Ride in Balamban" },
+      { title: "HatodGo — Food, Padala, Pabili & Ride in Balamban" },
       { name: "description", content: "All-in-one delivery, errand and ride app for Balamban, Toledo and Asturias." },
-      { name: "author", content: "HatodPH" },
-      { property: "og:title", content: "HatodPH — Your everyday hatod app" },
+      { name: "author", content: "HatodGo" },
+      { property: "og:title", content: "HatodGo — Your everyday hatod app" },
       { property: "og:description", content: "Food delivery, padala, pabili and ride booking — built for Cebu's west coast." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
