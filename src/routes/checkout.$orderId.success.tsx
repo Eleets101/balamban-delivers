@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
 import { SERVICE_LABELS, type ServiceType } from "@/lib/orders";
+import { isFareBreakdown, type FareBreakdown } from "@/lib/pricing";
 
 interface SuccessOrder {
   id: string;
@@ -16,14 +17,8 @@ interface SuccessOrder {
   estimated_price: number | null;
   updated_at: string;
   created_at: string;
+  details: Record<string, unknown> | null;
 }
-
-const DELIVERY_FEE_BY_SERVICE: Record<ServiceType, number> = {
-  ride: 0,
-  food: 25,
-  padali: 20,
-  pabili: 20,
-};
 
 export const Route = createFileRoute("/checkout/$orderId/success")({
   head: () => ({
@@ -73,7 +68,7 @@ function SuccessPage() {
     }
     supabase
       .from("orders")
-      .select("id, payment_status, payment_method, service_type, estimated_price, updated_at, created_at")
+      .select("id, payment_status, payment_method, service_type, estimated_price, updated_at, created_at, details")
       .eq("id", orderId)
       .maybeSingle()
       .then(({ data }) => setOrder(data as SuccessOrder | null));
@@ -111,9 +106,10 @@ function SuccessPage() {
     ? "Please have cash ready when your rider arrives."
     : `Paid via ${methodLabel}. Your receipt is saved in My Orders.`;
 
-  const fare = Number(order.estimated_price ?? 0);
-  const deliveryFee = DELIVERY_FEE_BY_SERVICE[order.service_type] ?? 0;
-  const total = fare + deliveryFee;
+  const breakdown: FareBreakdown | null = isFareBreakdown(order.details?.fare_breakdown)
+    ? (order.details!.fare_breakdown as FareBreakdown)
+    : null;
+  const total = breakdown?.total ?? Number(order.estimated_price ?? 0);
   const paidAt = formatTimestamp(order.updated_at || order.created_at);
   const MethodIcon = isCOD ? Banknote : Wallet;
 
@@ -162,9 +158,20 @@ function SuccessPage() {
     addRow("Service", SERVICE_LABELS[order.service_type]);
     addRow("Payment method", methodLabel);
     addRow("Timestamp", paidAt);
-    if (deliveryFee > 0) {
-      addRow("Service / fare", `PHP ${fare.toFixed(2)}`);
-      addRow("Delivery fee", `PHP ${deliveryFee.toFixed(2)}`);
+
+    if (breakdown) {
+      y += 4;
+      doc.setDrawColor(220, 220, 230);
+      doc.line(marginX, y, pageWidth - marginX, y);
+      y += 16;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(60, 60, 70);
+      doc.text("Fare breakdown", marginX, y);
+      y += 16;
+      for (const line of breakdown.lines) {
+        addRow(line.label, `PHP ${line.amount.toFixed(2)}`);
+      }
     }
 
     y += 4;
@@ -242,18 +249,21 @@ function SuccessPage() {
               <dt className="text-muted-foreground">Timestamp</dt>
               <dd className="text-right font-medium">{paidAt}</dd>
             </div>
-            {deliveryFee > 0 && (
-              <>
-                <div className="flex items-start justify-between gap-3">
-                  <dt className="text-muted-foreground">Service / fare</dt>
-                  <dd className="text-right font-medium">₱{fare.toFixed(2)}</dd>
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <dt className="text-muted-foreground">Delivery fee</dt>
-                  <dd className="text-right font-medium">₱{deliveryFee.toFixed(2)}</dd>
-                </div>
-              </>
+
+            {breakdown && (
+              <div className="space-y-1.5 border-t border-border/60 pt-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Fare breakdown
+                </p>
+                {breakdown.lines.map((line, i) => (
+                  <div key={i} className="flex items-start justify-between gap-3">
+                    <dt className="text-muted-foreground">{line.label}</dt>
+                    <dd className="text-right font-medium">₱{line.amount.toFixed(2)}</dd>
+                  </div>
+                ))}
+              </div>
             )}
+
             <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-3">
               <dt className="font-display text-base font-semibold">
                 {isCOD ? "Amount due" : "Total paid"}
