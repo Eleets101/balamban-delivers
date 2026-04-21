@@ -124,6 +124,32 @@ export function CancelOrderDialog({
       return;
     }
 
+    // Fire-and-forget rider notification (RLS only allows this while we're still the customer of this order)
+    if (riderId) {
+      const routeLabel =
+        pickupAddress && dropoffAddress
+          ? `${pickupAddress} → ${dropoffAddress}`
+          : pickupAddress ?? dropoffAddress ?? "your assigned order";
+      const body = parsed.data.note
+        ? `Reason: ${reasonLabel}. Note: “${parsed.data.note}”`
+        : `Reason: ${reasonLabel}.`;
+      const { error: notifyError } = await supabase.from("notifications").insert({
+        user_id: riderId,
+        type: "order_cancelled",
+        title: "Order cancelled by customer",
+        body: `${routeLabel} — ${body}`,
+        order_id: orderId,
+        data: {
+          reason: parsed.data.reason,
+          reason_label: reasonLabel,
+          note: parsed.data.note ?? null,
+          pickup_address: pickupAddress ?? null,
+          dropoff_address: dropoffAddress ?? null,
+        },
+      });
+      if (notifyError) console.warn("Failed to notify rider:", notifyError.message);
+    }
+
     toast.success("Order cancelled. Thanks for letting us know.");
     onCancelled?.();
     handleClose(false);
