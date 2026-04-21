@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { CheckCircle2, Bike, Loader2, ArrowRight, Receipt, Wallet, Banknote } from "lucide-react";
+import { CheckCircle2, Bike, Loader2, ArrowRight, Receipt, Wallet, Banknote, Download } from "lucide-react";
+import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
