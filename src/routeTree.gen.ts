@@ -9,38 +9,154 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OrdersRouteImport } from './routes/orders'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ServicesRideRouteImport } from './routes/services.ride'
+import { Route as ServicesPadalaRouteImport } from './routes/services.padala'
+import { Route as ServicesPabiliRouteImport } from './routes/services.pabili'
+import { Route as ServicesFoodRouteImport } from './routes/services.food'
 
+const OrdersRoute = OrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesRideRoute = ServicesRideRouteImport.update({
+  id: '/services/ride',
+  path: '/services/ride',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesPadalaRoute = ServicesPadalaRouteImport.update({
+  id: '/services/padala',
+  path: '/services/padala',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesPabiliRoute = ServicesPabiliRouteImport.update({
+  id: '/services/pabili',
+  path: '/services/pabili',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesFoodRoute = ServicesFoodRouteImport.update({
+  id: '/services/food',
+  path: '/services/food',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
+  '/orders': typeof OrdersRoute
+  '/services/food': typeof ServicesFoodRoute
+  '/services/pabili': typeof ServicesPabiliRoute
+  '/services/padala': typeof ServicesPadalaRoute
+  '/services/ride': typeof ServicesRideRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
+  '/orders': typeof OrdersRoute
+  '/services/food': typeof ServicesFoodRoute
+  '/services/pabili': typeof ServicesPabiliRoute
+  '/services/padala': typeof ServicesPadalaRoute
+  '/services/ride': typeof ServicesRideRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
+  '/orders': typeof OrdersRoute
+  '/services/food': typeof ServicesFoodRoute
+  '/services/pabili': typeof ServicesPabiliRoute
+  '/services/padala': typeof ServicesPadalaRoute
+  '/services/ride': typeof ServicesRideRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/orders'
+    | '/services/food'
+    | '/services/pabili'
+    | '/services/padala'
+    | '/services/ride'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/orders'
+    | '/services/food'
+    | '/services/pabili'
+    | '/services/padala'
+    | '/services/ride'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/orders'
+    | '/services/food'
+    | '/services/pabili'
+    | '/services/padala'
+    | '/services/ride'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
+  AuthRoute: typeof AuthRoute
+  OrdersRoute: typeof OrdersRoute
+  ServicesFoodRoute: typeof ServicesFoodRoute
+  ServicesPabiliRoute: typeof ServicesPabiliRoute
+  ServicesPadalaRoute: typeof ServicesPadalaRoute
+  ServicesRideRoute: typeof ServicesRideRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/orders': {
+      id: '/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof OrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +164,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/ride': {
+      id: '/services/ride'
+      path: '/services/ride'
+      fullPath: '/services/ride'
+      preLoaderRoute: typeof ServicesRideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/padala': {
+      id: '/services/padala'
+      path: '/services/padala'
+      fullPath: '/services/padala'
+      preLoaderRoute: typeof ServicesPadalaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/pabili': {
+      id: '/services/pabili'
+      path: '/services/pabili'
+      fullPath: '/services/pabili'
+      preLoaderRoute: typeof ServicesPabiliRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/food': {
+      id: '/services/food'
+      path: '/services/food'
+      fullPath: '/services/food'
+      preLoaderRoute: typeof ServicesFoodRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
+  AuthRoute: AuthRoute,
+  OrdersRoute: OrdersRoute,
+  ServicesFoodRoute: ServicesFoodRoute,
+  ServicesPabiliRoute: ServicesPabiliRoute,
+  ServicesPadalaRoute: ServicesPadalaRoute,
+  ServicesRideRoute: ServicesRideRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
