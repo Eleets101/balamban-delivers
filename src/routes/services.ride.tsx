@@ -21,6 +21,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MapPicker } from "@/components/map/MapPicker.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -71,17 +78,15 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+function nearestLandmarks(coords: { lat: number; lng: number }, k = 3) {
+  return KNOWN_LANDMARKS
+    .map((l) => ({ ...l, distanceKm: haversineKm(coords, l) }))
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+    .slice(0, k);
+}
+
 function nearestLandmark(coords: { lat: number; lng: number }) {
-  let best = KNOWN_LANDMARKS[0];
-  let bestKm = haversineKm(coords, best);
-  for (let i = 1; i < KNOWN_LANDMARKS.length; i++) {
-    const km = haversineKm(coords, KNOWN_LANDMARKS[i]);
-    if (km < bestKm) {
-      best = KNOWN_LANDMARKS[i];
-      bestKm = km;
-    }
-  }
-  return { ...best, distanceKm: bestKm };
+  return nearestLandmarks(coords, 1)[0];
 }
 
 const SAMPLE_DRIVER = {
@@ -104,6 +109,11 @@ function RidePage() {
   const [stage, setStage] = useState<Stage>("form");
   const [orderId, setOrderId] = useState<string | null>(null);
   const [locatingMe, setLocatingMe] = useState(false);
+  const [fallbackOptions, setFallbackOptions] = useState<
+    Array<{ name: string; lat: number; lng: number; distanceKm: number }>
+  >([]);
+  const [fallbackReason, setFallbackReason] = useState<string | null>(null);
+  const [fallbackChoice, setFallbackChoice] = useState<string | null>(null);
 
   const useMyLocation = () => {
     if (!("geolocation" in navigator)) {
@@ -133,25 +143,28 @@ function RidePage() {
           // best-effort
         }
 
-        // Fall back to the nearest known landmark when GPS is fuzzy or
-        // reverse geocoding came back empty.
+        // Fall back to a dropdown of the 3 nearest known landmarks when GPS
+        // is fuzzy or reverse geocoding came back empty. The user confirms
+        // which one to pin before we set the pickup.
         if (lowAccuracy || !resolvedAddress) {
-          const snap = nearestLandmark(rawCoords);
-          setPickupCoords({ lat: snap.lat, lng: snap.lng });
-          setPickup(snap.name);
-          setLocatingMe(false);
-          toast.message(
+          const options = nearestLandmarks(rawCoords, 3);
+          setFallbackOptions(options);
+          setFallbackChoice(options[0]?.name ?? null);
+          setFallbackReason(
             lowAccuracy
-              ? `GPS accuracy was ±${Math.round(accuracy)}m — pinned to nearest landmark`
-              : "Address unavailable — pinned to nearest landmark",
-            { description: `${snap.name} (~${snap.distanceKm.toFixed(1)} km away)` },
+              ? `GPS accuracy was ±${Math.round(accuracy)}m — pick the closest landmark to confirm your pickup.`
+              : "We couldn't resolve a street address — pick the closest landmark to confirm your pickup.",
           );
+          setLocatingMe(false);
           return;
         }
 
         // Good GPS + we have an address — use the live coordinates.
         setPickupCoords(rawCoords);
         setPickup(resolvedAddress);
+        setFallbackOptions([]);
+        setFallbackReason(null);
+        setFallbackChoice(null);
         setLocatingMe(false);
         toast.success("Pickup pinned to your current location.");
       },
@@ -409,6 +422,69 @@ function RidePage() {
             value={pickup}
             onChange={(e) => setPickup(e.target.value)}
           />
+
+          {fallbackOptions.length > 0 && (
+            <div className="space-y-2 rounded-xl border border-warning/40 bg-warning/10 p-3">
+              <div className="flex items-start gap-2">
+                <Crosshair className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+                <p className="text-xs text-warning-foreground">
+                  <span className="font-semibold text-warning">Confirm pickup:</span>{" "}
+                  {fallbackReason}
+                </p>
+              </div>
+              <Select
+                value={fallbackChoice ?? undefined}
+                onValueChange={setFallbackChoice}
+              >
+                <SelectTrigger className="h-10 bg-background">
+                  <SelectValue placeholder="Choose nearest landmark" />
+                </SelectTrigger>
+                <SelectContent>
+                  {fallbackOptions.map((opt) => (
+                    <SelectItem key={opt.name} value={opt.name}>
+                      {opt.name}
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        ~{opt.distanceKm.toFixed(1)} km
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => {
+                    const chosen = fallbackOptions.find((o) => o.name === fallbackChoice);
+                    if (!chosen) return;
+                    setPickupCoords({ lat: chosen.lat, lng: chosen.lng });
+                    setPickup(chosen.name);
+                    setFallbackOptions([]);
+                    setFallbackReason(null);
+                    setFallbackChoice(null);
+                    toast.success(`Pickup pinned to ${chosen.name}.`);
+                  }}
+                  disabled={!fallbackChoice}
+                >
+                  Confirm pickup
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setFallbackOptions([]);
+                    setFallbackReason(null);
+                    setFallbackChoice(null);
+                  }}
+                >
+                  Pin manually
+                </Button>
+              </div>
+            </div>
+          )}
+
           <MapClientOnly>
             <MapPicker
               value={pickupCoords}
