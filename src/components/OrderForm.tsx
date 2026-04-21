@@ -60,28 +60,32 @@ export function OrderForm({
 
     const detailsText = String(fd.get("details") ?? "");
     const estPrice = fd.get("estimated_price");
-    const { error } = await supabase.from("orders").insert({
-      customer_id: user.id,
-      service_type: serviceType,
-      pickup_address: String(fd.get("pickup")),
-      dropoff_address: String(fd.get("dropoff")),
-      pickup_lat: pickupCoords.lat,
-      pickup_lng: pickupCoords.lng,
-      dropoff_lat: dropoffCoords.lat,
-      dropoff_lng: dropoffCoords.lng,
-      notes: String(fd.get("notes") ?? "") || null,
-      details: { description: detailsText },
-      estimated_price: estPrice ? Number(estPrice) : null,
-      payment_method: "cash",
-    });
+    const { data, error } = await supabase
+      .from("orders")
+      .insert({
+        customer_id: user.id,
+        service_type: serviceType,
+        pickup_address: String(fd.get("pickup")),
+        dropoff_address: String(fd.get("dropoff")),
+        pickup_lat: pickupCoords.lat,
+        pickup_lng: pickupCoords.lng,
+        dropoff_lat: dropoffCoords.lat,
+        dropoff_lng: dropoffCoords.lng,
+        notes: String(fd.get("notes") ?? "") || null,
+        details: { description: detailsText },
+        estimated_price: estPrice ? Number(estPrice) : null,
+        payment_method: "pending",
+      })
+      .select("id")
+      .single();
     setBusy(false);
 
-    if (error) {
-      toast.error(error.message);
+    if (error || !data) {
+      toast.error(error?.message ?? "Could not place order.");
       return;
     }
-    toast.success("Order placed! A rider will pick it up soon.");
-    navigate({ to: "/orders" });
+    toast.success("Order placed! Choose how to pay.");
+    navigate({ to: "/checkout/$orderId", params: { orderId: data.id } });
   };
 
   return (
