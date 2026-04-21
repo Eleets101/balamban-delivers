@@ -51,7 +51,8 @@ const STATUS_INDEX: Record<OrderStatus, number> = {
 export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: OrderTrackerProps) {
   const [driver, setDriver] = useState<DriverLoc | null>(null);
   const [history, setHistory] = useState<LocationSample[]>([]);
-  const [tick, setTick] = useState(0); // forces ETA refresh every minute
+  const [tick, setTick] = useState(0); // forces ETA refresh on each interval
+  const [adaptive, setAdaptive] = useState(true);
 
   const isActive = status === "accepted" || status === "in_progress";
   const isCancelled = status === "cancelled";
