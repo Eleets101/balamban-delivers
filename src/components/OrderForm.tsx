@@ -147,28 +147,73 @@ export function OrderForm({
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
         <Label htmlFor="pickup">{pickupLabel}</Label>
-        <Input
-          id="pickup"
-          name="pickup"
-          required
-          placeholder={pickupPlaceholder}
-          value={pickupAddress}
-          onChange={(e) => setPickupAddress(e.target.value)}
-        />
+        <div className="flex gap-2">
+          <Input
+            id="pickup"
+            name="pickup"
+            required
+            placeholder={pickupPlaceholder}
+            value={pickupAddress}
+            onChange={(e) => setPickupAddress(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void runSearch("pickup");
+              }
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => runSearch("pickup")}
+            disabled={searching === "pickup"}
+            aria-label="Find pickup on map"
+          >
+            {searching === "pickup" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Search className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Type an address or place name (e.g. “Jollibee Balamban”) and press Enter or tap the search icon to pin it.
+        </p>
         <MapClientOnly>
           <MapPicker value={pickupCoords} onChange={setPickupCoords} onAddressResolved={setPickupAddress} />
         </MapClientOnly>
       </div>
       <div className="space-y-2">
         <Label htmlFor="dropoff">{dropoffLabel}</Label>
-        <Input
-          id="dropoff"
-          name="dropoff"
-          required
-          placeholder={dropoffPlaceholder}
-          value={dropoffAddress}
-          onChange={(e) => setDropoffAddress(e.target.value)}
-        />
+        <div className="flex gap-2">
+          <Input
+            id="dropoff"
+            name="dropoff"
+            required
+            placeholder={dropoffPlaceholder}
+            value={dropoffAddress}
+            onChange={(e) => setDropoffAddress(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void runSearch("dropoff");
+              }
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => runSearch("dropoff")}
+            disabled={searching === "dropoff"}
+            aria-label="Find drop-off on map"
+          >
+            {searching === "dropoff" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Search className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
         <MapClientOnly>
           <MapPicker value={dropoffCoords} onChange={setDropoffCoords} onAddressResolved={setDropoffAddress} />
         </MapClientOnly>
