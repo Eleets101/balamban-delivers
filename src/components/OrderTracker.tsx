@@ -105,12 +105,20 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
     };
   }, [orderId, riderId, isActive]);
 
-  // Tick once a minute so the "last updated" + ETA labels stay fresh.
+  const variance = useMemo(
+    () => speedVariance(history),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [history, tick],
+  );
+
+  // Tick on an adaptive cadence based on recent speed variance.
+  // When the rider's speed is changing fast (high variance), refresh ETA more often.
   useEffect(() => {
     if (!isActive) return;
-    const id = window.setInterval(() => setTick((n) => n + 1), 30_000);
+    const intervalMs = adaptive ? adaptiveRefreshMs(variance) : 30_000;
+    const id = window.setInterval(() => setTick((n) => n + 1), intervalMs);
     return () => window.clearInterval(id);
-  }, [isActive]);
+  }, [isActive, adaptive, variance]);
 
   const target = etaTargetForStatus(status, pickup, dropoff);
   const smoothedMps = useMemo(
@@ -124,6 +132,9 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [driver, target?.coords.lat, target?.coords.lng, target?.label, smoothedMps, tick],
   );
+
+  const refreshSec = Math.round((adaptive ? adaptiveRefreshMs(variance) : 30_000) / 1000);
+  const isFastRefresh = adaptive && variance != null && variance >= 0.3;
 
   const lastUpdated = useMemo(() => {
     if (!driver) return null;
