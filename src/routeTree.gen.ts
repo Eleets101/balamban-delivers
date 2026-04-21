@@ -11,6 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ServicesRideRouteImport } from './routes/services.ride'
+import { Route as ServicesPadalaRouteImport } from './routes/services.padala'
+import { Route as ServicesPabiliRouteImport } from './routes/services.pabili'
+import { Route as ServicesFoodRouteImport } from './routes/services.food'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -22,31 +26,86 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesRideRoute = ServicesRideRouteImport.update({
+  id: '/services/ride',
+  path: '/services/ride',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesPadalaRoute = ServicesPadalaRouteImport.update({
+  id: '/services/padala',
+  path: '/services/padala',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesPabiliRoute = ServicesPabiliRouteImport.update({
+  id: '/services/pabili',
+  path: '/services/pabili',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesFoodRoute = ServicesFoodRouteImport.update({
+  id: '/services/food',
+  path: '/services/food',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/services/food': typeof ServicesFoodRoute
+  '/services/pabili': typeof ServicesPabiliRoute
+  '/services/padala': typeof ServicesPadalaRoute
+  '/services/ride': typeof ServicesRideRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/services/food': typeof ServicesFoodRoute
+  '/services/pabili': typeof ServicesPabiliRoute
+  '/services/padala': typeof ServicesPadalaRoute
+  '/services/ride': typeof ServicesRideRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/services/food': typeof ServicesFoodRoute
+  '/services/pabili': typeof ServicesPabiliRoute
+  '/services/padala': typeof ServicesPadalaRoute
+  '/services/ride': typeof ServicesRideRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/services/food'
+    | '/services/pabili'
+    | '/services/padala'
+    | '/services/ride'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth'
-  id: '__root__' | '/' | '/auth'
+  to:
+    | '/'
+    | '/auth'
+    | '/services/food'
+    | '/services/pabili'
+    | '/services/padala'
+    | '/services/ride'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/services/food'
+    | '/services/pabili'
+    | '/services/padala'
+    | '/services/ride'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  ServicesFoodRoute: typeof ServicesFoodRoute
+  ServicesPabiliRoute: typeof ServicesPabiliRoute
+  ServicesPadalaRoute: typeof ServicesPadalaRoute
+  ServicesRideRoute: typeof ServicesRideRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +124,44 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/ride': {
+      id: '/services/ride'
+      path: '/services/ride'
+      fullPath: '/services/ride'
+      preLoaderRoute: typeof ServicesRideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/padala': {
+      id: '/services/padala'
+      path: '/services/padala'
+      fullPath: '/services/padala'
+      preLoaderRoute: typeof ServicesPadalaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/pabili': {
+      id: '/services/pabili'
+      path: '/services/pabili'
+      fullPath: '/services/pabili'
+      preLoaderRoute: typeof ServicesPabiliRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services/food': {
+      id: '/services/food'
+      path: '/services/food'
+      fullPath: '/services/food'
+      preLoaderRoute: typeof ServicesFoodRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  ServicesFoodRoute: ServicesFoodRoute,
+  ServicesPabiliRoute: ServicesPabiliRoute,
+  ServicesPadalaRoute: ServicesPadalaRoute,
+  ServicesRideRoute: ServicesRideRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
