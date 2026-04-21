@@ -1,22 +1,48 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Check, Circle, MapPin, Navigation, Truck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { LiveTrackingMap } from "@/components/map/LiveTrackingMap.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
 import { Button } from "@/components/ui/button";
-import { Navigation } from "lucide-react";
+import { estimateEta, etaTargetForStatus } from "@/lib/eta";
+import { STATUS_LABELS, type OrderStatus } from "@/lib/orders";
 
 interface OrderTrackerProps {
   orderId: string;
   riderId: string | null;
   pickup: { lat: number; lng: number } | null;
   dropoff: { lat: number; lng: number } | null;
-  status: string;
+  status: OrderStatus | string;
 }
 
+interface DriverLoc {
+  lat: number;
+  lng: number;
+  speed: number | null;
+  updated_at: string;
+}
+
+const TIMELINE: Array<{ status: OrderStatus; label: string; description: string; icon: typeof Circle }> = [
+  { status: "pending", label: "Order placed", description: "Looking for a nearby rider.", icon: Circle },
+  { status: "accepted", label: "Rider on the way", description: "Heading to your pickup point.", icon: Truck },
+  { status: "in_progress", label: "On the way to drop-off", description: "Your order is in transit.", icon: Navigation },
+  { status: "completed", label: "Delivered", description: "Order completed. Thanks for riding!", icon: Check },
+];
+
+const STATUS_INDEX: Record<OrderStatus, number> = {
+  pending: 0,
+  accepted: 1,
+  in_progress: 2,
+  completed: 3,
+  cancelled: -1,
+};
+
 export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: OrderTrackerProps) {
-  const [driver, setDriver] = useState<{ lat: number; lng: number } | null>(null);
+  const [driver, setDriver] = useState<DriverLoc | null>(null);
+  const [tick, setTick] = useState(0); // forces ETA refresh every minute
 
   const isActive = status === "accepted" || status === "in_progress";
+  const isCancelled = status === "cancelled";
 
   useEffect(() => {
     if (!isActive || !riderId) {
@@ -24,17 +50,15 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
       return;
     }
     let cancelled = false;
-    // Initial fetch — filter by order_id so the customer RLS policy
-    // ("Customers view driver location for own order") permits the read.
     supabase
       .from("driver_locations")
-      .select("lat, lng")
+      .select("lat, lng, speed, updated_at")
       .eq("order_id", orderId)
       .order("updated_at", { ascending: false })
       .limit(1)
       .maybeSingle()
       .then(({ data }) => {
-        if (!cancelled && data) setDriver({ lat: data.lat, lng: data.lng });
+        if (!cancelled && data) setDriver(data as DriverLoc);
       });
 
     const channel = supabase
@@ -43,8 +67,15 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
         "postgres_changes",
         { event: "*", schema: "public", table: "driver_locations", filter: `order_id=eq.${orderId}` },
         (payload) => {
-          const row = (payload.new ?? payload.old) as { lat?: number; lng?: number } | null;
-          if (row?.lat != null && row?.lng != null) setDriver({ lat: row.lat, lng: row.lng });
+          const row = (payload.new ?? payload.old) as Partial<DriverLoc> | null;
+          if (row?.lat != null && row?.lng != null) {
+            setDriver({
+              lat: row.lat,
+              lng: row.lng,
+              speed: row.speed ?? null,
+              updated_at: row.updated_at ?? new Date().toISOString(),
+            });
+          }
         },
       )
       .subscribe();
@@ -55,33 +86,144 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
     };
   }, [orderId, riderId, isActive]);
 
-  const openInMaps = (target: { lat: number; lng: number }) => {
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${target.lat},${target.lng}&travelmode=driving`;
-    window.open(url, "_blank");
+  // Tick once a minute so the "last updated" + ETA labels stay fresh.
+  useEffect(() => {
+    if (!isActive) return;
+    const id = window.setInterval(() => setTick((n) => n + 1), 30_000);
+    return () => window.clearInterval(id);
+  }, [isActive]);
+
+  const target = etaTargetForStatus(status, pickup, dropoff);
+  const eta = useMemo(
+    () => (driver && target ? estimateEta(driver, target.coords, { speedMps: driver.speed }) : null),
+    // tick included so the label refreshes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [driver, target?.coords.lat, target?.coords.lng, target?.label, tick],
+  );
+
+  const lastUpdated = useMemo(() => {
+    if (!driver) return null;
+    const ageSec = Math.max(0, Math.floor((Date.now() - new Date(driver.updated_at).getTime()) / 1000));
+    if (ageSec < 15) return "just now";
+    if (ageSec < 60) return `${ageSec}s ago`;
+    const mins = Math.floor(ageSec / 60);
+    return `${mins} min ago`;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [driver, tick]);
+
+  const openInMaps = (t: { lat: number; lng: number }) => {
+    window.open(
+      `https://www.google.com/maps/dir/?api=1&destination=${t.lat},${t.lng}&travelmode=driving`,
+      "_blank",
+    );
   };
 
   if (!pickup && !dropoff) return null;
 
+  const currentIdx = isCancelled ? -1 : STATUS_INDEX[status as OrderStatus] ?? 0;
+
   return (
-    <div className="mt-4 space-y-3">
+    <div className="mt-4 space-y-4">
+      {/* Live ETA banner */}
+      {isActive && (
+        <div
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 p-4"
+          style={{ background: "var(--gradient-card)" }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-primary/15">
+              <span className="absolute inset-0 animate-ping rounded-full bg-primary/30" aria-hidden />
+              <Truck className="relative h-5 w-5 text-primary-glow" />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                {target?.label === "drop-off" ? "Arriving at drop-off" : "Rider arriving in"}
+              </p>
+              <p className="font-display text-xl font-bold">
+                {eta ? eta.label : driver ? "Calculating…" : "Waiting for rider…"}
+              </p>
+              {eta && (
+                <p className="text-xs text-muted-foreground">
+                  {eta.km.toFixed(1)} km away · updated {lastUpdated ?? "just now"}
+                </p>
+              )}
+            </div>
+          </div>
+          {target && (
+            <Button size="sm" variant="outline" onClick={() => openInMaps(target.coords)}>
+              <Navigation className="h-4 w-4" /> Navigate to {target.label}
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Status timeline */}
+      {!isCancelled && (
+        <ol className="rounded-xl border border-border/60 p-4" style={{ background: "var(--gradient-card)" }}>
+          {TIMELINE.map((step, idx) => {
+            const reached = idx <= currentIdx;
+            const isCurrent = idx === currentIdx;
+            const Icon = step.icon;
+            return (
+              <li key={step.status} className="relative flex gap-3 pb-4 last:pb-0">
+                {idx < TIMELINE.length - 1 && (
+                  <span
+                    className={`absolute left-[15px] top-8 h-[calc(100%-1.5rem)] w-px ${
+                      idx < currentIdx ? "bg-primary/60" : "bg-border"
+                    }`}
+                    aria-hidden
+                  />
+                )}
+                <span
+                  className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${
+                    reached
+                      ? "border-primary bg-primary/15 text-primary-glow"
+                      : "border-border bg-muted/40 text-muted-foreground"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {isCurrent && (
+                    <span className="absolute inset-0 animate-ping rounded-full bg-primary/30" aria-hidden />
+                  )}
+                </span>
+                <div className="min-w-0">
+                  <p className={`text-sm font-semibold ${reached ? "" : "text-muted-foreground"}`}>
+                    {step.label}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{step.description}</p>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+
+      {/* Map */}
       <MapClientOnly>
         <LiveTrackingMap pickup={pickup} dropoff={dropoff} driver={driver} height={280} />
       </MapClientOnly>
+
       <div className="flex flex-wrap gap-2">
         {pickup && (
           <Button size="sm" variant="outline" onClick={() => openInMaps(pickup)}>
-            <Navigation className="h-4 w-4" /> Navigate to pickup
+            <MapPin className="h-4 w-4" /> Pickup directions
           </Button>
         )}
         {dropoff && (
           <Button size="sm" variant="outline" onClick={() => openInMaps(dropoff)}>
-            <Navigation className="h-4 w-4" /> Navigate to drop-off
+            <MapPin className="h-4 w-4" /> Drop-off directions
           </Button>
         )}
       </div>
-      {isActive && riderId && (
+
+      {isActive && riderId && !driver && (
         <p className="text-xs text-muted-foreground">
-          {driver ? "Live: rider location updates in real time." : "Waiting for rider location…"}
+          Waiting for rider location… ETA will appear once they go online.
+        </p>
+      )}
+      {!isActive && !isCancelled && status !== "completed" && (
+        <p className="text-xs text-muted-foreground">
+          Status: <span className="font-medium">{STATUS_LABELS[status as OrderStatus] ?? status}</span>
         </p>
       )}
     </div>

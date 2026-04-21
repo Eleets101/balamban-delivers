@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { LiveTrackingMap } from "@/components/map/LiveTrackingMap.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
 import { SERVICE_LABELS, STATUS_LABELS, STATUS_COLORS, type OrderStatus, type ServiceType } from "@/lib/orders";
+import { estimateEta, etaTargetForStatus } from "@/lib/eta";
 
 export const Route = createFileRoute("/driver")({
   head: () => ({
@@ -247,6 +248,8 @@ function DriverPage() {
               mine.map((o) => {
                 const pickup = o.pickup_lat != null && o.pickup_lng != null ? { lat: o.pickup_lat, lng: o.pickup_lng } : null;
                 const dropoff = o.dropoff_lat != null && o.dropoff_lng != null ? { lat: o.dropoff_lat, lng: o.dropoff_lng } : null;
+                const target = etaTargetForStatus(o.status, pickup, dropoff);
+                const eta = myCoords && target ? estimateEta(myCoords, target.coords) : null;
                 return (
                   <article key={o.id} className="rounded-2xl border border-border/60 p-5" style={{ background: "var(--gradient-card)" }}>
                     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -258,6 +261,18 @@ function DriverPage() {
                       </div>
                       <span className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleString()}</span>
                     </div>
+
+                    {target && (
+                      <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm">
+                        <Navigation className="h-4 w-4 text-primary-glow" />
+                        <span className="font-medium">
+                          {target.label === "pickup" ? "Heading to pickup" : "Delivering to drop-off"}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {eta ? `· ${eta.label} · ${eta.km.toFixed(1)} km` : sharing ? "· locating you…" : "· go online to compute ETA"}
+                        </span>
+                      </div>
+                    )}
 
                     <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
                       <div className="flex items-start gap-2">
@@ -297,12 +312,12 @@ function DriverPage() {
                       )}
                       {o.status === "accepted" && (
                         <Button size="sm" onClick={() => updateStatus(o.id, "in_progress")}>
-                          Start trip
+                          Arrived at pickup — Start trip
                         </Button>
                       )}
                       {o.status === "in_progress" && (
                         <Button size="sm" onClick={() => updateStatus(o.id, "completed")}>
-                          Mark completed
+                          Mark delivered
                         </Button>
                       )}
                     </div>
