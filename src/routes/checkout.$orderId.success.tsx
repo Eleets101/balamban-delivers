@@ -117,6 +117,84 @@ function SuccessPage() {
   const paidAt = formatTimestamp(order.updated_at || order.created_at);
   const MethodIcon = isCOD ? Banknote : Wallet;
 
+  const handleDownloadReceipt = () => {
+    const doc = new jsPDF({ unit: "pt", format: "a5" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const marginX = 36;
+    let y = 56;
+
+    // Header
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.setTextColor(40, 20, 80);
+    doc.text("HatodGo", marginX, y);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(120, 120, 130);
+    doc.text("Official Receipt", pageWidth - marginX, y, { align: "right" });
+
+    y += 20;
+    doc.setDrawColor(220, 220, 230);
+    doc.line(marginX, y, pageWidth - marginX, y);
+    y += 24;
+
+    // Status banner
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(isCOD ? 180 : 30, isCOD ? 110 : 130, isCOD ? 20 : 60);
+    doc.text(isCOD ? "Cash on Delivery" : "Payment Successful", marginX, y);
+    y += 28;
+
+    // Line item helper
+    const addRow = (label: string, value: string) => {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(110, 110, 120);
+      doc.text(label, marginX, y);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(30, 30, 40);
+      const lines = doc.splitTextToSize(value, pageWidth - marginX * 2 - 140);
+      doc.text(lines, pageWidth - marginX, y, { align: "right" });
+      y += 10 * lines.length + 8;
+    };
+
+    addRow("Order ID", order.id);
+    addRow("Service", SERVICE_LABELS[order.service_type]);
+    addRow("Payment method", methodLabel);
+    addRow("Timestamp", paidAt);
+    if (deliveryFee > 0) {
+      addRow("Service / fare", `PHP ${fare.toFixed(2)}`);
+      addRow("Delivery fee", `PHP ${deliveryFee.toFixed(2)}`);
+    }
+
+    y += 4;
+    doc.setDrawColor(220, 220, 230);
+    doc.line(marginX, y, pageWidth - marginX, y);
+    y += 22;
+
+    // Total
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(60, 60, 70);
+    doc.text(isCOD ? "Amount due" : "Total paid", marginX, y);
+    doc.setFontSize(18);
+    doc.setTextColor(90, 40, 170);
+    doc.text(`PHP ${total.toFixed(2)}`, pageWidth - marginX, y, { align: "right" });
+    y += 40;
+
+    // Footer
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(140, 140, 150);
+    const footer = isCOD
+      ? "Please have cash ready when your rider arrives. Thank you for riding with HatodGo."
+      : "This is a computer-generated receipt. Thank you for riding with HatodGo.";
+    const footerLines = doc.splitTextToSize(footer, pageWidth - marginX * 2);
+    doc.text(footerLines, marginX, y);
+
+    doc.save(`hatodgo-receipt-${order.id.slice(0, 8)}.pdf`);
+  };
+
   return (
     <PageShell>
       <div className="mx-auto max-w-md px-4 py-10 text-center sm:px-6">
