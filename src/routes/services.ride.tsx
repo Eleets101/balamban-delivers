@@ -71,17 +71,15 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+function nearestLandmarks(coords: { lat: number; lng: number }, k = 3) {
+  return KNOWN_LANDMARKS
+    .map((l) => ({ ...l, distanceKm: haversineKm(coords, l) }))
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+    .slice(0, k);
+}
+
 function nearestLandmark(coords: { lat: number; lng: number }) {
-  let best = KNOWN_LANDMARKS[0];
-  let bestKm = haversineKm(coords, best);
-  for (let i = 1; i < KNOWN_LANDMARKS.length; i++) {
-    const km = haversineKm(coords, KNOWN_LANDMARKS[i]);
-    if (km < bestKm) {
-      best = KNOWN_LANDMARKS[i];
-      bestKm = km;
-    }
-  }
-  return { ...best, distanceKm: bestKm };
+  return nearestLandmarks(coords, 1)[0];
 }
 
 const SAMPLE_DRIVER = {
