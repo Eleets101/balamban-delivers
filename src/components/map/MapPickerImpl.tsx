@@ -43,12 +43,15 @@ export function MapPicker({ value, onChange, onAddressResolved, height = 260 }: 
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const onChangeRef = useRef(onChange);
+  const onAddressResolvedRef = useRef(onAddressResolved);
   const [locating, setLocating] = useState(false);
+  const [resolving, setResolving] = useState(false);
 
-  // keep latest onChange without retriggering map setup
+  // keep latest callbacks without retriggering map setup
   useEffect(() => {
     onChangeRef.current = onChange;
-  }, [onChange]);
+    onAddressResolvedRef.current = onAddressResolved;
+  }, [onChange, onAddressResolved]);
 
   // Initialize map once on mount
   useEffect(() => {
