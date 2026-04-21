@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -47,6 +47,7 @@ export function MapPicker({ value, onChange, height = 260 }: MapPickerProps) {
     value ? [value.lat, value.lng] : DEFAULT_CENTER,
   );
   const containerRef = useRef<HTMLDivElement>(null);
+  const mapId = useId();
 
   const useCurrent = () => {
     if (!("geolocation" in navigator)) return;
@@ -76,6 +77,8 @@ export function MapPicker({ value, onChange, height = 260 }: MapPickerProps) {
         style={{ height }}
       >
         <MapContainer
+          key={mapId}
+          id={`map-picker-${mapId.replace(/:/g, "")}`}
           center={center}
           zoom={14}
           style={{ height: "100%", width: "100%" }}
