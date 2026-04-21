@@ -11,31 +11,74 @@ import { Textarea } from "@/components/ui/textarea";
 import { MapPicker } from "@/components/map/MapPicker.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
 
-// Biases search toward Balamban, Cebu — but falls back to PH-wide if no local hits.
-const SEARCH_VIEWBOX = "123.5,10.6,123.9,10.3";
+// Default bias toward Balamban, Cebu — used when we have no better reference point.
+const DEFAULT_BIAS: { lat: number; lng: number } = { lat: 10.4456, lng: 123.7016 };
+const DEFAULT_VIEWBOX = "123.5,10.6,123.9,10.3";
 
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const R = 6371;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const h =
+    Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+/**
+ * Geocode a free-text query, picking the candidate closest to `near` if provided.
+ * Falls back from local-viewbox → PH-wide if no results are found.
+ */
 async function geocodeAddress(
   query: string,
+  near: { lat: number; lng: number } | null,
 ): Promise<{ lat: number; lng: number; displayName: string } | null> {
-  const run = async (useViewbox: boolean) => {
+  const bias = near ?? DEFAULT_BIAS;
+
+  const run = async (mode: "nearby" | "ph") => {
     const url = new URL("https://nominatim.openstreetmap.org/search");
     url.searchParams.set("format", "json");
     url.searchParams.set("q", query);
-    url.searchParams.set("limit", "1");
+    url.searchParams.set("limit", "10");
     url.searchParams.set("countrycodes", "ph");
-    if (useViewbox) {
-      url.searchParams.set("viewbox", SEARCH_VIEWBOX);
-      url.searchParams.set("bounded", "1");
+    if (mode === "nearby") {
+      // Build a ~1° viewbox around the bias (roughly ~110km) so nearby POIs win
+      if (near) {
+        const d = 0.5;
+        const left = bias.lng - d;
+        const right = bias.lng + d;
+        const top = bias.lat + d;
+        const bottom = bias.lat - d;
+        url.searchParams.set("viewbox", `${left},${top},${right},${bottom}`);
+      } else {
+        url.searchParams.set("viewbox", DEFAULT_VIEWBOX);
+      }
+      // Not strictly bounded — Nominatim prefers results inside the box but still returns outsiders ranked lower
     }
     const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
     if (!res.ok) return null;
-    const data = (await res.json()) as Array<{ lat: string; lon: string; display_name: string }>;
+    const data = (await res.json()) as Array<{
+      lat: string;
+      lon: string;
+      display_name: string;
+    }>;
     if (!data.length) return null;
-    const hit = data[0];
-    return { lat: parseFloat(hit.lat), lng: parseFloat(hit.lon), displayName: hit.display_name };
+    // Choose the candidate closest to the bias point
+    const ranked = data
+      .map((h) => ({
+        lat: parseFloat(h.lat),
+        lng: parseFloat(h.lon),
+        displayName: h.display_name,
+      }))
+      .map((h) => ({ ...h, distKm: haversineKm(bias, h) }))
+      .sort((a, b) => a.distKm - b.distKm);
+    return ranked[0];
   };
+
   try {
-    return (await run(true)) ?? (await run(false));
+    return (await run("nearby")) ?? (await run("ph"));
   } catch {
     return null;
   }
