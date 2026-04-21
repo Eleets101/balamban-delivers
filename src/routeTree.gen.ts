@@ -21,6 +21,7 @@ import { Route as ServicesFoodRouteImport } from './routes/services.food'
 import { Route as CheckoutOrderIdRouteImport } from './routes/checkout.$orderId'
 import { Route as CheckoutOrderIdSuccessRouteImport } from './routes/checkout.$orderId.success'
 import { Route as CheckoutOrderIdPayRouteImport } from './routes/checkout.$orderId.pay'
+import { Route as CheckoutOrderIdFailedRouteImport } from './routes/checkout.$orderId.failed'
 
 const OrdersRoute = OrdersRouteImport.update({
   id: '/orders',
@@ -82,6 +83,11 @@ const CheckoutOrderIdPayRoute = CheckoutOrderIdPayRouteImport.update({
   path: '/pay',
   getParentRoute: () => CheckoutOrderIdRoute,
 } as any)
+const CheckoutOrderIdFailedRoute = CheckoutOrderIdFailedRouteImport.update({
+  id: '/failed',
+  path: '/failed',
+  getParentRoute: () => CheckoutOrderIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/services/pabili': typeof ServicesPabiliRoute
   '/services/padala': typeof ServicesPadalaRoute
   '/services/ride': typeof ServicesRideRoute
+  '/checkout/$orderId/failed': typeof CheckoutOrderIdFailedRoute
   '/checkout/$orderId/pay': typeof CheckoutOrderIdPayRoute
   '/checkout/$orderId/success': typeof CheckoutOrderIdSuccessRoute
 }
@@ -108,6 +115,7 @@ export interface FileRoutesByTo {
   '/services/pabili': typeof ServicesPabiliRoute
   '/services/padala': typeof ServicesPadalaRoute
   '/services/ride': typeof ServicesRideRoute
+  '/checkout/$orderId/failed': typeof CheckoutOrderIdFailedRoute
   '/checkout/$orderId/pay': typeof CheckoutOrderIdPayRoute
   '/checkout/$orderId/success': typeof CheckoutOrderIdSuccessRoute
 }
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   '/services/pabili': typeof ServicesPabiliRoute
   '/services/padala': typeof ServicesPadalaRoute
   '/services/ride': typeof ServicesRideRoute
+  '/checkout/$orderId/failed': typeof CheckoutOrderIdFailedRoute
   '/checkout/$orderId/pay': typeof CheckoutOrderIdPayRoute
   '/checkout/$orderId/success': typeof CheckoutOrderIdSuccessRoute
 }
@@ -139,6 +148,7 @@ export interface FileRouteTypes {
     | '/services/pabili'
     | '/services/padala'
     | '/services/ride'
+    | '/checkout/$orderId/failed'
     | '/checkout/$orderId/pay'
     | '/checkout/$orderId/success'
   fileRoutesByTo: FileRoutesByTo
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
     | '/services/pabili'
     | '/services/padala'
     | '/services/ride'
+    | '/checkout/$orderId/failed'
     | '/checkout/$orderId/pay'
     | '/checkout/$orderId/success'
   id:
@@ -167,6 +178,7 @@ export interface FileRouteTypes {
     | '/services/pabili'
     | '/services/padala'
     | '/services/ride'
+    | '/checkout/$orderId/failed'
     | '/checkout/$orderId/pay'
     | '/checkout/$orderId/success'
   fileRoutesById: FileRoutesById
@@ -270,15 +282,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckoutOrderIdPayRouteImport
       parentRoute: typeof CheckoutOrderIdRoute
     }
+    '/checkout/$orderId/failed': {
+      id: '/checkout/$orderId/failed'
+      path: '/failed'
+      fullPath: '/checkout/$orderId/failed'
+      preLoaderRoute: typeof CheckoutOrderIdFailedRouteImport
+      parentRoute: typeof CheckoutOrderIdRoute
+    }
   }
 }
 
 interface CheckoutOrderIdRouteChildren {
+  CheckoutOrderIdFailedRoute: typeof CheckoutOrderIdFailedRoute
   CheckoutOrderIdPayRoute: typeof CheckoutOrderIdPayRoute
   CheckoutOrderIdSuccessRoute: typeof CheckoutOrderIdSuccessRoute
 }
 
 const CheckoutOrderIdRouteChildren: CheckoutOrderIdRouteChildren = {
+  CheckoutOrderIdFailedRoute: CheckoutOrderIdFailedRoute,
   CheckoutOrderIdPayRoute: CheckoutOrderIdPayRoute,
   CheckoutOrderIdSuccessRoute: CheckoutOrderIdSuccessRoute,
 }
