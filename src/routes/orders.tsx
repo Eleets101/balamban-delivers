@@ -176,6 +176,34 @@ function OrdersPage() {
                         status={o.status}
                       />
                     )}
+
+                    {o.status === "cancelled" && o.details?.cancellation && (
+                      <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-destructive">
+                          Cancellation reason
+                        </p>
+                        <p className="mt-1 font-medium">{o.details.cancellation.reason_label}</p>
+                        {o.details.cancellation.note && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            “{o.details.cancellation.note}”
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {o.status === "pending" && (
+                      <div className="mt-4 flex justify-end">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => setCancelTarget(o)}
+                        >
+                          <X className="h-4 w-4" /> Cancel order
+                        </Button>
+                      </div>
+                    )}
                   </article>
                 );
               })}
@@ -183,6 +211,13 @@ function OrdersPage() {
           )}
         </div>
       </div>
+
+      <CancelOrderDialog
+        open={cancelTarget !== null}
+        onOpenChange={(next) => !next && setCancelTarget(null)}
+        orderId={cancelTarget?.id ?? ""}
+        existingDetails={cancelTarget?.details ?? null}
+      />
     </PageShell>
   );
 }
