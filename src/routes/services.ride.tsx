@@ -223,21 +223,21 @@ function RidePage() {
         dropoff_lng: dropoffCoords.lng,
         details: { description: `Ride · ${rideType}`, ride_type: rideType, estimated_eta_min: tripEta },
         estimated_price: fare,
-        payment_method: "cash",
+        payment_method: "pending",
       })
       .select("id")
       .single();
 
-    // Mock searching for a driver — short delay before "Driver Found"
+    if (error || !data) {
+      toast.error(error?.message ?? "Could not create ride.");
+      setStage("form");
+      return;
+    }
+    setOrderId(data.id);
+    // Short UX delay to match the "preparing your ride" vibe, then jump to checkout
     setTimeout(() => {
-      if (error) {
-        toast.error(error.message);
-        setStage("form");
-        return;
-      }
-      setOrderId(data?.id ?? null);
-      setStage("found");
-    }, 2200);
+      navigate({ to: "/checkout/$orderId", params: { orderId: data.id } });
+    }, 900);
   };
 
   if (stage === "searching") {
