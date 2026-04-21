@@ -30,6 +30,11 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  calculateRideFare,
+  haversineKm as pricingHaversineKm,
+  type FareBreakdown,
+} from "@/lib/pricing";
 
 export const Route = createFileRoute("/services/ride")({
   head: () => ({
