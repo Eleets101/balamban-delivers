@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { Search, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,36 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MapPicker } from "@/components/map/MapPicker.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
+
+// Biases search toward Balamban, Cebu — but falls back to PH-wide if no local hits.
+const SEARCH_VIEWBOX = "123.5,10.6,123.9,10.3";
+
+async function geocodeAddress(
+  query: string,
+): Promise<{ lat: number; lng: number; displayName: string } | null> {
+  const run = async (useViewbox: boolean) => {
+    const url = new URL("https://nominatim.openstreetmap.org/search");
+    url.searchParams.set("format", "json");
+    url.searchParams.set("q", query);
+    url.searchParams.set("limit", "1");
+    url.searchParams.set("countrycodes", "ph");
+    if (useViewbox) {
+      url.searchParams.set("viewbox", SEARCH_VIEWBOX);
+      url.searchParams.set("bounded", "1");
+    }
+    const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
+    if (!res.ok) return null;
+    const data = (await res.json()) as Array<{ lat: string; lon: string; display_name: string }>;
+    if (!data.length) return null;
+    const hit = data[0];
+    return { lat: parseFloat(hit.lat), lng: parseFloat(hit.lon), displayName: hit.display_name };
+  };
+  try {
+    return (await run(true)) ?? (await run(false));
+  } catch {
+    return null;
+  }
+}
 
 type ServiceType = "food" | "padali" | "pabili" | "ride";
 type Coords = { lat: number; lng: number } | null;
@@ -43,6 +74,30 @@ export function OrderForm({
   const [dropoffCoords, setDropoffCoords] = useState<Coords>(null);
   const [pickupAddress, setPickupAddress] = useState("");
   const [dropoffAddress, setDropoffAddress] = useState("");
+  const [searching, setSearching] = useState<null | "pickup" | "dropoff">(null);
+
+  const runSearch = async (which: "pickup" | "dropoff") => {
+    const query = (which === "pickup" ? pickupAddress : dropoffAddress).trim();
+    if (!query) {
+      toast.error("Type an address or place name first.");
+      return;
+    }
+    setSearching(which);
+    const hit = await geocodeAddress(query);
+    setSearching(null);
+    if (!hit) {
+      toast.error(`Couldn't find "${query}". Try a more specific name.`);
+      return;
+    }
+    if (which === "pickup") {
+      setPickupCoords({ lat: hit.lat, lng: hit.lng });
+      setPickupAddress(hit.displayName);
+    } else {
+      setDropoffCoords({ lat: hit.lat, lng: hit.lng });
+      setDropoffAddress(hit.displayName);
+    }
+    toast.success(`Pinned: ${hit.displayName.split(",").slice(0, 2).join(", ")}`);
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -92,28 +147,73 @@ export function OrderForm({
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
         <Label htmlFor="pickup">{pickupLabel}</Label>
-        <Input
-          id="pickup"
-          name="pickup"
-          required
-          placeholder={pickupPlaceholder}
-          value={pickupAddress}
-          onChange={(e) => setPickupAddress(e.target.value)}
-        />
+        <div className="flex gap-2">
+          <Input
+            id="pickup"
+            name="pickup"
+            required
+            placeholder={pickupPlaceholder}
+            value={pickupAddress}
+            onChange={(e) => setPickupAddress(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void runSearch("pickup");
+              }
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => runSearch("pickup")}
+            disabled={searching === "pickup"}
+            aria-label="Find pickup on map"
+          >
+            {searching === "pickup" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Search className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Type an address or place name (e.g. “Jollibee Balamban”) and press Enter or tap the search icon to pin it.
+        </p>
         <MapClientOnly>
           <MapPicker value={pickupCoords} onChange={setPickupCoords} onAddressResolved={setPickupAddress} />
         </MapClientOnly>
       </div>
       <div className="space-y-2">
         <Label htmlFor="dropoff">{dropoffLabel}</Label>
-        <Input
-          id="dropoff"
-          name="dropoff"
-          required
-          placeholder={dropoffPlaceholder}
-          value={dropoffAddress}
-          onChange={(e) => setDropoffAddress(e.target.value)}
-        />
+        <div className="flex gap-2">
+          <Input
+            id="dropoff"
+            name="dropoff"
+            required
+            placeholder={dropoffPlaceholder}
+            value={dropoffAddress}
+            onChange={(e) => setDropoffAddress(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void runSearch("dropoff");
+              }
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => runSearch("dropoff")}
+            disabled={searching === "dropoff"}
+            aria-label="Find drop-off on map"
+          >
+            {searching === "dropoff" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Search className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
         <MapClientOnly>
           <MapPicker value={dropoffCoords} onChange={setDropoffCoords} onAddressResolved={setDropoffAddress} />
         </MapClientOnly>
