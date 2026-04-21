@@ -288,6 +288,16 @@ function SuccessPage() {
           Redirecting to order tracking in {countdown}s…
         </p>
 
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-3 w-full"
+          size="lg"
+          onClick={handleDownloadReceipt}
+        >
+          <Download className="h-4 w-4" /> Download receipt (PDF)
+        </Button>
+
         <Button asChild className="mt-3 w-full" size="lg">
           <Link to="/orders">
             Track my order <ArrowRight className="h-4 w-4" />
