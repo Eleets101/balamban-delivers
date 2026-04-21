@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, Receipt } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MapPicker } from "@/components/map/MapPicker.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
+import {
+  calculateFoodFare,
+  calculatePabiliFare,
+  calculatePadalaFare,
+  type FareBreakdown,
+  type ParcelSize,
+  PARCEL_LABELS,
+} from "@/lib/pricing";
 
 // Default bias toward Balamban, Cebu — used when we have no better reference point.
 const DEFAULT_BIAS: { lat: number; lng: number } = { lat: 10.4456, lng: 123.7016 };
@@ -126,7 +134,10 @@ interface OrderFormProps {
   detailsPlaceholder: string;
   pickupPlaceholder?: string;
   dropoffPlaceholder?: string;
+  /** Show a "budget" input; required for food/pabili to compute service fee. */
   showEstimatedPrice?: boolean;
+  /** Show a small/medium/large parcel selector (Padala only). */
+  showParcelSize?: boolean;
   submitLabel: string;
 }
 
@@ -139,6 +150,7 @@ export function OrderForm({
   pickupPlaceholder,
   dropoffPlaceholder,
   showEstimatedPrice,
+  showParcelSize,
   submitLabel,
 }: OrderFormProps) {
   const { user } = useAuth();
@@ -150,6 +162,23 @@ export function OrderForm({
   const [dropoffAddress, setDropoffAddress] = useState("");
   const [searching, setSearching] = useState<null | "pickup" | "dropoff">(null);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
+  const [budgetInput, setBudgetInput] = useState("");
+  const [parcelSize, setParcelSize] = useState<ParcelSize>("small");
+
+  const distanceKm = useMemo(() => {
+    if (!pickupCoords || !dropoffCoords) return null;
+    return haversineKm(pickupCoords, dropoffCoords);
+  }, [pickupCoords, dropoffCoords]);
+
+  const budgetNum = Number(budgetInput) || 0;
+
+  const fareBreakdown: FareBreakdown | null = useMemo(() => {
+    if (distanceKm == null) return null;
+    if (serviceType === "padali") return calculatePadalaFare(distanceKm, parcelSize);
+    if (serviceType === "food") return calculateFoodFare(distanceKm, budgetNum);
+    if (serviceType === "pabili") return calculatePabiliFare(distanceKm, budgetNum);
+    return null;
+  }, [distanceKm, serviceType, parcelSize, budgetNum]);
 
   // Try to grab the user's current location once, silently, so "Jollibee" can resolve to the nearest branch.
   // Failure is fine — we just fall back to other biases.
@@ -179,7 +208,6 @@ export function OrderForm({
     }
     setSearching(which);
 
-    // Bias priority: already-pinned counterpart → pinned same-side coords → user geolocation → default
     const otherCoords = which === "pickup" ? dropoffCoords : pickupCoords;
     const sameCoords = which === "pickup" ? pickupCoords : dropoffCoords;
     const geoLoc = await ensureUserLocation();
@@ -216,7 +244,10 @@ export function OrderForm({
     setBusy(true);
 
     const detailsText = String(fd.get("details") ?? "");
-    const estPrice = fd.get("estimated_price");
+    const details: Record<string, unknown> = { description: detailsText };
+    if (showParcelSize) details.parcel_size = parcelSize;
+    if (fareBreakdown) details.fare_breakdown = fareBreakdown;
+
     const { data, error } = await supabase
       .from("orders")
       .insert({
@@ -229,8 +260,8 @@ export function OrderForm({
         dropoff_lat: dropoffCoords.lat,
         dropoff_lng: dropoffCoords.lng,
         notes: String(fd.get("notes") ?? "") || null,
-        details: { description: detailsText },
-        estimated_price: estPrice ? Number(estPrice) : null,
+        details: JSON.parse(JSON.stringify(details)),
+        estimated_price: fareBreakdown?.total ?? (budgetNum > 0 ? budgetNum : null),
         payment_method: "pending",
       })
       .select("id")
@@ -324,12 +355,77 @@ export function OrderForm({
         <Label htmlFor="details">{detailsLabel}</Label>
         <Textarea id="details" name="details" required rows={4} placeholder={detailsPlaceholder} />
       </div>
-      {showEstimatedPrice && (
+
+      {showParcelSize && (
         <div>
-          <Label htmlFor="estimated_price">Estimated budget (₱)</Label>
-          <Input id="estimated_price" name="estimated_price" type="number" min="0" step="0.01" placeholder="e.g. 250" />
+          <Label className="mb-2 block">Parcel size</Label>
+          <div className="grid grid-cols-3 gap-2">
+            {(Object.keys(PARCEL_LABELS) as ParcelSize[]).map((size) => (
+              <button
+                key={size}
+                type="button"
+                onClick={() => setParcelSize(size)}
+                className={`rounded-xl border p-3 text-left transition-all ${
+                  parcelSize === size
+                    ? "border-primary/60 bg-primary/10"
+                    : "border-border/60 hover:border-border"
+                }`}
+              >
+                <p className="text-sm font-semibold capitalize">{size}</p>
+                <p className="text-[11px] text-muted-foreground">{PARCEL_LABELS[size]}</p>
+              </button>
+            ))}
+          </div>
         </div>
       )}
+
+      {showEstimatedPrice && (
+        <div>
+          <Label htmlFor="estimated_price">
+            {serviceType === "food" ? "Food budget (₱)" : "Shopping budget (₱)"}
+          </Label>
+          <Input
+            id="estimated_price"
+            name="estimated_price"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="e.g. 250"
+            value={budgetInput}
+            onChange={(e) => setBudgetInput(e.target.value)}
+          />
+        </div>
+      )}
+
+      {/* Live fare breakdown */}
+      {fareBreakdown && (
+        <div
+          className="rounded-2xl border border-border/60 p-4"
+          style={{ background: "var(--gradient-card)" }}
+        >
+          <div className="flex items-center gap-2">
+            <Receipt className="h-4 w-4 text-primary-glow" />
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Fare estimate · {distanceKm != null ? `${distanceKm.toFixed(1)} km` : ""}
+            </p>
+          </div>
+          <dl className="mt-3 space-y-1.5 text-sm">
+            {fareBreakdown.lines.map((line, i) => (
+              <div key={i} className="flex items-center justify-between gap-3">
+                <dt className="text-muted-foreground">{line.label}</dt>
+                <dd className="font-medium">₱{line.amount.toFixed(2)}</dd>
+              </div>
+            ))}
+            <div className="mt-2 flex items-center justify-between gap-3 border-t border-border/60 pt-2">
+              <dt className="font-display text-base font-semibold">Total</dt>
+              <dd className="font-display text-lg font-bold text-primary-glow">
+                ₱{fareBreakdown.total.toFixed(2)}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      )}
+
       <div>
         <Label htmlFor="notes">Notes for rider (optional)</Label>
         <Textarea id="notes" name="notes" rows={2} placeholder="Landmark, contact person, etc." />

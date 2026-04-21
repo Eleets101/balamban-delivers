@@ -28,6 +28,7 @@ function PadalaPage() {
         dropoffPlaceholder="Where should we deliver it?"
         detailsLabel="What are we picking up?"
         detailsPlaceholder="e.g. Documents in long brown envelope, weight ~1kg"
+        showParcelSize
         submitLabel="Book padala"
       />
     </ServiceLayout>
