@@ -6,8 +6,8 @@ import { OrderForm } from "@/components/OrderForm";
 export const Route = createFileRoute("/services/food")({
   head: () => ({
     meta: [
-      { title: "Order food — HatodPH" },
-      { name: "description", content: "Order from local restaurants and carenderia in Balamban." },
+      { title: "Order food (Pagkain) — HatodPH" },
+      { name: "description", content: "Order from local restaurants and carenderia (eateries) in Balamban." },
     ],
   }),
   component: FoodPage,
@@ -17,12 +17,12 @@ function FoodPage() {
   return (
     <ServiceLayout
       icon={<UtensilsCrossed className="h-6 w-6" />}
-      title="Order food"
+      title="Order food (Pagkain)"
       tagline="Tell us where to pick up and what to order."
     >
       <OrderForm
         serviceType="food"
-        pickupLabel="Restaurant / carenderia"
+        pickupLabel="Restaurant / carenderia (eatery)"
         pickupPlaceholder="e.g. Jollibee Balamban"
         dropoffLabel="Deliver to"
         dropoffPlaceholder="Your address"

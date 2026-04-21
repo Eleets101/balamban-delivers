@@ -6,8 +6,8 @@ import { OrderForm } from "@/components/OrderForm";
 export const Route = createFileRoute("/services/padala")({
   head: () => ({
     meta: [
-      { title: "Padala — Pickup & Drop-off — HatodPH" },
-      { name: "description", content: "Send documents or items across Balamban — same-day pickup and drop-off." },
+      { title: "Padala (Send) — Pickup & Drop-off — HatodPH" },
+      { name: "description", content: "Send (padala) documents or items across Balamban — same-day pickup and drop-off." },
     ],
   }),
   component: PadalaPage,
@@ -17,7 +17,7 @@ function PadalaPage() {
   return (
     <ServiceLayout
       icon={<Package className="h-6 w-6" />}
-      title="Padala"
+      title="Padala (Send)"
       tagline="Pickup and drop-off — anywhere in town."
     >
       <OrderForm

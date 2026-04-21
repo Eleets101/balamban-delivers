@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "HatodPH — Hatod, Padala, Sakay sa Balamban" },
-      { name: "description", content: "Order food, send packages, request errands or book a ride. One app for Balamban, Toledo and Asturias." },
-      { property: "og:title", content: "HatodPH — Your everyday hatod app" },
-      { property: "og:description", content: "Food delivery, padala, pabili and ride booking for Cebu's west coast." },
+      { title: "HatodPH — Hatod (Deliver), Padala (Send), Sakay (Ride) sa Balamban" },
+      { name: "description", content: "Order food, send packages (padala), request errands (pabili) or book a ride (sakay). One app for Balamban, Toledo and Asturias." },
+      { property: "og:title", content: "HatodPH — Your everyday hatod (delivery) app" },
+      { property: "og:description", content: "Food delivery, padala (send), pabili (buy for me) and ride (sakay) booking for Cebu's west coast." },
     ],
   }),
   component: HomePage,
@@ -25,20 +25,20 @@ const services = [
   {
     to: "/services/padala" as const,
     icon: Package,
-    title: "Padala",
+    title: "Padala (Send)",
     description: "Send documents or items across town — same-day pickup & drop-off.",
   },
   {
     to: "/services/pabili" as const,
     icon: ShoppingBasket,
-    title: "Pabili",
+    title: "Pabili (Buy for me)",
     description: "Need something from the store? Our riders will buy it for you.",
   },
   {
     to: "/services/ride" as const,
     icon: Bike,
-    title: "Ride Booking",
-    description: "Book a habal-habal or motor ride within town in minutes.",
+    title: "Sakay (Ride Booking)",
+    description: "Book a habal-habal (motorcycle taxi) or motor ride within town in minutes.",
   },
 ];
 
@@ -58,18 +58,18 @@ function HomePage() {
             <MapPin className="h-3.5 w-3.5" /> Now serving Balamban · Toledo · Asturias
           </span>
           <h1 className="mt-6 font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-7xl">
-            Hatod. Padala.{" "}
+            Hatod (Deliver). Padala (Send).{" "}
             <span
               className="bg-clip-text text-transparent"
               style={{ backgroundImage: "var(--gradient-primary)" }}
             >
-              Sakay.
+              Sakay (Ride).
             </span>
             <br />
             All in one app.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-            HatodPH brings food delivery, padala, pabili and ride booking to Balamban and nearby towns —
+            HatodPH brings food delivery, padala (send), pabili (buy for me) and ride (sakay) booking to Balamban and nearby towns —
             sleek, simple, and built for our community.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
