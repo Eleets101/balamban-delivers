@@ -4,7 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { LiveTrackingMap } from "@/components/map/LiveTrackingMap.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
 import { Button } from "@/components/ui/button";
-import { estimateEta, etaTargetForStatus } from "@/lib/eta";
+import {
+  estimateEta,
+  etaTargetForStatus,
+  LOCATION_BUFFER_SIZE,
+  pushLocationSample,
+  smoothedSpeedMps,
+  type LocationSample,
+} from "@/lib/eta";
 import { STATUS_LABELS, type OrderStatus } from "@/lib/orders";
 
 interface OrderTrackerProps {
