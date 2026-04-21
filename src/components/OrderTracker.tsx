@@ -17,6 +17,7 @@ import {
   type LocationSample,
 } from "@/lib/eta";
 import { STATUS_LABELS, type OrderStatus } from "@/lib/orders";
+import { DevSimulatorPanel } from "@/components/DevSimulatorPanel";
 
 interface OrderTrackerProps {
   orderId: string;
@@ -174,6 +175,17 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
 
   return (
     <div className="mt-4 space-y-4">
+      {/* Dev-only simulator (hidden in production builds) */}
+      {import.meta.env.DEV && (
+        <DevSimulatorPanel
+          orderId={orderId}
+          riderId={riderId}
+          status={status}
+          pickup={pickup}
+          dropoff={dropoff}
+        />
+      )}
+
       {/* Live ETA banner */}
       {isActive && (
         <div
