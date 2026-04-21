@@ -189,6 +189,21 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
               <Navigation className="h-4 w-4" /> Navigate to {target.label}
             </Button>
           )}
+          <div className="flex w-full items-center justify-between gap-3 border-t border-border/40 pt-3 text-xs">
+            <div className="flex items-center gap-2">
+              <Switch id="adaptive-eta" checked={adaptive} onCheckedChange={setAdaptive} />
+              <Label htmlFor="adaptive-eta" className="cursor-pointer text-xs font-medium">
+                Auto-refresh ETA faster on speed changes
+              </Label>
+            </div>
+            <span
+              className={`flex items-center gap-1 ${isFastRefresh ? "text-primary-glow" : "text-muted-foreground"}`}
+              aria-live="polite"
+            >
+              {isFastRefresh && <Zap className="h-3 w-3" />}
+              Refresh: {refreshSec}s
+            </span>
+          </div>
         </div>
       )}
 
