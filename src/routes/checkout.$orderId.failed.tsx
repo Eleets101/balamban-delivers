@@ -117,7 +117,7 @@ function FailedPage() {
     );
   }
 
-  const copy = REASON_COPY[reason] ?? REASON_COPY.unknown;
+  const copy: { title: string; body: string } = REASON_COPY[reason as FailReason] ?? REASON_COPY.unknown;
   const fare = Number(order.estimated_price ?? 0);
   const deliveryFee = DELIVERY_FEE_BY_SERVICE[order.service_type] ?? 0;
   const total = fare + deliveryFee;
