@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Menu, Package, ShieldCheck, LogOut, LogIn, Bike } from "lucide-react";
+import { Menu, Package, ShieldCheck, LogOut, LogIn, Bike, UtensilsCrossed, ShoppingBasket } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -17,10 +17,10 @@ export function AppHeader() {
   const [open, setOpen] = useState(false);
 
   const links = [
-    { to: "/services/food" as const, label: "Food (Pagkain)" },
-    { to: "/services/padala" as const, label: "Padala (Send)" },
-    { to: "/services/pabili" as const, label: "Pabili (Buy)" },
-    { to: "/services/ride" as const, label: "Ride (Sakay)" },
+    { to: "/services/food" as const, label: "Food", icon: UtensilsCrossed },
+    { to: "/services/padala" as const, label: "Padala", icon: Package },
+    { to: "/services/pabili" as const, label: "Pabili", icon: ShoppingBasket },
+    { to: "/services/ride" as const, label: "Ride", icon: Bike },
   ];
 
   const handleSignOut = async () => {
@@ -46,9 +46,10 @@ export function AppHeader() {
             <Link
               key={l.to}
               to={l.to}
-              className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
               activeProps={{ className: "bg-secondary text-foreground" }}
             >
+              <l.icon className="h-4 w-4" />
               {l.label}
             </Link>
           ))}
@@ -105,8 +106,9 @@ export function AppHeader() {
                   key={l.to}
                   to={l.to}
                   onClick={() => setOpen(false)}
-                  className="rounded-md px-3 py-3 text-sm font-medium hover:bg-secondary"
+                  className="inline-flex items-center gap-2 rounded-md px-3 py-3 text-sm font-medium hover:bg-secondary"
                 >
+                  <l.icon className="h-4 w-4 text-primary-glow" />
                   {l.label}
                 </Link>
               ))}
