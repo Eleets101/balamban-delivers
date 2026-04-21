@@ -136,10 +136,13 @@ function OrdersPage() {
                     style={{ background: "var(--gradient-card)", boxShadow: "var(--shadow-card)" }}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="font-display text-base font-semibold">{SERVICE_LABELS[o.service_type]}</span>
                         <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[o.status]}`}>
                           {STATUS_LABELS[o.status]}
+                        </span>
+                        <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${PAYMENT_BADGES[o.payment_status].className}`}>
+                          {PAYMENT_BADGES[o.payment_status].label}
                         </span>
                       </div>
                       <span className="text-xs text-muted-foreground">
