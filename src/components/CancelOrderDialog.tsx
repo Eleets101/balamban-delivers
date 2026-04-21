@@ -45,6 +45,9 @@ interface CancelOrderDialogProps {
   onOpenChange: (open: boolean) => void;
   orderId: string;
   existingDetails?: Record<string, unknown> | null;
+  riderId?: string | null;
+  pickupAddress?: string | null;
+  dropoffAddress?: string | null;
   onCancelled?: () => void;
 }
 
@@ -53,6 +56,9 @@ export function CancelOrderDialog({
   onOpenChange,
   orderId,
   existingDetails,
+  riderId,
+  pickupAddress,
+  dropoffAddress,
   onCancelled,
 }: CancelOrderDialogProps) {
   const [reason, setReason] = useState<ReasonValue | "">("");
