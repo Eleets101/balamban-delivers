@@ -331,9 +331,26 @@ function RidePage() {
 
         {/* Pickup */}
         <div className="space-y-2">
-          <Label htmlFor="pickup">
-            <MapPin className="mr-1 inline h-3.5 w-3.5 text-primary-glow" /> Pickup point
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="pickup">
+              <MapPin className="mr-1 inline h-3.5 w-3.5 text-primary-glow" /> Pickup point
+            </Label>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={useMyLocation}
+              disabled={locatingMe}
+              className="h-8 gap-1.5 text-xs"
+            >
+              {locatingMe ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Crosshair className="h-3.5 w-3.5 text-primary-glow" />
+              )}
+              {locatingMe ? "Locating…" : "Use my location"}
+            </Button>
+          </div>
           <Input
             id="pickup"
             placeholder="Where are you now?"
