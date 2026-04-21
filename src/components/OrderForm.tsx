@@ -7,8 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { MapPicker } from "@/components/map/MapPicker";
+import { MapClientOnly } from "@/components/map/MapClientOnly";
 
 type ServiceType = "food" | "padali" | "pabili" | "ride";
+type Coords = { lat: number; lng: number } | null;
 
 interface OrderFormProps {
   serviceType: ServiceType;
@@ -36,10 +39,20 @@ export function OrderForm({
   const { user } = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [pickupCoords, setPickupCoords] = useState<Coords>(null);
+  const [dropoffCoords, setDropoffCoords] = useState<Coords>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user) return;
+    if (!pickupCoords) {
+      toast.error("Please pin the pickup location on the map.");
+      return;
+    }
+    if (!dropoffCoords) {
+      toast.error("Please pin the drop-off location on the map.");
+      return;
+    }
     const fd = new FormData(e.currentTarget);
     setBusy(true);
 
@@ -50,6 +63,10 @@ export function OrderForm({
       service_type: serviceType,
       pickup_address: String(fd.get("pickup")),
       dropoff_address: String(fd.get("dropoff")),
+      pickup_lat: pickupCoords.lat,
+      pickup_lng: pickupCoords.lng,
+      dropoff_lat: dropoffCoords.lat,
+      dropoff_lng: dropoffCoords.lng,
       notes: String(fd.get("notes") ?? "") || null,
       details: { description: detailsText },
       estimated_price: estPrice ? Number(estPrice) : null,
@@ -67,13 +84,19 @@ export function OrderForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <div>
+      <div className="space-y-2">
         <Label htmlFor="pickup">{pickupLabel}</Label>
         <Input id="pickup" name="pickup" required placeholder={pickupPlaceholder} />
+        <MapClientOnly>
+          <MapPicker value={pickupCoords} onChange={setPickupCoords} />
+        </MapClientOnly>
       </div>
-      <div>
+      <div className="space-y-2">
         <Label htmlFor="dropoff">{dropoffLabel}</Label>
         <Input id="dropoff" name="dropoff" required placeholder={dropoffPlaceholder} />
+        <MapClientOnly>
+          <MapPicker value={dropoffCoords} onChange={setDropoffCoords} />
+        </MapClientOnly>
       </div>
       <div>
         <Label htmlFor="details">{detailsLabel}</Label>

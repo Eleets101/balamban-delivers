@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as OrdersRouteImport } from './routes/orders'
+import { Route as DriverRouteImport } from './routes/driver'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -21,6 +22,11 @@ import { Route as ServicesFoodRouteImport } from './routes/services.food'
 const OrdersRoute = OrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DriverRoute = DriverRouteImport.update({
+  id: '/driver',
+  path: '/driver',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/driver': typeof DriverRoute
   '/orders': typeof OrdersRoute
   '/services/food': typeof ServicesFoodRoute
   '/services/pabili': typeof ServicesPabiliRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/driver': typeof DriverRoute
   '/orders': typeof OrdersRoute
   '/services/food': typeof ServicesFoodRoute
   '/services/pabili': typeof ServicesPabiliRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/driver': typeof DriverRoute
   '/orders': typeof OrdersRoute
   '/services/food': typeof ServicesFoodRoute
   '/services/pabili': typeof ServicesPabiliRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/driver'
     | '/orders'
     | '/services/food'
     | '/services/pabili'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/driver'
     | '/orders'
     | '/services/food'
     | '/services/pabili'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/driver'
     | '/orders'
     | '/services/food'
     | '/services/pabili'
@@ -127,6 +139,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
+  DriverRoute: typeof DriverRoute
   OrdersRoute: typeof OrdersRoute
   ServicesFoodRoute: typeof ServicesFoodRoute
   ServicesPabiliRoute: typeof ServicesPabiliRoute
@@ -141,6 +154,13 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/orders'
       preLoaderRoute: typeof OrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/driver': {
+      id: '/driver'
+      path: '/driver'
+      fullPath: '/driver'
+      preLoaderRoute: typeof DriverRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -199,6 +219,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
+  DriverRoute: DriverRoute,
   OrdersRoute: OrdersRoute,
   ServicesFoodRoute: ServicesFoodRoute,
   ServicesPabiliRoute: ServicesPabiliRoute,
