@@ -98,6 +98,7 @@ export type Database = {
           id: string
           notes: string | null
           payment_method: string
+          payment_status: Database["public"]["Enums"]["payment_status"]
           pickup_address: string
           pickup_lat: number | null
           pickup_lng: number | null
@@ -117,6 +118,7 @@ export type Database = {
           id?: string
           notes?: string | null
           payment_method?: string
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           pickup_address: string
           pickup_lat?: number | null
           pickup_lng?: number | null
@@ -136,6 +138,7 @@ export type Database = {
           id?: string
           notes?: string | null
           payment_method?: string
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           pickup_address?: string
           pickup_lat?: number | null
           pickup_lng?: number | null
@@ -215,6 +218,7 @@ export type Database = {
         | "in_progress"
         | "completed"
         | "cancelled"
+      payment_status: "pending" | "paid" | "cod" | "failed"
       service_type: "food" | "padali" | "pabili" | "ride"
     }
     CompositeTypes: {
@@ -351,6 +355,7 @@ export const Constants = {
         "completed",
         "cancelled",
       ],
+      payment_status: ["pending", "paid", "cod", "failed"],
       service_type: ["food", "padali", "pabili", "ride"],
     },
   },
