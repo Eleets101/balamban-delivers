@@ -35,8 +35,17 @@ interface Order {
   rider_id: string | null;
   details: OrderDetails;
   estimated_price: number | null;
+  payment_method: string;
+  payment_status: "pending" | "paid" | "cod" | "failed";
   created_at: string;
 }
+
+const PAYMENT_BADGES: Record<Order["payment_status"], { label: string; className: string }> = {
+  pending: { label: "Payment pending", className: "bg-warning/15 text-warning border-warning/30" },
+  paid: { label: "Paid", className: "bg-success/15 text-success border-success/30" },
+  cod: { label: "Cash on delivery", className: "bg-accent/15 text-accent-foreground border-accent/30" },
+  failed: { label: "Payment failed", className: "bg-destructive/15 text-destructive border-destructive/30" },
+};
 
 export const Route = createFileRoute("/orders")({
   head: () => ({
