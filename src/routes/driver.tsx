@@ -1,21 +1,25 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Bike, Loader2, MapPin, Navigation, Power, ShieldAlert } from "lucide-react";
+import { Bike, Loader2, MapPin, Navigation, Power, ShieldAlert, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { LiveTrackingMap } from "@/components/map/LiveTrackingMap.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
 import { SERVICE_LABELS, STATUS_LABELS, STATUS_COLORS, type OrderStatus, type ServiceType } from "@/lib/orders";
 import {
+  adaptiveRefreshMs,
   estimateEta,
   etaTargetForStatus,
   LOCATION_BUFFER_SIZE,
   pushLocationSample,
   smoothedSpeedMps,
+  speedVariance,
   type LocationSample,
 } from "@/lib/eta";
 
