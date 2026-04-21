@@ -113,12 +113,30 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
 
   // Tick on an adaptive cadence based on recent speed variance.
   // When the rider's speed is changing fast (high variance), refresh ETA more often.
+  const intervalMs = adaptive ? adaptiveRefreshMs(variance) : 30_000;
+  const refreshSec = Math.round(intervalMs / 1000);
+  const isFastRefresh = adaptive && variance != null && variance >= 0.3;
+  const [countdown, setCountdown] = useState(refreshSec);
+
   useEffect(() => {
     if (!isActive) return;
-    const intervalMs = adaptive ? adaptiveRefreshMs(variance) : 30_000;
     const id = window.setInterval(() => setTick((n) => n + 1), intervalMs);
     return () => window.clearInterval(id);
-  }, [isActive, adaptive, variance]);
+  }, [isActive, intervalMs]);
+
+  // Per-second countdown to next refresh — resets whenever tick fires
+  // or the interval length changes.
+  useEffect(() => {
+    if (!isActive) {
+      setCountdown(refreshSec);
+      return;
+    }
+    setCountdown(refreshSec);
+    const id = window.setInterval(() => {
+      setCountdown((n) => (n <= 1 ? refreshSec : n - 1));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [isActive, tick, refreshSec]);
 
   const target = etaTargetForStatus(status, pickup, dropoff);
   const smoothedMps = useMemo(
@@ -132,9 +150,6 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [driver, target?.coords.lat, target?.coords.lng, target?.label, smoothedMps, tick],
   );
-
-  const refreshSec = Math.round((adaptive ? adaptiveRefreshMs(variance) : 30_000) / 1000);
-  const isFastRefresh = adaptive && variance != null && variance >= 0.3;
 
   const lastUpdated = useMemo(() => {
     if (!driver) return null;
@@ -197,11 +212,12 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
               </Label>
             </div>
             <span
-              className={`flex items-center gap-1 ${isFastRefresh ? "text-primary-glow" : "text-muted-foreground"}`}
+              className={`flex items-center gap-2 ${isFastRefresh ? "text-primary-glow" : "text-muted-foreground"}`}
               aria-live="polite"
             >
               {isFastRefresh && <Zap className="h-3 w-3" />}
-              Refresh: {refreshSec}s
+              <span>Next update in {countdown}s</span>
+              <span className="text-muted-foreground/70">· every {refreshSec}s</span>
             </span>
           </div>
         </div>
