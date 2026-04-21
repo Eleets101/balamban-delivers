@@ -263,13 +263,30 @@ function DriverPage() {
         </div>
 
         {sharing && (
-          <div className="mt-4 rounded-xl border border-primary/30 bg-primary/10 p-3 text-xs text-primary-glow">
-            Live: your location is being broadcast to assigned customers. Keep this tab open while driving.
-            {myCoords && (
-              <span className="ml-2 text-muted-foreground">
-                ({myCoords.lat.toFixed(5)}, {myCoords.lng.toFixed(5)})
+          <div className="mt-4 space-y-2 rounded-xl border border-primary/30 bg-primary/10 p-3 text-xs text-primary-glow">
+            <div>
+              Live: your location is being broadcast to assigned customers. Keep this tab open while driving.
+              {myCoords && (
+                <span className="ml-2 text-muted-foreground">
+                  ({myCoords.lat.toFixed(5)}, {myCoords.lng.toFixed(5)})
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-primary/20 pt-2">
+              <div className="flex items-center gap-2">
+                <Switch id="adaptive-eta-rider" checked={adaptive} onCheckedChange={setAdaptive} />
+                <Label htmlFor="adaptive-eta-rider" className="cursor-pointer text-xs font-medium text-foreground">
+                  Auto-refresh ETA faster on speed changes
+                </Label>
+              </div>
+              <span
+                className={`flex items-center gap-1 ${isFastRefresh ? "text-primary-glow" : "text-muted-foreground"}`}
+                aria-live="polite"
+              >
+                {isFastRefresh && <Zap className="h-3 w-3" />}
+                Refresh: {refreshSec}s
               </span>
-            )}
+            </div>
           </div>
         )}
 
