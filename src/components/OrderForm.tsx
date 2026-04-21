@@ -118,6 +118,27 @@ export function OrderForm({
   const [pickupAddress, setPickupAddress] = useState("");
   const [dropoffAddress, setDropoffAddress] = useState("");
   const [searching, setSearching] = useState<null | "pickup" | "dropoff">(null);
+  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Try to grab the user's current location once, silently, so "Jollibee" can resolve to the nearest branch.
+  // Failure is fine — we just fall back to other biases.
+  const ensureUserLocation = (): Promise<{ lat: number; lng: number } | null> => {
+    if (userLoc) return Promise.resolve(userLoc);
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      return Promise.resolve(null);
+    }
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setUserLoc(loc);
+          resolve(loc);
+        },
+        () => resolve(null),
+        { enableHighAccuracy: true, timeout: 8_000, maximumAge: 5 * 60_000 },
+      );
+    });
+  };
 
   const runSearch = async (which: "pickup" | "dropoff") => {
     const query = (which === "pickup" ? pickupAddress : dropoffAddress).trim();
@@ -126,7 +147,14 @@ export function OrderForm({
       return;
     }
     setSearching(which);
-    const hit = await geocodeAddress(query);
+
+    // Bias priority: already-pinned counterpart → pinned same-side coords → user geolocation → default
+    const otherCoords = which === "pickup" ? dropoffCoords : pickupCoords;
+    const sameCoords = which === "pickup" ? pickupCoords : dropoffCoords;
+    const geoLoc = await ensureUserLocation();
+    const bias = otherCoords ?? sameCoords ?? geoLoc ?? null;
+
+    const hit = await geocodeAddress(query, bias);
     setSearching(null);
     if (!hit) {
       toast.error(`Couldn't find "${query}". Try a more specific name.`);
