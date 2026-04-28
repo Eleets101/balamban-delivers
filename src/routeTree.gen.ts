@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as DriverRouteImport } from './routes/driver'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -23,6 +24,11 @@ import { Route as CheckoutOrderIdSuccessRouteImport } from './routes/checkout.$o
 import { Route as CheckoutOrderIdPayRouteImport } from './routes/checkout.$orderId.pay'
 import { Route as CheckoutOrderIdFailedRouteImport } from './routes/checkout.$orderId.failed'
 
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrdersRoute = OrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/driver': typeof DriverRoute
   '/orders': typeof OrdersRoute
+  '/privacy': typeof PrivacyRoute
   '/checkout/$orderId': typeof CheckoutOrderIdRouteWithChildren
   '/services/food': typeof ServicesFoodRoute
   '/services/pabili': typeof ServicesPabiliRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/driver': typeof DriverRoute
   '/orders': typeof OrdersRoute
+  '/privacy': typeof PrivacyRoute
   '/checkout/$orderId': typeof CheckoutOrderIdRouteWithChildren
   '/services/food': typeof ServicesFoodRoute
   '/services/pabili': typeof ServicesPabiliRoute
@@ -126,6 +134,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/driver': typeof DriverRoute
   '/orders': typeof OrdersRoute
+  '/privacy': typeof PrivacyRoute
   '/checkout/$orderId': typeof CheckoutOrderIdRouteWithChildren
   '/services/food': typeof ServicesFoodRoute
   '/services/pabili': typeof ServicesPabiliRoute
@@ -143,6 +152,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/driver'
     | '/orders'
+    | '/privacy'
     | '/checkout/$orderId'
     | '/services/food'
     | '/services/pabili'
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/driver'
     | '/orders'
+    | '/privacy'
     | '/checkout/$orderId'
     | '/services/food'
     | '/services/pabili'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/driver'
     | '/orders'
+    | '/privacy'
     | '/checkout/$orderId'
     | '/services/food'
     | '/services/pabili'
@@ -189,6 +201,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   DriverRoute: typeof DriverRoute
   OrdersRoute: typeof OrdersRoute
+  PrivacyRoute: typeof PrivacyRoute
   CheckoutOrderIdRoute: typeof CheckoutOrderIdRouteWithChildren
   ServicesFoodRoute: typeof ServicesFoodRoute
   ServicesPabiliRoute: typeof ServicesPabiliRoute
@@ -198,6 +211,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/orders': {
       id: '/orders'
       path: '/orders'
@@ -314,6 +334,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   DriverRoute: DriverRoute,
   OrdersRoute: OrdersRoute,
+  PrivacyRoute: PrivacyRoute,
   CheckoutOrderIdRoute: CheckoutOrderIdRouteWithChildren,
   ServicesFoodRoute: ServicesFoodRoute,
   ServicesPabiliRoute: ServicesPabiliRoute,
