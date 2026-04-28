@@ -1,0 +1,138 @@
+# Codemagic CI/CD configuration for HatodGo
+# Docs: https://docs.codemagic.io/yaml-quick-start/building-a-capacitor-app/
+#
+# This file defines two workflows:
+#   - ios-workflow      → builds, signs, and submits to App Store Connect (TestFlight)
+#   - android-workflow  → builds an .aab and uploads to Google Play (internal track)
+#
+# Setup checklist (do this once in the Codemagic UI before triggering a build):
+#   1. Connect this GitHub repo to Codemagic.
+#   2. iOS:
+#      - Add Apple Developer Portal integration (App Store Connect API key).
+#      - Set the bundle ID below (APP_BUNDLE_ID) to one you own and registered
+#        on App Store Connect (e.g. com.hatodgo.app).
+#      - Update `appstore_connect.app_id` once the app exists in App Store Connect.
+#   3. Android:
+#      - Upload your Android keystore as the env group `keystore_credentials`
+#        with vars: CM_KEYSTORE, CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD.
+#      - Add a Google Play service account JSON as `gcloud_service_account_credentials`.
+#      - Set `package_name` below to your reversed-domain id (e.g. com.hatodgo.app).
+#   4. Trigger a build manually the first time, or push to `main`.
+
+definitions:
+  env_versions: &env_versions
+    node: 20
+    npm: latest
+    xcode: latest
+    cocoapods: default
+
+workflows:
+  ios-workflow:
+    name: iOS — TestFlight
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: HatodGo App Store Connect
+    environment:
+      <<: *env_versions
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.hatodgo.app
+      vars:
+        APP_BUNDLE_ID: com.hatodgo.app
+        APP_STORE_APP_ID: 0000000000 # replace with your numeric App Store Connect app id
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+    scripts:
+      - name: Install web dependencies
+        script: |
+          npm ci
+      - name: Build web app
+        script: |
+          npm run build
+      - name: Add iOS platform if missing
+        script: |
+          if [ ! -d "ios" ]; then
+            npx cap add ios
+          fi
+          npx cap sync ios
+      - name: Set bundle id and version
+        script: |
+          cd ios/App
+          /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $APP_BUNDLE_ID" App/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.0" App/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" App/Info.plist || true
+      - name: Install CocoaPods
+        script: |
+          cd ios/App && pod install
+      - name: Build .ipa
+        script: |
+          cd ios/App
+          xcode-project use-profiles
+          xcode-project build-ipa \
+            --workspace App.xcworkspace \
+            --scheme App
+    artifacts:
+      - ios/App/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        # submit_to_app_store: false  # flip to true once you're ready for review
+
+  android-workflow:
+    name: Android — Play Internal
+    max_build_duration: 60
+    instance_type: linux_x2
+    environment:
+      <<: *env_versions
+      groups:
+        - keystore_credentials # CM_KEYSTORE, CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD
+        - gcloud_service_account_credentials # GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+      vars:
+        PACKAGE_NAME: com.hatodgo.app
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+    scripts:
+      - name: Install web dependencies
+        script: |
+          npm ci
+      - name: Build web app
+        script: |
+          npm run build
+      - name: Add Android platform if missing
+        script: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
+          npx cap sync android
+      - name: Decode keystore
+        script: |
+          echo $CM_KEYSTORE | base64 --decode > /tmp/keystore.jks
+          cat >> android/key.properties <<EOF
+          storeFile=/tmp/keystore.jks
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          keyPassword=$CM_KEY_PASSWORD
+          EOF
+      - name: Build signed AAB
+        script: |
+          cd android
+          ./gradlew bundleRelease
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/mapping.txt
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true
