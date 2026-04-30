@@ -451,7 +451,7 @@ function DriverPage() {
                 const bonus = pickup
                   ? HOTSPOTS.find((h) => {
                       const eta = estimateEta(pickup, { lat: h.lat, lng: h.lng });
-                      return eta.km <= h.radiusKm;
+                      return eta != null && eta.km <= h.radiusKm;
                     })
                   : undefined;
                 const fare = Number(o.estimated_price ?? 0);
