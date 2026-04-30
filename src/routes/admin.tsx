@@ -82,13 +82,30 @@ function AdminPage() {
   const [roles, setRoles] = useState<RoleRow[] | null>(null);
   const [roleSearch, setRoleSearch] = useState("");
 
+  const [riderLocs, setRiderLocs] = useState<RiderLoc[]>([]);
+  const [mapFilter, setMapFilter] = useState<OrderStatus | "all">("all");
+
   const refresh = async () => {
     const { data } = await supabase
       .from("orders")
-      .select("id, customer_id, service_type, status, pickup_address, dropoff_address, estimated_price, created_at")
+      .select("id, customer_id, service_type, status, pickup_address, dropoff_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, estimated_price, created_at")
       .order("created_at", { ascending: false })
       .limit(100);
     setOrders((data as AdminOrder[]) ?? []);
+
+    // Live rider locations: latest per rider in the last 5 minutes.
+    const sinceIso = new Date(Date.now() - 5 * 60_000).toISOString();
+    const { data: locData } = await supabase
+      .from("driver_locations")
+      .select("rider_id, lat, lng, updated_at")
+      .gte("updated_at", sinceIso)
+      .order("updated_at", { ascending: false })
+      .limit(200);
+    const latestByRider = new Map<string, RiderLoc>();
+    (locData as RiderLoc[] | null)?.forEach((row) => {
+      if (!latestByRider.has(row.rider_id)) latestByRider.set(row.rider_id, row);
+    });
+    setRiderLocs(Array.from(latestByRider.values()));
 
     const { count } = await supabase.from("profiles").select("*", { count: "exact", head: true });
     setUserCount(count ?? 0);
