@@ -232,6 +232,46 @@ function AdminRiderFinancePage() {
     };
   }, [rows, ledger, todayStart]);
 
+  // 7-day trend (orders + revenue per day)
+  const trend7d = useMemo(() => {
+    const days: { key: string; label: string; orders: number; revenue: number; profit: number }[] = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - i);
+      days.push({
+        key: d.toISOString().slice(0, 10),
+        label: d.toLocaleDateString(undefined, { weekday: "short" }),
+        orders: 0,
+        revenue: 0,
+        profit: 0,
+      });
+    }
+    const idx: Record<string, typeof days[number]> = {};
+    days.forEach(d => { idx[d.key] = d; });
+
+    if (showSample) {
+      // deterministic-ish sample momentum
+      const seeds = [12, 18, 22, 19, 28, 34, 30];
+      days.forEach((d, i) => {
+        d.orders = seeds[i];
+        d.revenue = seeds[i] * 165;
+        d.profit = Math.round(seeds[i] * 165 * 0.2);
+      });
+    } else if (ledger) {
+      for (const row of ledger) {
+        const k = new Date(row.created_at).toISOString().slice(0, 10);
+        const bucket = idx[k];
+        if (!bucket) continue;
+        bucket.orders += 1;
+        bucket.revenue += Number(row.customer_paid);
+        bucket.profit += Number(row.platform_commission);
+      }
+    }
+    return days;
+  }, [ledger, showSample]);
+
   // Sample rows for visual inspection (admin-only test toggle, no DB writes)
   const sampleRows = useMemo(() => {
     return [
