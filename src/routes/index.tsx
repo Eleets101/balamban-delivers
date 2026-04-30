@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { UtensilsCrossed, Package, ShoppingBasket, Bike, ArrowRight, MapPin, Clock, ShieldCheck } from "lucide-react";
+import { UtensilsCrossed, Package, ShoppingBasket, Bike, ArrowRight, MapPin, Clock, ShieldCheck, Truck, Store, Zap, Wallet } from "lucide-react";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
 
@@ -79,6 +79,33 @@ function HomePage() {
               <Link to="/auth">Create an account</Link>
             </Button>
           </div>
+        </div>
+      </section>
+
+      {/* Trust signals */}
+      <section className="mx-auto max-w-6xl px-6 pb-16">
+        <div className="mb-6 text-center">
+          <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/50 px-3 py-1 text-xs font-medium text-muted-foreground">
+            <ShieldCheck className="h-3.5 w-3.5 text-primary-glow" /> Trusted by Locals
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-5">
+          {[
+            { icon: Truck, stat: "100+", label: "Deliveries Completed" },
+            { icon: Store, stat: "20+", label: "Partner Stores" },
+            { icon: Zap, stat: "Fast", label: "Local Riders" },
+            { icon: Wallet, stat: "COD", label: "Cash on Delivery" },
+          ].map((t) => (
+            <div
+              key={t.label}
+              className="rounded-2xl border border-border/50 p-4 text-center sm:p-5"
+              style={{ background: "var(--gradient-card)" }}
+            >
+              <t.icon className="mx-auto h-5 w-5 text-primary-glow" />
+              <div className="mt-2 font-display text-2xl font-bold sm:text-3xl">{t.stat}</div>
+              <div className="mt-0.5 text-xs text-muted-foreground sm:text-sm">{t.label}</div>
+            </div>
+          ))}
         </div>
       </section>
 
