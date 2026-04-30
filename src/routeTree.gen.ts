@@ -22,6 +22,7 @@ import { Route as ServicesFoodRouteImport } from './routes/services.food'
 import { Route as DriverWalletRouteImport } from './routes/driver.wallet'
 import { Route as CheckoutOrderIdRouteImport } from './routes/checkout.$orderId'
 import { Route as AdminWalletRouteImport } from './routes/admin.wallet'
+import { Route as AdminRiderFinanceRouteImport } from './routes/admin.rider-finance'
 import { Route as AdminFinanceRouteImport } from './routes/admin.finance'
 import { Route as CheckoutOrderIdSuccessRouteImport } from './routes/checkout.$orderId.success'
 import { Route as CheckoutOrderIdPayRouteImport } from './routes/checkout.$orderId.pay'
@@ -92,6 +93,11 @@ const AdminWalletRoute = AdminWalletRouteImport.update({
   path: '/wallet',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminRiderFinanceRoute = AdminRiderFinanceRouteImport.update({
+  id: '/rider-finance',
+  path: '/rider-finance',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminFinanceRoute = AdminFinanceRouteImport.update({
   id: '/finance',
   path: '/finance',
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/orders': typeof OrdersRoute
   '/privacy': typeof PrivacyRoute
   '/admin/finance': typeof AdminFinanceRoute
+  '/admin/rider-finance': typeof AdminRiderFinanceRoute
   '/admin/wallet': typeof AdminWalletRoute
   '/checkout/$orderId': typeof CheckoutOrderIdRouteWithChildren
   '/driver/wallet': typeof DriverWalletRoute
@@ -140,6 +147,7 @@ export interface FileRoutesByTo {
   '/orders': typeof OrdersRoute
   '/privacy': typeof PrivacyRoute
   '/admin/finance': typeof AdminFinanceRoute
+  '/admin/rider-finance': typeof AdminRiderFinanceRoute
   '/admin/wallet': typeof AdminWalletRoute
   '/checkout/$orderId': typeof CheckoutOrderIdRouteWithChildren
   '/driver/wallet': typeof DriverWalletRoute
@@ -160,6 +168,7 @@ export interface FileRoutesById {
   '/orders': typeof OrdersRoute
   '/privacy': typeof PrivacyRoute
   '/admin/finance': typeof AdminFinanceRoute
+  '/admin/rider-finance': typeof AdminRiderFinanceRoute
   '/admin/wallet': typeof AdminWalletRoute
   '/checkout/$orderId': typeof CheckoutOrderIdRouteWithChildren
   '/driver/wallet': typeof DriverWalletRoute
@@ -181,6 +190,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/privacy'
     | '/admin/finance'
+    | '/admin/rider-finance'
     | '/admin/wallet'
     | '/checkout/$orderId'
     | '/driver/wallet'
@@ -200,6 +210,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/privacy'
     | '/admin/finance'
+    | '/admin/rider-finance'
     | '/admin/wallet'
     | '/checkout/$orderId'
     | '/driver/wallet'
@@ -219,6 +230,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/privacy'
     | '/admin/finance'
+    | '/admin/rider-finance'
     | '/admin/wallet'
     | '/checkout/$orderId'
     | '/driver/wallet'
@@ -338,6 +350,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWalletRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/rider-finance': {
+      id: '/admin/rider-finance'
+      path: '/rider-finance'
+      fullPath: '/admin/rider-finance'
+      preLoaderRoute: typeof AdminRiderFinanceRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/finance': {
       id: '/admin/finance'
       path: '/finance'
@@ -371,11 +390,13 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminFinanceRoute: typeof AdminFinanceRoute
+  AdminRiderFinanceRoute: typeof AdminRiderFinanceRoute
   AdminWalletRoute: typeof AdminWalletRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminFinanceRoute: AdminFinanceRoute,
+  AdminRiderFinanceRoute: AdminRiderFinanceRoute,
   AdminWalletRoute: AdminWalletRoute,
 }
 
@@ -424,3 +445,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
