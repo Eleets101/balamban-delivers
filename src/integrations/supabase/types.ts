@@ -212,6 +212,51 @@ export type Database = {
         }
         Relationships: []
       }
+      settlements: {
+        Row: {
+          admin_id: string | null
+          amount: number
+          approved_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          receipt_url: string | null
+          reference: string | null
+          rider_id: string
+          status: Database["public"]["Enums"]["settlement_status"]
+          type: Database["public"]["Enums"]["settlement_type"]
+          updated_at: string
+        }
+        Insert: {
+          admin_id?: string | null
+          amount: number
+          approved_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          receipt_url?: string | null
+          reference?: string | null
+          rider_id: string
+          status?: Database["public"]["Enums"]["settlement_status"]
+          type: Database["public"]["Enums"]["settlement_type"]
+          updated_at?: string
+        }
+        Update: {
+          admin_id?: string | null
+          amount?: number
+          approved_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          receipt_url?: string | null
+          reference?: string | null
+          rider_id?: string
+          status?: Database["public"]["Enums"]["settlement_status"]
+          type?: Database["public"]["Enums"]["settlement_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -233,6 +278,51 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_ledger: {
+        Row: {
+          collected_by: string
+          created_at: string
+          customer_paid: number
+          gcash_to: Database["public"]["Enums"]["gcash_recipient"] | null
+          id: string
+          order_id: string
+          payment_method: string
+          platform_commission: number
+          rider_earning: number
+          rider_id: string
+          service_type: Database["public"]["Enums"]["service_type"]
+          settled: boolean
+        }
+        Insert: {
+          collected_by: string
+          created_at?: string
+          customer_paid?: number
+          gcash_to?: Database["public"]["Enums"]["gcash_recipient"] | null
+          id?: string
+          order_id: string
+          payment_method: string
+          platform_commission?: number
+          rider_earning?: number
+          rider_id: string
+          service_type: Database["public"]["Enums"]["service_type"]
+          settled?: boolean
+        }
+        Update: {
+          collected_by?: string
+          created_at?: string
+          customer_paid?: number
+          gcash_to?: Database["public"]["Enums"]["gcash_recipient"] | null
+          id?: string
+          order_id?: string
+          payment_method?: string
+          platform_commission?: number
+          rider_earning?: number
+          rider_id?: string
+          service_type?: Database["public"]["Enums"]["service_type"]
+          settled?: boolean
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -248,6 +338,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "rider" | "vendor" | "customer"
+      gcash_recipient: "hatodgo" | "rider"
       order_status:
         | "pending"
         | "accepted"
@@ -257,6 +348,8 @@ export type Database = {
       payment_status: "pending" | "paid" | "cod" | "failed"
       saved_location_kind: "home" | "work" | "favorite"
       service_type: "food" | "padali" | "pabili" | "ride"
+      settlement_status: "pending" | "approved" | "rejected"
+      settlement_type: "cash_remit" | "gcash_to_hatodgo" | "payout_to_rider"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -385,6 +478,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "rider", "vendor", "customer"],
+      gcash_recipient: ["hatodgo", "rider"],
       order_status: [
         "pending",
         "accepted",
@@ -395,6 +489,8 @@ export const Constants = {
       payment_status: ["pending", "paid", "cod", "failed"],
       saved_location_kind: ["home", "work", "favorite"],
       service_type: ["food", "padali", "pabili", "ride"],
+      settlement_status: ["pending", "approved", "rejected"],
+      settlement_type: ["cash_remit", "gcash_to_hatodgo", "payout_to_rider"],
     },
   },
 } as const
