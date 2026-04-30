@@ -21,6 +21,7 @@ import {
   SETTLEMENT_LABELS,
   STATUS_LABELS,
   summarizeWallet,
+  type LedgerAdjustment,
   type LedgerRow,
   type Settlement,
 } from "@/lib/wallet";
@@ -42,6 +43,7 @@ function AdminWalletPage() {
   const navigate = useNavigate();
   const [ledger, setLedger] = useState<LedgerRow[] | null>(null);
   const [settlements, setSettlements] = useState<Settlement[] | null>(null);
+  const [adjustments, setAdjustments] = useState<LedgerAdjustment[] | null>(null);
   const [profiles, setProfiles] = useState<Record<string, RiderProfile>>({});
   const [search, setSearch] = useState("");
   const [actingId, setActingId] = useState<string | null>(null);
@@ -49,23 +51,37 @@ function AdminWalletPage() {
 
   const refresh = useCallback(async () => {
     try {
-      const [{ data: l, error: le }, { data: s, error: se }] = await Promise.all([
+      const [{ data: l, error: le }, { data: s, error: se }, { data: a, error: ae }, { data: rr, error: re }] = await Promise.all([
         supabase.from("wallet_ledger").select("*").order("created_at", { ascending: false }),
         supabase.from("settlements").select("*").order("created_at", { ascending: false }),
+        supabase.from("ledger_adjustments").select("*").order("created_at", { ascending: false }),
+        supabase.from("user_roles").select("user_id").eq("role", "rider"),
       ]);
       if (le) throw le;
       if (se) throw se;
+      if (ae) throw ae;
+      if (re) throw re;
       const ledgerRows = (l ?? []) as LedgerRow[];
       const settlementRows = (s ?? []) as Settlement[];
+      const adjustmentRows = (a ?? []) as LedgerAdjustment[];
+      const riderRoleRows = (rr ?? []) as { user_id: string }[];
       setLedger(ledgerRows);
       setSettlements(settlementRows);
+      setAdjustments(adjustmentRows);
 
-      const ids = Array.from(new Set([...ledgerRows.map(r => r.rider_id), ...settlementRows.map(r => r.rider_id)]));
+      const ids = Array.from(new Set([
+        ...riderRoleRows.map(r => r.user_id),
+        ...ledgerRows.map(r => r.rider_id),
+        ...settlementRows.map(r => r.rider_id),
+        ...adjustmentRows.map(r => r.rider_id),
+      ]));
       if (ids.length > 0) {
         const { data: ps } = await supabase.from("profiles").select("id, full_name, phone").in("id", ids);
         const map: Record<string, RiderProfile> = {};
         (ps ?? []).forEach(p => { map[p.id] = p as RiderProfile; });
         setProfiles(map);
+      } else {
+        setProfiles({});
       }
     } catch (err) {
       console.error("[admin wallet] refresh failed", err);
@@ -87,22 +103,30 @@ function AdminWalletPage() {
       .channel("admin:wallet")
       .on("postgres_changes", { event: "*", schema: "public", table: "settlements" }, () => void refresh())
       .on("postgres_changes", { event: "*", schema: "public", table: "wallet_ledger" }, () => void refresh())
+      .on("postgres_changes", { event: "*", schema: "public", table: "ledger_adjustments" }, () => void refresh())
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_roles" }, () => void refresh())
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [isAdmin, refresh]);
 
   // Per-rider summary
   const perRider = useMemo(() => {
-    if (!ledger || !settlements) return null;
-    const riderIds = Array.from(new Set([...ledger.map(r => r.rider_id), ...settlements.map(r => r.rider_id)]));
+    if (!ledger || !settlements || !adjustments) return null;
+    const riderIds = Array.from(new Set([
+      ...Object.keys(profiles),
+      ...ledger.map(r => r.rider_id),
+      ...settlements.map(r => r.rider_id),
+      ...adjustments.map(r => r.rider_id),
+    ]));
     return riderIds.map(id => {
       const ll = ledger.filter(r => r.rider_id === id);
       const ss = settlements.filter(r => r.rider_id === id);
-      const summary = summarizeWallet(ll, ss);
+      const aa = adjustments.filter(r => r.rider_id === id);
+      const summary = summarizeWallet(ll, ss, aa);
       const lastSettlement = ss.find(s => s.status === "approved");
       return { id, profile: profiles[id], summary, lastSettlement };
     }).sort((a, b) => Math.abs(b.summary.netBalance) - Math.abs(a.summary.netBalance));
-  }, [ledger, settlements, profiles]);
+  }, [ledger, settlements, adjustments, profiles]);
 
   const filteredRiders = useMemo(() => {
     if (!perRider) return null;
