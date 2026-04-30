@@ -9,6 +9,7 @@ export interface AuthState {
   session: Session | null;
   roles: AppRole[];
   loading: boolean;
+  rolesLoading: boolean;
 }
 
 export function useAuth() {
@@ -17,6 +18,7 @@ export function useAuth() {
     session: null,
     roles: [],
     loading: true,
+    rolesLoading: true,
   });
 
   useEffect(() => {
@@ -29,22 +31,28 @@ export function useAuth() {
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
-      setState((s) => ({ ...s, user: session?.user ?? null, session, loading: false }));
+      setState((s) => ({
+        ...s,
+        user: session?.user ?? null,
+        session,
+        loading: false,
+        rolesLoading: !!session?.user,
+      }));
       if (session?.user) {
         // Defer role fetch to avoid recursion warnings
         setTimeout(async () => {
           const roles = await fetchRoles(session.user.id);
-          if (mounted) setState((s) => ({ ...s, roles }));
+          if (mounted) setState((s) => ({ ...s, roles, rolesLoading: false }));
         }, 0);
       } else {
-        setState((s) => ({ ...s, roles: [] }));
+        setState((s) => ({ ...s, roles: [], rolesLoading: false }));
       }
     });
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return;
       const roles = session?.user ? await fetchRoles(session.user.id) : [];
-      setState({ user: session?.user ?? null, session, roles, loading: false });
+      setState({ user: session?.user ?? null, session, roles, loading: false, rolesLoading: false });
     });
 
     return () => {

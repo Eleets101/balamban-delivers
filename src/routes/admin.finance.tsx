@@ -74,7 +74,7 @@ interface RiderProfile { id: string; full_name: string | null; phone: string | n
 const LARGE_CASH_THRESHOLD = 1000; // ₱ — alert when rider holds more than this in unremitted cash
 
 function AdminFinancePage() {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, rolesLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const [ledger, setLedger] = useState<LedgerRow[] | null>(null);
@@ -142,11 +142,11 @@ function AdminFinancePage() {
   }, []);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || rolesLoading) return;
     if (!user) { navigate({ to: "/auth" }); return; }
     if (!isAdmin) return;
     void refresh();
-  }, [user, loading, isAdmin, navigate, refresh]);
+  }, [user, loading, rolesLoading, isAdmin, navigate, refresh]);
 
   // Realtime
   useEffect(() => {
@@ -307,7 +307,7 @@ function AdminFinancePage() {
     }
   };
 
-  if (loading) {
+  if (loading || rolesLoading) {
     return <PageShell><div className="flex min-h-[60vh] items-center justify-center text-muted-foreground"><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading…</div></PageShell>;
   }
   if (!isAdmin) {
