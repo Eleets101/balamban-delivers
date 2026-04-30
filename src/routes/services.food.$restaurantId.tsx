@@ -30,6 +30,7 @@ import {
 import {
   CATEGORY_EMOJI,
   CATEGORY_LABELS,
+  isRestaurantOpenNow,
   type MenuCategory,
   type MenuItem,
   type Restaurant,
@@ -60,7 +61,7 @@ function RestaurantPage() {
         supabase
           .from("restaurants")
           .select(
-            "id, name, slug, category, description, address, lat, lng, phone, logo_url, cover_url, open_hours, is_open, is_active, base_delivery_fee, per_km_fee, free_distance_km, estimated_minutes, rating, sort_order",
+            "id, name, slug, category, description, address, lat, lng, phone, logo_url, cover_url, open_hours, open_time, close_time, is_open, is_active, base_delivery_fee, per_km_fee, free_distance_km, estimated_minutes, rating, sort_order",
           )
           .eq("id", restaurantId)
           .maybeSingle(),
@@ -160,7 +161,7 @@ function RestaurantPage() {
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-display text-2xl font-bold sm:text-3xl">{restaurant.name}</h1>
-              {restaurant.is_open ? (
+              {isRestaurantOpenNow(restaurant) ? (
                 <Badge className="border border-success bg-success/20 text-success">🟢 Open now</Badge>
               ) : (
                 <Badge variant="outline" className="border-destructive bg-destructive/20 text-destructive">
@@ -330,7 +331,7 @@ function AddToCartDialog({
   if (!item) return null;
 
   const handleAdd = () => {
-    if (!restaurant.is_open) {
+    if (!isRestaurantOpenNow(restaurant)) {
       toast.error("Sorry, this restaurant is closed right now.");
       return;
     }

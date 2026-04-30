@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   CATEGORY_LABELS,
+  isRestaurantOpenNow,
   CATEGORY_EMOJI,
   type Restaurant,
   type RestaurantCategory,
@@ -64,7 +65,7 @@ function FoodHomePage() {
       const { data, error } = await supabase
         .from("restaurants")
         .select(
-          "id, name, slug, category, description, address, lat, lng, phone, logo_url, cover_url, open_hours, is_open, is_active, base_delivery_fee, per_km_fee, free_distance_km, estimated_minutes, rating, sort_order",
+          "id, name, slug, category, description, address, lat, lng, phone, logo_url, cover_url, open_hours, open_time, close_time, is_open, is_active, base_delivery_fee, per_km_fee, free_distance_km, estimated_minutes, rating, sort_order",
         )
         .eq("is_active", true)
         .order("is_open", { ascending: false })
@@ -223,7 +224,7 @@ function RestaurantCard({ r }: { r: Restaurant }) {
             {CATEGORY_EMOJI[r.category]}
           </div>
         )}
-        {!r.is_open && (
+        {!isRestaurantOpenNow(r) && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm">
             <Badge variant="outline" className="border-destructive bg-destructive/20 text-destructive">
               Closed
