@@ -164,7 +164,7 @@ function AdminFinancePage() {
   const summary = useMemo(() => {
     if (!ledger || !settlements) return null;
     return summarizeFinance(ledger, settlements, rangeWin);
-  }, [ledger, settlements, window]);
+  }, [ledger, settlements, rangeWin]);
 
   // Per-rider rollup (lifetime balances + window-scoped order count/cash)
   const perRider = useMemo(() => {
@@ -199,7 +199,7 @@ function AdminFinancePage() {
         hasPending: ss.some(s => s.status === "pending"),
       };
     }).sort((a, b) => Math.abs(b.netBalance) - Math.abs(a.netBalance));
-  }, [ledger, settlements, adjustments, profiles, window]);
+  }, [ledger, settlements, adjustments, profiles, rangeWin]);
 
   const alerts = useMemo(() => {
     if (!perRider) return [];
@@ -216,7 +216,7 @@ function AdminFinancePage() {
   const ledgerInRange = useMemo(() => {
     if (!ledger) return [];
     return ledger.filter(r => r.created_at >= rangeWin.start.toISOString() && r.created_at < rangeWin.end.toISOString());
-  }, [ledger, window]);
+  }, [ledger, rangeWin]);
 
   const exportCsv = () => {
     if (ledgerInRange.length === 0) {
