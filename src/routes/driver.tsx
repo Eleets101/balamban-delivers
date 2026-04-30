@@ -340,52 +340,12 @@ function DriverPage() {
 
   return (
     <PageShell>
-      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="font-display text-3xl font-bold sm:text-4xl">
-              <Bike className="inline h-7 w-7 text-primary-glow" /> Driver Dashboard
-            </h1>
-            <p className="mt-1 text-muted-foreground">Accept orders and share your live location.</p>
-          </div>
-          <button
-            type="button"
-            onClick={() =>
-              setSharing((v) => {
-                const next = !v;
-                setSessionStartedAt(next ? Date.now() : null);
-                return next;
-              })
-            }
-            aria-pressed={sharing}
-            className={`group relative flex min-w-[260px] items-center gap-4 rounded-2xl border px-5 py-4 text-left transition-all ${
-              sharing
-                ? "border-success/60 bg-success/10 shadow-[0_0_0_4px_color-mix(in_oklab,var(--success)_25%,transparent),0_10px_40px_-10px_color-mix(in_oklab,var(--success)_60%,transparent)]"
-                : "border-border/60 bg-muted/30 hover:border-border"
-            }`}
-          >
-            <span className="relative flex h-12 w-12 items-center justify-center">
-              {sharing && (
-                <span className="absolute inset-0 animate-ping rounded-full bg-success/40" aria-hidden />
-              )}
-              <span
-                className={`relative flex h-12 w-12 items-center justify-center rounded-full ${
-                  sharing ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"
-                }`}
-              >
-                <Power className="h-5 w-5" />
-              </span>
-            </span>
-            <span className="flex flex-col">
-              <span className={`font-display text-lg font-bold leading-tight ${sharing ? "text-success" : "text-foreground"}`}>
-                {sharing ? "🟢 ONLINE" : "⚫ OFFLINE"}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {sharing ? "Receiving orders · tap to go offline" : "Tap to go online & share location"}
-              </span>
-            </span>
-          </button>
-
+      <div className="mx-auto max-w-5xl px-3 pb-24 pt-4 sm:px-6 sm:py-10">
+        {/* Title row */}
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="font-display text-xl font-bold sm:text-3xl">
+            <Bike className="inline h-6 w-6 text-primary-glow sm:h-7 sm:w-7" /> Driver
+          </h1>
           <button
             type="button"
             onClick={() => {
@@ -397,13 +357,54 @@ function DriverPage() {
             }}
             aria-pressed={soundOn}
             title={soundOn ? "Sound alerts on — tap to mute" : "Sound alerts off — tap to enable"}
-            className={`flex h-12 w-12 items-center justify-center rounded-full border transition-colors ${
+            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border transition-colors ${
               soundOn
                 ? "border-primary/40 bg-primary/10 text-primary-glow"
                 : "border-border/60 bg-muted/30 text-muted-foreground"
             }`}
           >
             {soundOn ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
+          </button>
+        </div>
+
+        {/* Sticky ONLINE/OFFLINE toggle — always reachable by thumb */}
+        <div className="sticky top-2 z-20 mt-3 sm:static sm:mt-4">
+          <button
+            type="button"
+            onClick={() =>
+              setSharing((v) => {
+                const next = !v;
+                setSessionStartedAt(next ? Date.now() : null);
+                return next;
+              })
+            }
+            aria-pressed={sharing}
+            className={`relative flex w-full items-center gap-4 rounded-2xl border px-4 py-4 text-left transition-all sm:px-5 ${
+              sharing
+                ? "border-success/60 bg-success/10 shadow-[0_0_0_4px_color-mix(in_oklab,var(--success)_25%,transparent),0_10px_40px_-10px_color-mix(in_oklab,var(--success)_60%,transparent)]"
+                : "border-border/60 bg-card/95 backdrop-blur"
+            }`}
+          >
+            <span className="relative flex h-12 w-12 shrink-0 items-center justify-center">
+              {sharing && (
+                <span className="absolute inset-0 animate-ping rounded-full bg-success/40" aria-hidden />
+              )}
+              <span
+                className={`relative flex h-12 w-12 items-center justify-center rounded-full ${
+                  sharing ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"
+                }`}
+              >
+                <Power className="h-5 w-5" />
+              </span>
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className={`font-display text-lg font-bold leading-tight ${sharing ? "text-success" : "text-foreground"}`}>
+                {sharing ? "🟢 ONLINE" : "⚫ OFFLINE"}
+              </span>
+              <span className="truncate text-xs text-muted-foreground">
+                {sharing ? "Receiving orders · tap to go offline" : "Tap to go online"}
+              </span>
+            </span>
           </button>
         </div>
 
@@ -486,25 +487,27 @@ function DriverPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex w-full gap-2 sm:w-auto">
                         <Button
-                          size="sm"
+                          size="lg"
                           variant="outline"
                           disabled={!customerPhone}
                           onClick={() => customerPhone && window.open(`tel:${customerPhone}`)}
                           title={customerPhone ?? "No phone on file"}
                           aria-label={`Call ${customerName}`}
+                          className="h-12 flex-1 sm:flex-none"
                         >
-                          <Phone className="h-4 w-4" /> Call
+                          <Phone className="h-5 w-5" /> Call
                         </Button>
                         <Button
-                          size="sm"
+                          size="lg"
                           variant="outline"
                           disabled={!customerPhone}
                           onClick={() => customerPhone && window.open(`sms:${customerPhone}`)}
                           aria-label={`Message ${customerName}`}
+                          className="h-12 flex-1 sm:flex-none"
                         >
-                          <MessageCircle className="h-4 w-4" /> Chat
+                          <MessageCircle className="h-5 w-5" /> Chat
                         </Button>
                       </div>
                     </div>
@@ -696,7 +699,11 @@ function DriverPage() {
                           </p>
                         )}
                       </div>
-                      <Button size="sm" onClick={() => acceptOrder(o)} className="shrink-0 shadow-[var(--shadow-glow)]">
+                      <Button
+                        size="lg"
+                        onClick={() => acceptOrder(o)}
+                        className="hidden h-12 shrink-0 px-6 shadow-[var(--shadow-glow)] sm:inline-flex"
+                      >
                         Accept Order
                       </Button>
                     </div>
@@ -728,6 +735,15 @@ function DriverPage() {
                       <p className="truncate"><span className="text-muted-foreground">From:</span> {o.pickup_address}</p>
                       <p className="truncate"><span className="text-muted-foreground">To:</span> {o.dropoff_address}</p>
                     </div>
+
+                    {/* Mobile: big full-width Accept */}
+                    <Button
+                      size="lg"
+                      onClick={() => acceptOrder(o)}
+                      className="mt-4 h-14 w-full text-base shadow-[var(--shadow-glow)] sm:hidden"
+                    >
+                      Accept Order · ₱{fare.toFixed(0)}
+                    </Button>
                   </article>
                 );
               })
