@@ -487,25 +487,27 @@ function DriverPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex w-full gap-2 sm:w-auto">
                         <Button
-                          size="sm"
+                          size="lg"
                           variant="outline"
                           disabled={!customerPhone}
                           onClick={() => customerPhone && window.open(`tel:${customerPhone}`)}
                           title={customerPhone ?? "No phone on file"}
                           aria-label={`Call ${customerName}`}
+                          className="h-12 flex-1 sm:flex-none"
                         >
-                          <Phone className="h-4 w-4" /> Call
+                          <Phone className="h-5 w-5" /> Call
                         </Button>
                         <Button
-                          size="sm"
+                          size="lg"
                           variant="outline"
                           disabled={!customerPhone}
                           onClick={() => customerPhone && window.open(`sms:${customerPhone}`)}
                           aria-label={`Message ${customerName}`}
+                          className="h-12 flex-1 sm:flex-none"
                         >
-                          <MessageCircle className="h-4 w-4" /> Chat
+                          <MessageCircle className="h-5 w-5" /> Chat
                         </Button>
                       </div>
                     </div>
