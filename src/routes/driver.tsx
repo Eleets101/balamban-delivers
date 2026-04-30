@@ -77,6 +77,17 @@ function DriverPage() {
   const refreshSec = Math.round((adaptive ? adaptiveRefreshMs(myVariance) : 30_000) / 1000);
   const isFastRefresh = adaptive && myVariance != null && myVariance >= 0.3;
 
+  // Keep latest sound preference accessible inside realtime callbacks
+  useEffect(() => {
+    soundOnRef.current = soundOn;
+  }, [soundOn]);
+
+  // Tick every second so available-order countdown timers re-render
+  useEffect(() => {
+    const id = window.setInterval(() => setTick((n) => n + 1), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
   // Adaptive ETA tick — recomputes ETA labels on a cadence driven by speed variance.
   useEffect(() => {
     if (!sharing) return;
