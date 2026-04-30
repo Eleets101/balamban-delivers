@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   CATEGORY_LABELS,
+  isRestaurantOpenNow,
   CATEGORY_EMOJI,
   type Restaurant,
   type RestaurantCategory,
