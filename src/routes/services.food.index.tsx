@@ -224,7 +224,7 @@ function RestaurantCard({ r }: { r: Restaurant }) {
             {CATEGORY_EMOJI[r.category]}
           </div>
         )}
-        {!r.is_open && (
+        {!isRestaurantOpenNow(r) && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm">
             <Badge variant="outline" className="border-destructive bg-destructive/20 text-destructive">
               Closed
