@@ -135,6 +135,12 @@ function AdminRiderFinancePage() {
         if (!om[r.rider_id] || r.updated_at > om[r.rider_id]) om[r.rider_id] = r.updated_at;
       });
       setOnlineMap(om);
+
+      const bm: Record<string, boolean> = {};
+      ((activeOrders ?? []) as { rider_id: string | null }[]).forEach(o => {
+        if (o.rider_id) bm[o.rider_id] = true;
+      });
+      setBusyMap(bm);
     } catch (err) {
       console.error("[rider-finance] refresh failed", err);
       toast.error("Couldn't load rider finance data", { description: (err as Error).message });
