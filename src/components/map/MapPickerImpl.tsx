@@ -1,21 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import maplibregl, { type Map as MLMap, type Marker } from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { Button } from "@/components/ui/button";
 import { Crosshair, Loader2 } from "lucide-react";
-
-const DefaultIcon = L.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-L.Marker.prototype.options.icon = DefaultIcon;
-
-const DEFAULT_CENTER: [number, number] = [10.4456, 123.7016];
+import { DEFAULT_CENTER, MAP_STYLE_URL, reverseGeocode } from "@/lib/geo";
 
 interface MapPickerProps {
   value: { lat: number; lng: number } | null;
@@ -24,58 +12,50 @@ interface MapPickerProps {
   height?: number;
 }
 
-async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-      { headers: { Accept: "application/json" } },
-    );
-    if (!res.ok) return null;
-    const data = (await res.json()) as { display_name?: string };
-    return data.display_name ?? null;
-  } catch {
-    return null;
-  }
+function buildPinElement(color: string): HTMLDivElement {
+  const el = document.createElement("div");
+  el.style.width = "30px";
+  el.style.height = "30px";
+  el.style.cursor = "grab";
+  el.innerHTML = `
+    <svg viewBox="0 0 30 40" width="30" height="40" style="overflow:visible;filter:drop-shadow(0 4px 6px rgba(0,0,0,.4))">
+      <path d="M15 0C6.7 0 0 6.7 0 15c0 11.3 15 25 15 25s15-13.7 15-25C30 6.7 23.3 0 15 0z" fill="${color}"/>
+      <circle cx="15" cy="15" r="6" fill="white"/>
+    </svg>`;
+  return el;
 }
 
-export function MapPicker({ value, onChange, onAddressResolved, height = 260 }: MapPickerProps) {
+export function MapPicker({ value, onChange, onAddressResolved, height = 280 }: MapPickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const markerRef = useRef<L.Marker | null>(null);
+  const mapRef = useRef<MLMap | null>(null);
+  const markerRef = useRef<Marker | null>(null);
   const onChangeRef = useRef(onChange);
   const onAddressResolvedRef = useRef(onAddressResolved);
   const [locating, setLocating] = useState(false);
   const [resolving, setResolving] = useState(false);
 
-  // keep latest callbacks without retriggering map setup
   useEffect(() => {
     onChangeRef.current = onChange;
     onAddressResolvedRef.current = onAddressResolved;
   }, [onChange, onAddressResolved]);
 
-  // Initialize map once on mount
+  // Initialize map once
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-
-    const initial = value ? ([value.lat, value.lng] as [number, number]) : DEFAULT_CENTER;
-    const map = L.map(containerRef.current, {
-      center: initial,
-      zoom: value ? 15 : 14,
-      scrollWheelZoom: true,
+    const start = value ?? DEFAULT_CENTER;
+    const map = new maplibregl.Map({
+      container: containerRef.current,
+      style: MAP_STYLE_URL,
+      center: [start.lng, start.lat],
+      zoom: value ? 15 : 13,
+      attributionControl: { compact: true },
     });
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map);
-
-    map.on("click", (e: L.LeafletMouseEvent) => {
-      onChangeRef.current({ lat: e.latlng.lat, lng: e.latlng.lng });
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    map.on("click", (e) => {
+      onChangeRef.current({ lat: e.lngLat.lat, lng: e.lngLat.lng });
     });
-
     mapRef.current = map;
-
-    // Fix sizing inside flex/grid containers
-    setTimeout(() => map.invalidateSize(), 50);
+    setTimeout(() => map.resize(), 60);
 
     return () => {
       map.remove();
@@ -85,34 +65,35 @@ export function MapPicker({ value, onChange, onAddressResolved, height = 260 }: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync marker with value
+  // Sync draggable marker
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-
     if (!value) {
-      if (markerRef.current) {
-        markerRef.current.remove();
-        markerRef.current = null;
-      }
+      markerRef.current?.remove();
+      markerRef.current = null;
       return;
     }
-
-    const pos: L.LatLngExpression = [value.lat, value.lng];
     if (!markerRef.current) {
-      const marker = L.marker(pos, { draggable: true }).addTo(map);
+      const marker = new maplibregl.Marker({
+        element: buildPinElement("hsl(280 90% 60%)"),
+        draggable: true,
+        anchor: "bottom",
+      })
+        .setLngLat([value.lng, value.lat])
+        .addTo(map);
       marker.on("dragend", () => {
-        const p = marker.getLatLng();
-        onChangeRef.current({ lat: p.lat, lng: p.lng });
+        const ll = marker.getLngLat();
+        onChangeRef.current({ lat: ll.lat, lng: ll.lng });
       });
       markerRef.current = marker;
     } else {
-      markerRef.current.setLatLng(pos);
+      markerRef.current.setLngLat([value.lng, value.lat]);
     }
-    map.setView(pos, Math.max(map.getZoom(), 15), { animate: true });
+    map.easeTo({ center: [value.lng, value.lat], zoom: Math.max(map.getZoom(), 15), duration: 500 });
   }, [value]);
 
-  // Reverse geocode pinned location into a human-readable address
+  // Reverse-geocode whenever the pin moves
   useEffect(() => {
     if (!value || !onAddressResolvedRef.current) return;
     let cancelled = false;
@@ -152,7 +133,7 @@ export function MapPicker({ value, onChange, onAddressResolved, height = 260 }: 
           {resolving
             ? "Resolving address…"
             : value
-              ? `Pinned: ${value.lat.toFixed(5)}, ${value.lng.toFixed(5)}`
+              ? "Drag the pin or tap the map to fine-tune"
               : "Tap the map to pin a location"}
         </span>
         <Button type="button" variant="outline" size="sm" onClick={useCurrent} disabled={locating}>

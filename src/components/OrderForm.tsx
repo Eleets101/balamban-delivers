@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { Search, Loader2, Receipt } from "lucide-react";
+import { Receipt } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MapPicker } from "@/components/map/MapPicker.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
+import { PlaceAutocomplete } from "@/components/map/PlaceAutocomplete";
+import { SavedLocations, type SavedLocation } from "@/components/map/SavedLocations";
+import { haversineM } from "@/lib/geo";
 import {
   calculateFoodFare,
   calculatePabiliFare,
@@ -18,110 +21,6 @@ import {
   type ParcelSize,
   PARCEL_LABELS,
 } from "@/lib/pricing";
-
-// Default bias toward Balamban, Cebu — used when we have no better reference point.
-const DEFAULT_BIAS: { lat: number; lng: number } = { lat: 10.4456, lng: 123.7016 };
-const DEFAULT_VIEWBOX = "123.5,10.6,123.9,10.3";
-
-function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const R = 6371;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const lat1 = toRad(a.lat);
-  const lat2 = toRad(b.lat);
-  const h =
-    Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
-}
-
-// Common local-brand misspellings we auto-correct before searching.
-const SPELLING_FIXES: Array<[RegExp, string]> = [
-  [/\bgiasano\b/gi, "Gaisano"],
-  [/\bjolibee\b/gi, "Jollibee"],
-  [/\bjolibe\b/gi, "Jollibee"],
-  [/\bmcdo\b/gi, "McDonald's"],
-  [/\bsavemore\b/gi, "Save More"],
-];
-
-function normalizeQuery(q: string): string {
-  let out = q.trim();
-  for (const [pattern, replacement] of SPELLING_FIXES) {
-    out = out.replace(pattern, replacement);
-  }
-  return out;
-}
-
-/**
- * Geocode a free-text query, picking the candidate closest to `near` if provided.
- * Tries a cascade of strategies so typos and generic place names still resolve.
- */
-async function geocodeAddress(
-  rawQuery: string,
-  near: { lat: number; lng: number } | null,
-): Promise<{ lat: number; lng: number; displayName: string } | null> {
-  const bias = near ?? DEFAULT_BIAS;
-  const normalized = normalizeQuery(rawQuery);
-
-  const fetchOnce = async (
-    q: string,
-    mode: "nearby" | "ph",
-  ): Promise<{ lat: number; lng: number; displayName: string } | null> => {
-    const url = new URL("https://nominatim.openstreetmap.org/search");
-    url.searchParams.set("format", "json");
-    url.searchParams.set("q", q);
-    url.searchParams.set("limit", "15");
-    url.searchParams.set("countrycodes", "ph");
-    if (mode === "nearby") {
-      if (near) {
-        const d = 0.5;
-        url.searchParams.set(
-          "viewbox",
-          `${bias.lng - d},${bias.lat + d},${bias.lng + d},${bias.lat - d}`,
-        );
-      } else {
-        url.searchParams.set("viewbox", DEFAULT_VIEWBOX);
-      }
-    }
-    const res = await fetch(url.toString(), { headers: { Accept: "application/json" } });
-    if (!res.ok) return null;
-    const data = (await res.json()) as Array<{
-      lat: string;
-      lon: string;
-      display_name: string;
-    }>;
-    if (!data.length) return null;
-    return data
-      .map((h) => ({
-        lat: parseFloat(h.lat),
-        lng: parseFloat(h.lon),
-        displayName: h.display_name,
-      }))
-      .map((h) => ({ ...h, distKm: haversineKm(bias, h) }))
-      .sort((a, b) => a.distKm - b.distKm)[0];
-  };
-
-  // Build a cascade of query variants so a typo or extra words still resolve.
-  const broadened = normalized
-    .split(/\s+/)
-    .filter((t) => t.length >= 4)
-    .join(" ");
-  const variants = Array.from(
-    new Set(
-      [normalized, rawQuery.trim(), broadened].filter((v) => v.length > 0),
-    ),
-  );
-
-  try {
-    for (const v of variants) {
-      const hit = (await fetchOnce(v, "nearby")) ?? (await fetchOnce(v, "ph"));
-      if (hit) return hit;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
 
 type ServiceType = "food" | "padali" | "pabili" | "ride";
 type Coords = { lat: number; lng: number } | null;
@@ -134,9 +33,7 @@ interface OrderFormProps {
   detailsPlaceholder: string;
   pickupPlaceholder?: string;
   dropoffPlaceholder?: string;
-  /** Show a "budget" input; required for food/pabili to compute service fee. */
   showEstimatedPrice?: boolean;
-  /** Show a small/medium/large parcel selector (Padala only). */
   showParcelSize?: boolean;
   submitLabel: string;
 }
@@ -160,14 +57,12 @@ export function OrderForm({
   const [dropoffCoords, setDropoffCoords] = useState<Coords>(null);
   const [pickupAddress, setPickupAddress] = useState("");
   const [dropoffAddress, setDropoffAddress] = useState("");
-  const [searching, setSearching] = useState<null | "pickup" | "dropoff">(null);
-  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [budgetInput, setBudgetInput] = useState("");
   const [parcelSize, setParcelSize] = useState<ParcelSize>("small");
 
   const distanceKm = useMemo(() => {
     if (!pickupCoords || !dropoffCoords) return null;
-    return haversineKm(pickupCoords, dropoffCoords);
+    return haversineM(pickupCoords, dropoffCoords) / 1000;
   }, [pickupCoords, dropoffCoords]);
 
   const budgetNum = Number(budgetInput) || 0;
@@ -180,53 +75,15 @@ export function OrderForm({
     return null;
   }, [distanceKm, serviceType, parcelSize, budgetNum]);
 
-  // Try to grab the user's current location once, silently, so "Jollibee" can resolve to the nearest branch.
-  // Failure is fine — we just fall back to other biases.
-  const ensureUserLocation = (): Promise<{ lat: number; lng: number } | null> => {
-    if (userLoc) return Promise.resolve(userLoc);
-    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
-      return Promise.resolve(null);
-    }
-    return new Promise((resolve) => {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          setUserLoc(loc);
-          resolve(loc);
-        },
-        () => resolve(null),
-        { enableHighAccuracy: true, timeout: 8_000, maximumAge: 5 * 60_000 },
-      );
-    });
-  };
-
-  const runSearch = async (which: "pickup" | "dropoff") => {
-    const query = (which === "pickup" ? pickupAddress : dropoffAddress).trim();
-    if (!query) {
-      toast.error("Type an address or place name first.");
-      return;
-    }
-    setSearching(which);
-
-    const otherCoords = which === "pickup" ? dropoffCoords : pickupCoords;
-    const sameCoords = which === "pickup" ? pickupCoords : dropoffCoords;
-    const geoLoc = await ensureUserLocation();
-    const bias = otherCoords ?? sameCoords ?? geoLoc ?? null;
-
-    const hit = await geocodeAddress(query, bias);
-    setSearching(null);
-    if (!hit) {
-      toast.error(`Couldn't find "${query}". Try a more specific name.`);
-      return;
-    }
+  const pickSaved = (which: "pickup" | "dropoff", loc: SavedLocation) => {
     if (which === "pickup") {
-      setPickupCoords({ lat: hit.lat, lng: hit.lng });
-      setPickupAddress(hit.displayName);
+      setPickupCoords({ lat: loc.lat, lng: loc.lng });
+      setPickupAddress(loc.address);
     } else {
-      setDropoffCoords({ lat: hit.lat, lng: hit.lng });
-      setDropoffAddress(hit.displayName);
+      setDropoffCoords({ lat: loc.lat, lng: loc.lng });
+      setDropoffAddress(loc.address);
     }
-    toast.success(`Pinned: ${hit.displayName.split(",").slice(0, 2).join(", ")}`);
+    toast.success(`${loc.label} pinned`);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -253,8 +110,8 @@ export function OrderForm({
       .insert({
         customer_id: user.id,
         service_type: serviceType,
-        pickup_address: String(fd.get("pickup")),
-        dropoff_address: String(fd.get("dropoff")),
+        pickup_address: pickupAddress || String(fd.get("pickup") ?? ""),
+        dropoff_address: dropoffAddress || String(fd.get("dropoff") ?? ""),
         pickup_lat: pickupCoords.lat,
         pickup_lng: pickupCoords.lng,
         dropoff_lat: dropoffCoords.lat,
@@ -280,77 +137,51 @@ export function OrderForm({
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
         <Label htmlFor="pickup">{pickupLabel}</Label>
-        <div className="flex gap-2">
-          <Input
-            id="pickup"
-            name="pickup"
-            required
-            placeholder={pickupPlaceholder}
-            value={pickupAddress}
-            onChange={(e) => setPickupAddress(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void runSearch("pickup");
-              }
-            }}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => runSearch("pickup")}
-            disabled={searching === "pickup"}
-            aria-label="Find pickup on map"
-          >
-            {searching === "pickup" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Search className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
+        <PlaceAutocomplete
+          id="pickup"
+          name="pickup"
+          required
+          placeholder={pickupPlaceholder}
+          value={pickupAddress}
+          onValueChange={setPickupAddress}
+          onPick={(hit) => setPickupCoords({ lat: hit.lat, lng: hit.lng })}
+          bias={dropoffCoords}
+        />
+        <SavedLocations
+          onPick={(loc) => pickSaved("pickup", loc)}
+          currentCoords={pickupCoords}
+          currentAddress={pickupAddress}
+        />
         <p className="text-xs text-muted-foreground">
-          Type an address or place name (e.g. “Jollibee Balamban”) and press Enter or tap the search icon to pin it.
+          Start typing to search Balamban, Toledo, Asturias and beyond — or drag the pin to fine-tune.
         </p>
         <MapClientOnly>
           <MapPicker value={pickupCoords} onChange={setPickupCoords} onAddressResolved={setPickupAddress} />
         </MapClientOnly>
       </div>
+
       <div className="space-y-2">
         <Label htmlFor="dropoff">{dropoffLabel}</Label>
-        <div className="flex gap-2">
-          <Input
-            id="dropoff"
-            name="dropoff"
-            required
-            placeholder={dropoffPlaceholder}
-            value={dropoffAddress}
-            onChange={(e) => setDropoffAddress(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void runSearch("dropoff");
-              }
-            }}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => runSearch("dropoff")}
-            disabled={searching === "dropoff"}
-            aria-label="Find drop-off on map"
-          >
-            {searching === "dropoff" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Search className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
+        <PlaceAutocomplete
+          id="dropoff"
+          name="dropoff"
+          required
+          placeholder={dropoffPlaceholder}
+          value={dropoffAddress}
+          onValueChange={setDropoffAddress}
+          onPick={(hit) => setDropoffCoords({ lat: hit.lat, lng: hit.lng })}
+          bias={pickupCoords}
+        />
+        <SavedLocations
+          onPick={(loc) => pickSaved("dropoff", loc)}
+          currentCoords={dropoffCoords}
+          currentAddress={dropoffAddress}
+        />
         <MapClientOnly>
           <MapPicker value={dropoffCoords} onChange={setDropoffCoords} onAddressResolved={setDropoffAddress} />
         </MapClientOnly>
       </div>
+
       <div>
         <Label htmlFor="details">{detailsLabel}</Label>
         <Textarea id="details" name="details" required rows={4} placeholder={detailsPlaceholder} />
@@ -397,7 +228,6 @@ export function OrderForm({
         </div>
       )}
 
-      {/* Live fare breakdown */}
       {fareBreakdown && (
         <div
           className="rounded-2xl border border-border/60 p-4"
