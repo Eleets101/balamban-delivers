@@ -176,6 +176,42 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_locations: {
+        Row: {
+          address: string
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["saved_location_kind"]
+          label: string
+          lat: number
+          lng: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["saved_location_kind"]
+          label: string
+          lat: number
+          lng: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["saved_location_kind"]
+          label?: string
+          lat?: number
+          lng?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -219,6 +255,7 @@ export type Database = {
         | "completed"
         | "cancelled"
       payment_status: "pending" | "paid" | "cod" | "failed"
+      saved_location_kind: "home" | "work" | "favorite"
       service_type: "food" | "padali" | "pabili" | "ride"
     }
     CompositeTypes: {
@@ -356,6 +393,7 @@ export const Constants = {
         "cancelled",
       ],
       payment_status: ["pending", "paid", "cod", "failed"],
+      saved_location_kind: ["home", "work", "favorite"],
       service_type: ["food", "padali", "pabili", "ride"],
     },
   },
