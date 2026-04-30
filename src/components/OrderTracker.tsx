@@ -18,6 +18,7 @@ import {
 } from "@/lib/eta";
 import { STATUS_LABELS, type OrderStatus } from "@/lib/orders";
 import { DevSimulatorPanel } from "@/components/DevSimulatorPanel";
+import { RiderInfoCard } from "@/components/RiderInfoCard";
 
 interface OrderTrackerProps {
   orderId: string;
@@ -185,6 +186,9 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
           dropoff={dropoff}
         />
       )}
+
+      {/* Rider info — name, vehicle, rating, call & chat */}
+      {isActive && riderId && <RiderInfoCard riderId={riderId} />}
 
       {/* Live ETA banner */}
       {isActive && (
