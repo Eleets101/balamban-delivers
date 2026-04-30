@@ -452,6 +452,25 @@ function AdminRiderFinancePage() {
           </div>
         )}
 
+        {/* Hero KPI — Net profit today (the #1 number) */}
+        <div className="mt-5 rounded-2xl border border-success/40 bg-gradient-to-br from-success/15 via-success/5 to-transparent p-4 sm:p-6 shadow">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-success">Net profit today (after rider costs)</p>
+              <p className="mt-1 font-display text-4xl font-bold text-success sm:text-5xl">
+                {formatPeso(displaySummary?.netProfitToday ?? 0)}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Gross sales <strong className="text-foreground">{formatPeso(displaySummary?.grossSalesToday ?? 0)}</strong>
+                {" − "}rider earnings <strong className="text-foreground">{formatPeso(displaySummary?.riderCostToday ?? 0)}</strong>
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-success">
+              <TrendingUp className="h-10 w-10 sm:h-12 sm:w-12" />
+            </div>
+          </div>
+        </div>
+
         {/* Summary cards — always render, even with zero values */}
         <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
           <Card icon={<Users />} label="Total riders today" value={String(displaySummary?.ridersToday ?? 0)} />
