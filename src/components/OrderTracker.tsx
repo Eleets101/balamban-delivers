@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Check, Circle, MapPin, Navigation, Truck, Zap } from "lucide-react";
+import { googleMapsUrl, wazeUrl } from "@/lib/geo";
 import { supabase } from "@/integrations/supabase/client";
 import { LiveTrackingMap } from "@/components/map/LiveTrackingMap.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
@@ -163,12 +164,8 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [driver, tick]);
 
-  const openInMaps = (t: { lat: number; lng: number }) => {
-    window.open(
-      `https://www.google.com/maps/dir/?api=1&destination=${t.lat},${t.lng}&travelmode=driving`,
-      "_blank",
-    );
-  };
+  const openGoogle = (t: { lat: number; lng: number }) => window.open(googleMapsUrl(t), "_blank");
+  const openWaze = (t: { lat: number; lng: number }) => window.open(wazeUrl(t), "_blank");
 
   if (!pickup && !dropoff) return null;
 
