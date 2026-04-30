@@ -427,7 +427,7 @@ function AdminFinancePage() {
         {perRider === null ? (
           <div className="h-32 animate-pulse rounded-xl bg-muted" />
         ) : perRider.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border bg-card/50 p-4 text-center text-sm text-muted-foreground">No rider activity yet.</p>
+          <p className="rounded-xl border border-dashed border-border bg-card/50 p-4 text-center text-sm text-muted-foreground">No riders found yet. Add the rider role to drivers from Admin home, then completed trips will appear here.</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border bg-card">
             <table className="w-full text-sm">
@@ -435,9 +435,10 @@ function AdminFinancePage() {
                 <tr>
                   <th className="px-3 py-2 text-left">Rider</th>
                   <th className="px-3 py-2 text-right">Orders ({range})</th>
-                  <th className="px-3 py-2 text-right">Cash held</th>
+                      <th className="px-3 py-2 text-right">Cash ({range})</th>
                   <th className="px-3 py-2 text-right">GCash ({range})</th>
                   <th className="px-3 py-2 text-right">Earnings ({range})</th>
+                      <th className="px-3 py-2 text-right">Co. share ({range})</th>
                   <th className="px-3 py-2 text-right">Owes co.</th>
                   <th className="px-3 py-2 text-right">Co. owes</th>
                   <th className="px-3 py-2 text-center">Status</th>
@@ -456,9 +457,10 @@ function AdminFinancePage() {
                         <p className="text-xs text-muted-foreground">{r.profile?.phone ?? r.id.slice(0, 8)}</p>
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums">{r.ordersInRange}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{formatPeso(r.cashHeld)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{formatPeso(r.cashInRange)}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{formatPeso(r.gcashInRange)}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{formatPeso(r.earningsInRange)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{formatPeso(r.companyShareInRange)}</td>
                       <td className="px-3 py-2 text-right tabular-nums text-destructive">{formatPeso(r.riderOwes)}</td>
                       <td className="px-3 py-2 text-right tabular-nums text-success">{formatPeso(r.hatodgoOwes)}</td>
                       <td className={`px-3 py-2 text-center text-xs font-bold ${balanceClass}`}>{status}</td>
