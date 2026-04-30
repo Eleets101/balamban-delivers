@@ -21,6 +21,7 @@ import { Route as ServicesPabiliRouteImport } from './routes/services.pabili'
 import { Route as ServicesFoodRouteImport } from './routes/services.food'
 import { Route as DriverWalletRouteImport } from './routes/driver.wallet'
 import { Route as CheckoutOrderIdRouteImport } from './routes/checkout.$orderId'
+import { Route as AdminWalletRouteImport } from './routes/admin.wallet'
 import { Route as CheckoutOrderIdSuccessRouteImport } from './routes/checkout.$orderId.success'
 import { Route as CheckoutOrderIdPayRouteImport } from './routes/checkout.$orderId.pay'
 import { Route as CheckoutOrderIdFailedRouteImport } from './routes/checkout.$orderId.failed'
@@ -85,6 +86,11 @@ const CheckoutOrderIdRoute = CheckoutOrderIdRouteImport.update({
   path: '/checkout/$orderId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminWalletRoute = AdminWalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => AdminRoute,
+} as any)
 const CheckoutOrderIdSuccessRoute = CheckoutOrderIdSuccessRouteImport.update({
   id: '/success',
   path: '/success',
@@ -103,11 +109,12 @@ const CheckoutOrderIdFailedRoute = CheckoutOrderIdFailedRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/driver': typeof DriverRouteWithChildren
   '/orders': typeof OrdersRoute
   '/privacy': typeof PrivacyRoute
+  '/admin/wallet': typeof AdminWalletRoute
   '/checkout/$orderId': typeof CheckoutOrderIdRouteWithChildren
   '/driver/wallet': typeof DriverWalletRoute
   '/services/food': typeof ServicesFoodRoute
@@ -120,11 +127,12 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/driver': typeof DriverRouteWithChildren
   '/orders': typeof OrdersRoute
   '/privacy': typeof PrivacyRoute
+  '/admin/wallet': typeof AdminWalletRoute
   '/checkout/$orderId': typeof CheckoutOrderIdRouteWithChildren
   '/driver/wallet': typeof DriverWalletRoute
   '/services/food': typeof ServicesFoodRoute
@@ -138,11 +146,12 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/driver': typeof DriverRouteWithChildren
   '/orders': typeof OrdersRoute
   '/privacy': typeof PrivacyRoute
+  '/admin/wallet': typeof AdminWalletRoute
   '/checkout/$orderId': typeof CheckoutOrderIdRouteWithChildren
   '/driver/wallet': typeof DriverWalletRoute
   '/services/food': typeof ServicesFoodRoute
@@ -162,6 +171,7 @@ export interface FileRouteTypes {
     | '/driver'
     | '/orders'
     | '/privacy'
+    | '/admin/wallet'
     | '/checkout/$orderId'
     | '/driver/wallet'
     | '/services/food'
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/driver'
     | '/orders'
     | '/privacy'
+    | '/admin/wallet'
     | '/checkout/$orderId'
     | '/driver/wallet'
     | '/services/food'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/driver'
     | '/orders'
     | '/privacy'
+    | '/admin/wallet'
     | '/checkout/$orderId'
     | '/driver/wallet'
     | '/services/food'
@@ -209,7 +221,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
   DriverRoute: typeof DriverRouteWithChildren
   OrdersRoute: typeof OrdersRoute
@@ -307,6 +319,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckoutOrderIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/wallet': {
+      id: '/admin/wallet'
+      path: '/wallet'
+      fullPath: '/admin/wallet'
+      preLoaderRoute: typeof AdminWalletRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/checkout/$orderId/success': {
       id: '/checkout/$orderId/success'
       path: '/success'
@@ -330,6 +349,16 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AdminRouteChildren {
+  AdminWalletRoute: typeof AdminWalletRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminWalletRoute: AdminWalletRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface DriverRouteChildren {
   DriverWalletRoute: typeof DriverWalletRoute
@@ -360,7 +389,7 @@ const CheckoutOrderIdRouteWithChildren = CheckoutOrderIdRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
   DriverRoute: DriverRouteWithChildren,
   OrdersRoute: OrdersRoute,
@@ -374,3 +403,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
