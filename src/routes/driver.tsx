@@ -451,84 +451,163 @@ function DriverPage() {
                 const dropoff = o.dropoff_lat != null && o.dropoff_lng != null ? { lat: o.dropoff_lat, lng: o.dropoff_lng } : null;
                 const target = etaTargetForStatus(o.status, pickup, dropoff);
                 const eta = myCoords && target ? estimateEta(myCoords, target.coords, { speedMps: mySmoothedMps }) : null;
+                const stage: TripStage =
+                  o.details?.trip_stage ??
+                  (o.status === "in_progress" ? "picked_up" : o.status === "completed" ? "completed" : "enroute_pickup");
+                const customer = customers[o.customer_id];
+                const customerName = customer?.full_name?.trim() || "Customer";
+                const customerPhone = customer?.phone?.replace(/\s+/g, "") || null;
+
+                const STEPS: { key: TripStage; label: string; cta: string }[] = [
+                  { key: "enroute_pickup", label: "En route", cta: "Start Trip" },
+                  { key: "arrived_pickup", label: "Arrived", cta: "Arrived at Pickup" },
+                  { key: "picked_up", label: "Picked up", cta: "Picked Up" },
+                  { key: "completed", label: "Completed", cta: "Complete Order" },
+                ];
+                const currentIdx = STEPS.findIndex((s) => s.key === stage);
+                const nextStep = STEPS[currentIdx + 1] ?? null;
+
                 return (
-                  <article key={o.id} className="rounded-2xl border border-border/60 p-5" style={{ background: "var(--gradient-card)" }}>
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <span className="font-display text-base font-semibold">{SERVICE_LABELS[o.service_type]}</span>
-                        <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[o.status]}`}>
-                          {STATUS_LABELS[o.status]}
-                        </span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleString()}</span>
-                    </div>
-
-                    {target && (
-                      <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm">
-                        <Navigation className="h-4 w-4 text-primary-glow" />
-                        <span className="font-medium">
-                          {target.label === "pickup" ? "Heading to pickup" : "Delivering to drop-off"}
-                        </span>
-                        <span className="text-muted-foreground">
-                          {eta ? `· ${eta.label} · ${eta.km.toFixed(1)} km` : sharing ? "· locating you…" : "· go online to compute ETA"}
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
-                      <div className="flex items-start gap-2">
-                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary-glow" />
-                        <div>
-                          <p className="text-xs text-muted-foreground">Pickup</p>
-                          <p className="font-medium">{o.pickup_address}</p>
+                  <article
+                    key={o.id}
+                    className="overflow-hidden rounded-2xl border border-primary/40 shadow-[var(--shadow-glow)]"
+                    style={{ background: "var(--gradient-card)" }}
+                  >
+                    {/* Customer header */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 bg-background/40 p-4">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary-glow">
+                          <User className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate font-display text-base font-bold">{customerName}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {SERVICE_LABELS[o.service_type]} · {STATUS_LABELS[o.status]}
+                          </p>
                         </div>
                       </div>
-                      <div className="flex items-start gap-2">
-                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                        <div>
-                          <p className="text-xs text-muted-foreground">Drop-off</p>
-                          <p className="font-medium">{o.dropoff_address}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {(pickup || dropoff) && (
-                      <div className="mt-4">
-                        <MapClientOnly>
-                          <LiveTrackingMap pickup={pickup} dropoff={dropoff} driver={myCoords} height={260} />
-                        </MapClientOnly>
-                      </div>
-                    )}
-
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {pickup && (
-                        <>
-                          <Button size="sm" variant="outline" onClick={() => openGoogle(pickup)}>
-                            <Navigation className="h-4 w-4" /> Pickup · Google
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => openWaze(pickup)}>
-                            <Navigation className="h-4 w-4" /> Pickup · Waze
-                          </Button>
-                        </>
-                      )}
-                      {dropoff && (
-                        <>
-                          <Button size="sm" variant="outline" onClick={() => openGoogle(dropoff)}>
-                            <Navigation className="h-4 w-4" /> Drop-off · Google
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => openWaze(dropoff)}>
-                            <Navigation className="h-4 w-4" /> Drop-off · Waze
-                          </Button>
-                        </>
-                      )}
-                      {o.status === "accepted" && (
-                        <Button size="sm" onClick={() => updateStatus(o.id, "in_progress")}>
-                          Arrived at pickup — Start trip
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={!customerPhone}
+                          onClick={() => customerPhone && window.open(`tel:${customerPhone}`)}
+                          title={customerPhone ?? "No phone on file"}
+                          aria-label={`Call ${customerName}`}
+                        >
+                          <Phone className="h-4 w-4" /> Call
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={!customerPhone}
+                          onClick={() => customerPhone && window.open(`sms:${customerPhone}`)}
+                          aria-label={`Message ${customerName}`}
+                        >
+                          <MessageCircle className="h-4 w-4" /> Chat
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="p-5">
+                      {/* Trip stage stepper */}
+                      <ol className="flex items-center justify-between gap-1 text-[10px] font-medium uppercase tracking-wide">
+                        {STEPS.map((s, i) => {
+                          const done = i < currentIdx;
+                          const active = i === currentIdx;
+                          return (
+                            <li key={s.key} className="flex flex-1 items-center gap-1">
+                              <span
+                                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10px] ${
+                                  done
+                                    ? "border-success bg-success text-success-foreground"
+                                    : active
+                                    ? "border-primary bg-primary text-primary-foreground"
+                                    : "border-border bg-background/40 text-muted-foreground"
+                                }`}
+                              >
+                                {done ? <Check className="h-3 w-3" /> : i + 1}
+                              </span>
+                              <span className={`truncate ${active ? "text-primary-glow" : done ? "text-foreground" : "text-muted-foreground"}`}>
+                                {s.label}
+                              </span>
+                              {i < STEPS.length - 1 && (
+                                <span className={`h-px flex-1 ${i < currentIdx ? "bg-success" : "bg-border"}`} />
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ol>
+
+                      {target && stage !== "completed" && (
+                        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm">
+                          <Navigation className="h-4 w-4 text-primary-glow" />
+                          <span className="font-medium">
+                            {stage === "picked_up" ? "Delivering to drop-off" : "Heading to pickup"}
+                          </span>
+                          <span className="text-muted-foreground">
+                            {eta ? `· ETA ${eta.label} · ${eta.km.toFixed(1)} km` : sharing ? "· locating you…" : "· go online to compute ETA"}
+                          </span>
+                        </div>
                       )}
-                      {o.status === "in_progress" && (
-                        <Button size="sm" onClick={() => updateStatus(o.id, "completed")}>
-                          Mark delivered
+
+                      <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+                        <div className="flex items-start gap-2">
+                          <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary-glow" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">Pickup</p>
+                            <p className="font-medium">{o.pickup_address}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">Drop-off</p>
+                            <p className="font-medium">{o.dropoff_address}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {(pickup || dropoff) && (
+                        <div className="mt-4">
+                          <MapClientOnly>
+                            <LiveTrackingMap pickup={pickup} dropoff={dropoff} driver={myCoords} height={260} />
+                          </MapClientOnly>
+                        </div>
+                      )}
+
+                      {/* Navigation deep links — show pickup until picked up, then drop-off */}
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {stage !== "picked_up" && stage !== "completed" && pickup && (
+                          <>
+                            <Button size="sm" variant="outline" onClick={() => openGoogle(pickup)}>
+                              <Navigation className="h-4 w-4" /> Pickup · Google
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => openWaze(pickup)}>
+                              <Navigation className="h-4 w-4" /> Pickup · Waze
+                            </Button>
+                          </>
+                        )}
+                        {(stage === "picked_up" || stage === "arrived_pickup") && dropoff && (
+                          <>
+                            <Button size="sm" variant="outline" onClick={() => openGoogle(dropoff)}>
+                              <Navigation className="h-4 w-4" /> Drop-off · Google
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => openWaze(dropoff)}>
+                              <Navigation className="h-4 w-4" /> Drop-off · Waze
+                            </Button>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Primary stage CTA */}
+                      {nextStep && (
+                        <Button
+                          size="lg"
+                          className="mt-4 w-full shadow-[var(--shadow-glow)]"
+                          onClick={() => advanceStage(o, nextStep.key)}
+                        >
+                          {nextStep.cta}
                         </Button>
                       )}
                     </div>
