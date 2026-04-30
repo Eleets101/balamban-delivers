@@ -255,13 +255,23 @@ function DriverPage() {
             <p className="mt-1 text-muted-foreground">Accept orders and share your live location.</p>
           </div>
           <Button
-            onClick={() => setSharing((v) => !v)}
+            onClick={() =>
+              setSharing((v) => {
+                const next = !v;
+                setSessionStartedAt(next ? Date.now() : null);
+                return next;
+              })
+            }
             variant={sharing ? "default" : "outline"}
             className={sharing ? "shadow-[var(--shadow-glow)]" : ""}
           >
             <Power className="h-4 w-4" /> {sharing ? "Sharing location — go offline" : "Go online & share location"}
           </Button>
         </div>
+
+        {user && (
+          <DriverEarningsBar userId={user.id} sharing={sharing} sessionStartedAt={sessionStartedAt} />
+        )}
 
         {sharing && (
           <div className="mt-4 space-y-2 rounded-xl border border-primary/30 bg-primary/10 p-3 text-xs text-primary-glow">
