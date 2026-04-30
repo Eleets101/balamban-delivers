@@ -1,0 +1,1 @@
+UPDATE public.restaurants SET is_active = true WHERE slug = 'bayaw-ramen-porkhub';
