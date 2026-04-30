@@ -348,6 +348,7 @@ export type Database = {
           address: string
           base_delivery_fee: number
           category: Database["public"]["Enums"]["restaurant_category"]
+          close_time: string | null
           cover_url: string | null
           created_at: string
           description: string | null
@@ -361,6 +362,7 @@ export type Database = {
           logo_url: string | null
           name: string
           open_hours: string | null
+          open_time: string | null
           osm_id: string | null
           per_km_fee: number
           phone: string | null
@@ -377,6 +379,7 @@ export type Database = {
           address: string
           base_delivery_fee?: number
           category?: Database["public"]["Enums"]["restaurant_category"]
+          close_time?: string | null
           cover_url?: string | null
           created_at?: string
           description?: string | null
@@ -390,6 +393,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           open_hours?: string | null
+          open_time?: string | null
           osm_id?: string | null
           per_km_fee?: number
           phone?: string | null
@@ -406,6 +410,7 @@ export type Database = {
           address?: string
           base_delivery_fee?: number
           category?: Database["public"]["Enums"]["restaurant_category"]
+          close_time?: string | null
           cover_url?: string | null
           created_at?: string
           description?: string | null
@@ -419,6 +424,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           open_hours?: string | null
+          open_time?: string | null
           osm_id?: string | null
           per_km_fee?: number
           phone?: string | null
