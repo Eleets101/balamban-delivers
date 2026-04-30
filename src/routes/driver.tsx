@@ -36,6 +36,14 @@ export const Route = createFileRoute("/driver")({
   component: DriverPage,
 });
 
+type TripStage = "enroute_pickup" | "arrived_pickup" | "picked_up" | "completed";
+
+interface CustomerProfile {
+  id: string;
+  full_name: string | null;
+  phone: string | null;
+}
+
 interface DriverOrder {
   id: string;
   customer_id: string;
