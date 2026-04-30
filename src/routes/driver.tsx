@@ -523,17 +523,35 @@ function DriverPage() {
                 return (
                   <article
                     key={o.id}
-                    className="rounded-2xl border border-border/60 p-4 transition-all hover:border-primary/40 hover:shadow-[var(--shadow-glow)]"
+                    className={`rounded-2xl border p-4 transition-all hover:shadow-[var(--shadow-glow)] ${
+                      urgent
+                        ? "border-destructive/60 animate-pulse"
+                        : isFresh
+                        ? "border-primary/50"
+                        : "border-border/60 hover:border-primary/40"
+                    }`}
                     style={{ background: "var(--gradient-card)" }}
                   >
                     {/* Header: service + fare */}
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <h3 className="font-display text-base font-bold">{SERVICE_LABELS[o.service_type]}</h3>
                           {isFresh && (
                             <span className="rounded-full bg-warning/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-warning">
                               New
+                            </span>
+                          )}
+                          {showCountdown && (
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                                urgent
+                                  ? "bg-destructive/20 text-destructive"
+                                  : "bg-primary/15 text-primary-glow"
+                              }`}
+                              aria-live="polite"
+                            >
+                              ⏱ {secondsLeft}s to act
                             </span>
                           )}
                         </div>
