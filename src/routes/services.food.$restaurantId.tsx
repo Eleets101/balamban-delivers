@@ -161,7 +161,7 @@ function RestaurantPage() {
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-display text-2xl font-bold sm:text-3xl">{restaurant.name}</h1>
-              {restaurant.is_open ? (
+              {isRestaurantOpenNow(restaurant) ? (
                 <Badge className="border border-success bg-success/20 text-success">🟢 Open now</Badge>
               ) : (
                 <Badge variant="outline" className="border-destructive bg-destructive/20 text-destructive">
