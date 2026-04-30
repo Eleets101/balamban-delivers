@@ -512,7 +512,13 @@ function DriverPage() {
                     })
                   : undefined;
                 const fare = Number(o.estimated_price ?? 0);
-                const isFresh = Date.now() - new Date(o.created_at).getTime() < 60_000;
+                const ageMs = Date.now() - new Date(o.created_at).getTime();
+                const isFresh = ageMs < 60_000;
+                // 30s "act fast" countdown after order is created
+                const ACCEPT_WINDOW_MS = 30_000;
+                const secondsLeft = Math.max(0, Math.ceil((ACCEPT_WINDOW_MS - ageMs) / 1000));
+                const showCountdown = secondsLeft > 0;
+                const urgent = secondsLeft > 0 && secondsLeft <= 10;
 
                 return (
                   <article
