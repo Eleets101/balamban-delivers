@@ -477,7 +477,8 @@ function AdminRiderFinancePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map(r => {
+                  {displayRows.map(r => {
+                    const isSample = "sample" in r && r.sample;
                     const isOpen = expanded === r.id;
                     const owesUs = r.riderOwes > 0;
                     const weOwe = r.hatodgoOwes > 0;
