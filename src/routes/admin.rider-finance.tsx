@@ -73,6 +73,7 @@ function AdminRiderFinancePage() {
   const [profiles, setProfiles] = useState<Record<string, RiderProfile>>({});
   const [riderIds, setRiderIds] = useState<string[]>([]);
   const [onlineMap, setOnlineMap] = useState<Record<string, string>>({}); // rider_id -> last update iso
+  const [busyMap, setBusyMap] = useState<Record<string, boolean>>({}); // rider_id -> currently on active order
   const [expanded, setExpanded] = useState<string | null>(null);
   const [adjustOpen, setAdjustOpen] = useState<string | null>(null);
   const [adjustAmount, setAdjustAmount] = useState<string>("");
@@ -91,12 +92,14 @@ function AdminRiderFinancePage() {
         { data: a, error: ae },
         { data: rr, error: re },
         { data: locs },
+        { data: activeOrders },
       ] = await Promise.all([
         supabase.from("wallet_ledger").select("*").order("created_at", { ascending: false }),
         supabase.from("settlements").select("*").order("created_at", { ascending: false }),
         supabase.from("ledger_adjustments").select("*").order("created_at", { ascending: false }),
         supabase.from("user_roles").select("user_id").eq("role", "rider"),
         supabase.from("driver_locations").select("rider_id, updated_at").gte("updated_at", sinceIso),
+        supabase.from("orders").select("rider_id, status").in("status", ["accepted", "in_progress"]).not("rider_id", "is", null),
       ]);
       if (le) throw le;
       if (se) throw se;
@@ -132,6 +135,12 @@ function AdminRiderFinancePage() {
         if (!om[r.rider_id] || r.updated_at > om[r.rider_id]) om[r.rider_id] = r.updated_at;
       });
       setOnlineMap(om);
+
+      const bm: Record<string, boolean> = {};
+      ((activeOrders ?? []) as { rider_id: string | null }[]).forEach(o => {
+        if (o.rider_id) bm[o.rider_id] = true;
+      });
+      setBusyMap(bm);
     } catch (err) {
       console.error("[rider-finance] refresh failed", err);
       toast.error("Couldn't load rider finance data", { description: (err as Error).message });
@@ -155,6 +164,7 @@ function AdminRiderFinancePage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "settlements" }, () => void refresh())
       .on("postgres_changes", { event: "*", schema: "public", table: "ledger_adjustments" }, () => void refresh())
       .on("postgres_changes", { event: "*", schema: "public", table: "driver_locations" }, () => void refresh())
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => void refresh())
       .subscribe();
     const t = setInterval(() => void refresh(), 30_000);
     return () => { void supabase.removeChannel(channel); clearInterval(t); };
@@ -178,10 +188,12 @@ function AdminRiderFinancePage() {
       const earningsToday = today.reduce((s, r) => s + Number(r.rider_earning), 0);
       const lastSettlement = ss.find(x => x.status === "approved");
       const lastOnline = onlineMap[id];
+      const busy = !!busyMap[id];
       return {
         id,
         profile: profiles[id],
         online: !!lastOnline,
+        busy,
         lastOnline,
         jobsToday: today.length,
         grossToday,
@@ -198,7 +210,7 @@ function AdminRiderFinancePage() {
       if ((b.riderOwes > 0 ? 1 : 0) !== (a.riderOwes > 0 ? 1 : 0)) return (b.riderOwes > 0 ? 1 : 0) - (a.riderOwes > 0 ? 1 : 0);
       return b.jobsToday - a.jobsToday;
     });
-  }, [ledger, settlements, adjustments, riderIds, profiles, onlineMap, todayStart]);
+  }, [ledger, settlements, adjustments, riderIds, profiles, onlineMap, busyMap, todayStart]);
 
   const summary = useMemo(() => {
     if (!rows) return null;
@@ -227,6 +239,7 @@ function AdminRiderFinancePage() {
         id: "sample-1",
         profile: { id: "sample-1", full_name: "Juan Dela Cruz (sample)", phone: "0917 000 0001" } as RiderProfile,
         online: true,
+        busy: true,
         lastOnline: new Date().toISOString() as string | undefined,
         jobsToday: 8,
         grossToday: 1240,
@@ -243,6 +256,7 @@ function AdminRiderFinancePage() {
         id: "sample-2",
         profile: { id: "sample-2", full_name: "Maria Santos (sample)", phone: "0917 000 0002" } as RiderProfile,
         online: true,
+        busy: false,
         lastOnline: new Date().toISOString() as string | undefined,
         jobsToday: 5,
         grossToday: 860,
@@ -259,6 +273,7 @@ function AdminRiderFinancePage() {
         id: "sample-3",
         profile: { id: "sample-3", full_name: "Pedro Reyes (sample)", phone: "0917 000 0003" } as RiderProfile,
         online: false,
+        busy: false,
         lastOnline: undefined as string | undefined,
         jobsToday: 0,
         grossToday: 0,
@@ -279,6 +294,7 @@ function AdminRiderFinancePage() {
     id: "demo",
     profile: { id: "demo", full_name: "Demo Rider", phone: "—" } as RiderProfile,
     online: false,
+    busy: false,
     lastOnline: undefined as string | undefined,
     jobsToday: 0,
     grossToday: 0,
@@ -547,10 +563,12 @@ function AdminRiderFinancePage() {
                             </div>
                           </td>
                           <td className="px-3 py-3">
-                            {r.online ? (
-                              <Badge className="border border-success/40 bg-success/15 text-success">● Online</Badge>
+                            {r.busy ? (
+                              <Badge className="border border-warning bg-warning/20 font-semibold text-warning">🟡 Busy</Badge>
+                            ) : r.online ? (
+                              <Badge className="border border-success bg-success/20 font-semibold text-success">🟢 Online</Badge>
                             ) : (
-                              <Badge variant="outline" className="text-muted-foreground">Offline</Badge>
+                              <Badge variant="outline" className="text-muted-foreground">⚫ Offline</Badge>
                             )}
                           </td>
                           <td className="px-3 py-3 text-right font-mono">{r.jobsToday}</td>
