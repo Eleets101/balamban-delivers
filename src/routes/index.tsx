@@ -58,19 +58,18 @@ function HomePage() {
             <MapPin className="h-3.5 w-3.5" /> Now serving Balamban · Toledo · Asturias
           </span>
           <h1 className="mt-6 font-display text-5xl font-bold leading-[1.05] tracking-tight sm:text-7xl">
-            Hatod (Deliver). Padala (Send).{" "}
+            Balamban's{" "}
             <span
               className="bg-clip-text text-transparent"
               style={{ backgroundImage: "var(--gradient-primary)" }}
             >
-              Sakay (Ride).
+              All-in-One
             </span>
             <br />
-            All in one app.
+            Delivery App
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-            HatodGo brings food delivery, padala (send), pabili (buy for me) and ride (sakay) booking to Balamban and nearby towns —
-            sleek, simple, and built for our community.
+            Food • Padala • Pabili • Ride
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button size="lg" asChild className="h-12 px-8 text-base shadow-[var(--shadow-glow)]">
