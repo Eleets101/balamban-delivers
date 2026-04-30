@@ -222,3 +222,127 @@ export const importOsmRestaurants = createServerFn({ method: "POST" })
 
     return { imported: inserted?.length ?? 0 };
   });
+
+// ============================================================================
+// CSV import (Outscraper / Google Maps export compatible)
+// ============================================================================
+
+const CSV_CATEGORIES = [
+  "carenderia",
+  "fast_food",
+  "snacks",
+  "drinks",
+  "bakery",
+  "pharmacy",
+  "grocery",
+  "other",
+] as const;
+
+const csvRowSchema = z.object({
+  name: z.string().min(1).max(200),
+  category: z.enum(CSV_CATEGORIES),
+  address: z.string().min(1).max(500),
+  lat: z.number().nullable(),
+  lng: z.number().nullable(),
+  phone: z.string().max(50).nullable(),
+  website: z.string().max(500).nullable(),
+  rating: z.number().min(0).max(5).default(0),
+  review_count: z.number().int().min(0).default(0),
+  open_hours: z.string().max(500).nullable(),
+  cover_url: z.string().max(1000).nullable(),
+  tags: z.array(z.string().min(1).max(40)).max(8).default([]),
+  external_id: z.string().max(200).nullable(),
+});
+
+export const importCsvRestaurants = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    z.object({
+      rows: z.array(csvRowSchema).min(1).max(200),
+    }).parse,
+  )
+  .handler(async ({ data, context }) => {
+    const { data: roles } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    if (!roles?.some((r) => r.role === "admin")) {
+      throw new Error("Admin only");
+    }
+
+    // Dedup against existing OSM/external IDs and against names already in DB.
+    const externalIds = data.rows.map((r) => r.external_id).filter(Boolean) as string[];
+    const existingIds = new Set<string>();
+    if (externalIds.length > 0) {
+      const { data: rows } = await context.supabase
+        .from("restaurants")
+        .select("osm_id")
+        .in("osm_id", externalIds);
+      rows?.forEach((r) => r.osm_id && existingIds.add(r.osm_id));
+    }
+
+    const toInsert = data.rows
+      .filter((r) => !r.external_id || !existingIds.has(r.external_id))
+      .map((r) => ({
+        osm_id: r.external_id ?? null,
+        name: r.name,
+        category: r.category,
+        address: r.address,
+        lat: r.lat,
+        lng: r.lng,
+        phone: r.phone,
+        website: r.website,
+        rating: r.rating,
+        review_count: r.review_count,
+        open_hours: r.open_hours,
+        cover_url: r.cover_url,
+        tags: r.tags,
+        source: "csv",
+        is_active: false, // hidden until admin publishes
+        is_open: true,
+      }));
+
+    if (toInsert.length === 0) {
+      return { imported: 0, skipped: data.rows.length };
+    }
+
+    const { data: inserted, error } = await context.supabase
+      .from("restaurants")
+      .insert(toInsert)
+      .select("id");
+
+    if (error) throw new Error(error.message);
+
+    return {
+      imported: inserted?.length ?? 0,
+      skipped: data.rows.length - (inserted?.length ?? 0),
+    };
+  });
+
+// Bulk publish (set is_active = true) for a list of restaurant IDs.
+export const bulkPublishRestaurants = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    z.object({
+      ids: z.array(z.string().uuid()).min(1).max(200),
+      active: z.boolean(),
+    }).parse,
+  )
+  .handler(async ({ data, context }) => {
+    const { data: roles } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    if (!roles?.some((r) => r.role === "admin")) {
+      throw new Error("Admin only");
+    }
+
+    const { error, count } = await context.supabase
+      .from("restaurants")
+      .update({ is_active: data.active }, { count: "exact" })
+      .in("id", data.ids);
+
+    if (error) throw new Error(error.message);
+    return { updated: count ?? 0 };
+  });
+
