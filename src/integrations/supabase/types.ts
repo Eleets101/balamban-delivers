@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      daily_finance_snapshots: {
+        Row: {
+          cash_collected: number
+          company_revenue: number
+          created_at: string
+          day: string
+          gcash_received: number
+          generated_by: string
+          gross_sales: number
+          id: string
+          notes: string | null
+          pending_settlements_amount: number
+          pending_settlements_count: number
+          rider_earnings: number
+          total_orders: number
+        }
+        Insert: {
+          cash_collected?: number
+          company_revenue?: number
+          created_at?: string
+          day: string
+          gcash_received?: number
+          generated_by: string
+          gross_sales?: number
+          id?: string
+          notes?: string | null
+          pending_settlements_amount?: number
+          pending_settlements_count?: number
+          rider_earnings?: number
+          total_orders?: number
+        }
+        Update: {
+          cash_collected?: number
+          company_revenue?: number
+          created_at?: string
+          day?: string
+          gcash_received?: number
+          generated_by?: string
+          gross_sales?: number
+          id?: string
+          notes?: string | null
+          pending_settlements_amount?: number
+          pending_settlements_count?: number
+          rider_earnings?: number
+          total_orders?: number
+        }
+        Relationships: []
+      }
       driver_locations: {
         Row: {
           accuracy: number | null
@@ -47,6 +95,33 @@ export type Database = {
           rider_id?: string
           speed?: number | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      ledger_adjustments: {
+        Row: {
+          admin_id: string
+          amount: number
+          created_at: string
+          id: string
+          note: string
+          rider_id: string
+        }
+        Insert: {
+          admin_id: string
+          amount: number
+          created_at?: string
+          id?: string
+          note: string
+          rider_id: string
+        }
+        Update: {
+          admin_id?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          note?: string
+          rider_id?: string
         }
         Relationships: []
       }

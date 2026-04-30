@@ -22,6 +22,7 @@ import { Route as ServicesFoodRouteImport } from './routes/services.food'
 import { Route as DriverWalletRouteImport } from './routes/driver.wallet'
 import { Route as CheckoutOrderIdRouteImport } from './routes/checkout.$orderId'
 import { Route as AdminWalletRouteImport } from './routes/admin.wallet'
+import { Route as AdminFinanceRouteImport } from './routes/admin.finance'
 import { Route as CheckoutOrderIdSuccessRouteImport } from './routes/checkout.$orderId.success'
 import { Route as CheckoutOrderIdPayRouteImport } from './routes/checkout.$orderId.pay'
 import { Route as CheckoutOrderIdFailedRouteImport } from './routes/checkout.$orderId.failed'
@@ -91,6 +92,11 @@ const AdminWalletRoute = AdminWalletRouteImport.update({
   path: '/wallet',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminFinanceRoute = AdminFinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
+  getParentRoute: () => AdminRoute,
+} as any)
 const CheckoutOrderIdSuccessRoute = CheckoutOrderIdSuccessRouteImport.update({
   id: '/success',
   path: '/success',
@@ -114,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/driver': typeof DriverRouteWithChildren
   '/orders': typeof OrdersRoute
   '/privacy': typeof PrivacyRoute
+  '/admin/finance': typeof AdminFinanceRoute
   '/admin/wallet': typeof AdminWalletRoute
   '/checkout/$orderId': typeof CheckoutOrderIdRouteWithChildren
   '/driver/wallet': typeof DriverWalletRoute
@@ -132,6 +139,7 @@ export interface FileRoutesByTo {
   '/driver': typeof DriverRouteWithChildren
   '/orders': typeof OrdersRoute
   '/privacy': typeof PrivacyRoute
+  '/admin/finance': typeof AdminFinanceRoute
   '/admin/wallet': typeof AdminWalletRoute
   '/checkout/$orderId': typeof CheckoutOrderIdRouteWithChildren
   '/driver/wallet': typeof DriverWalletRoute
@@ -151,6 +159,7 @@ export interface FileRoutesById {
   '/driver': typeof DriverRouteWithChildren
   '/orders': typeof OrdersRoute
   '/privacy': typeof PrivacyRoute
+  '/admin/finance': typeof AdminFinanceRoute
   '/admin/wallet': typeof AdminWalletRoute
   '/checkout/$orderId': typeof CheckoutOrderIdRouteWithChildren
   '/driver/wallet': typeof DriverWalletRoute
@@ -171,6 +180,7 @@ export interface FileRouteTypes {
     | '/driver'
     | '/orders'
     | '/privacy'
+    | '/admin/finance'
     | '/admin/wallet'
     | '/checkout/$orderId'
     | '/driver/wallet'
@@ -189,6 +199,7 @@ export interface FileRouteTypes {
     | '/driver'
     | '/orders'
     | '/privacy'
+    | '/admin/finance'
     | '/admin/wallet'
     | '/checkout/$orderId'
     | '/driver/wallet'
@@ -207,6 +218,7 @@ export interface FileRouteTypes {
     | '/driver'
     | '/orders'
     | '/privacy'
+    | '/admin/finance'
     | '/admin/wallet'
     | '/checkout/$orderId'
     | '/driver/wallet'
@@ -326,6 +338,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWalletRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/finance': {
+      id: '/admin/finance'
+      path: '/finance'
+      fullPath: '/admin/finance'
+      preLoaderRoute: typeof AdminFinanceRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/checkout/$orderId/success': {
       id: '/checkout/$orderId/success'
       path: '/success'
@@ -351,10 +370,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminFinanceRoute: typeof AdminFinanceRoute
   AdminWalletRoute: typeof AdminWalletRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminFinanceRoute: AdminFinanceRoute,
   AdminWalletRoute: AdminWalletRoute,
 }
 

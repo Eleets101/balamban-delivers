@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Users, Package as PackageIcon, ShieldCheck, Clock, CheckCircle2, UserCog, X, Search, Map as MapIcon, Wallet } from "lucide-react";
+import { Loader2, Users, Package as PackageIcon, ShieldCheck, Clock, CheckCircle2, UserCog, X, Search, Map as MapIcon, Wallet, CircleDollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -235,12 +235,20 @@ function AdminPage() {
             <ShieldCheck className="h-7 w-7 text-primary-glow" />
             <h1 className="font-display text-3xl font-bold sm:text-4xl">Admin Dashboard</h1>
           </div>
-          <Link
-            to="/admin/wallet"
-            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold transition hover:bg-secondary"
-          >
-            <Wallet className="h-4 w-4 text-primary" /> Rider Wallets
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to="/admin/finance"
+              className="inline-flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary-glow transition hover:bg-primary/20"
+            >
+              <CircleDollarSign className="h-4 w-4" /> Finance
+            </Link>
+            <Link
+              to="/admin/wallet"
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold transition hover:bg-secondary"
+            >
+              <Wallet className="h-4 w-4 text-primary" /> Rider Wallets
+            </Link>
+          </div>
         </div>
         <p className="mt-1 text-muted-foreground">Overview of HatodGo operations.</p>
 

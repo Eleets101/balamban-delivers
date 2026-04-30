@@ -90,7 +90,20 @@ function isThisWeek(iso: string) {
   return d >= start.getTime() && d < start.getTime() + 7 * DAY_MS;
 }
 
-export function summarizeWallet(ledger: LedgerRow[], settlements: Settlement[]): WalletSummary {
+export type LedgerAdjustment = {
+  id: string;
+  rider_id: string;
+  amount: number; // positive = HatodGo owes rider; negative = rider owes HatodGo
+  note: string;
+  admin_id: string;
+  created_at: string;
+};
+
+export function summarizeWallet(
+  ledger: LedgerRow[],
+  settlements: Settlement[],
+  adjustments: LedgerAdjustment[] = [],
+): WalletSummary {
   let lifetimeEarnings = 0;
   let lifetimeCommission = 0;
   let todayEarnings = 0;
@@ -141,7 +154,8 @@ export function summarizeWallet(ledger: LedgerRow[], settlements: Settlement[]):
 
   const riderOwes = Math.max(0, riderCollectedTotal - approvedRemits);
   const hatodgoOwes = Math.max(0, hatodgoCollectedTotal - approvedPayouts);
-  const netBalance = hatodgoOwes - riderOwes;
+  const adjustmentsTotal = adjustments.reduce((sum, a) => sum + Number(a.amount), 0);
+  const netBalance = hatodgoOwes - riderOwes + adjustmentsTotal;
 
   // Subtract pending remittances from "cash held" so the rider sees only
   // the cash they still physically have.
@@ -184,3 +198,133 @@ export const STATUS_LABELS: Record<SettlementStatus, string> = {
   approved: "Approved",
   rejected: "Rejected",
 };
+
+// ============================================================
+// Owner finance helpers — company-wide aggregates
+// ============================================================
+
+export interface FinanceWindow {
+  start: Date;
+  end: Date; // exclusive
+}
+
+export type ReportRange = "today" | "week" | "month";
+
+export function rangeWindow(range: ReportRange, ref: Date = new Date()): FinanceWindow {
+  const start = new Date(ref);
+  start.setHours(0, 0, 0, 0);
+  if (range === "today") {
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    return { start, end };
+  }
+  if (range === "week") {
+    const day = start.getDay();
+    const diff = (day + 6) % 7; // Monday-start
+    start.setDate(start.getDate() - diff);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    return { start, end };
+  }
+  // month
+  start.setDate(1);
+  const end = new Date(start);
+  end.setMonth(end.getMonth() + 1);
+  return { start, end };
+}
+
+function inWindow(iso: string, w: FinanceWindow): boolean {
+  const t = new Date(iso).getTime();
+  return t >= w.start.getTime() && t < w.end.getTime();
+}
+
+export interface FinanceSummary {
+  grossSales: number;
+  totalOrders: number;
+  companyRevenue: number;
+  riderEarnings: number;
+  cashCollected: number;
+  gcashReceived: number;
+  pendingSettlementsCount: number;
+  pendingSettlementsAmount: number;
+}
+
+export function summarizeFinance(
+  ledger: LedgerRow[],
+  settlements: Settlement[],
+  window: FinanceWindow,
+): FinanceSummary {
+  let grossSales = 0;
+  let totalOrders = 0;
+  let companyRevenue = 0;
+  let riderEarnings = 0;
+  let cashCollected = 0;
+  let gcashReceived = 0;
+
+  for (const row of ledger) {
+    if (!inWindow(row.created_at, window)) continue;
+    grossSales += Number(row.customer_paid);
+    totalOrders += 1;
+    companyRevenue += Number(row.platform_commission);
+    riderEarnings += Number(row.rider_earning);
+    if (row.payment_method === "cash") {
+      // Cash always collected by rider
+      cashCollected += Number(row.customer_paid);
+    } else if (row.payment_method === "gcash") {
+      gcashReceived += Number(row.customer_paid);
+    }
+  }
+
+  const pending = settlements.filter((s) => s.status === "pending");
+  const pendingSettlementsCount = pending.length;
+  const pendingSettlementsAmount = pending.reduce((sum, s) => sum + Number(s.amount), 0);
+
+  return {
+    grossSales,
+    totalOrders,
+    companyRevenue,
+    riderEarnings,
+    cashCollected,
+    gcashReceived,
+    pendingSettlementsCount,
+    pendingSettlementsAmount,
+  };
+}
+
+/** CSV-safe escaping. */
+function csvCell(v: unknown): string {
+  const s = v === null || v === undefined ? "" : String(v);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+export function ledgerToCsv(rows: LedgerRow[], riderNames: Record<string, string>): string {
+  const headers = [
+    "order_id", "created_at", "rider_id", "rider_name", "service_type",
+    "payment_method", "collected_by", "customer_paid", "rider_earning",
+    "platform_commission", "settled",
+  ];
+  const lines = [headers.join(",")];
+  for (const r of rows) {
+    lines.push([
+      r.order_id, r.created_at, r.rider_id, riderNames[r.rider_id] ?? "",
+      r.service_type, r.payment_method, r.collected_by,
+      Number(r.customer_paid).toFixed(2), Number(r.rider_earning).toFixed(2),
+      Number(r.platform_commission).toFixed(2), r.settled ? "yes" : "no",
+    ].map(csvCell).join(","));
+  }
+  return lines.join("\n");
+}
+
+export function downloadCsv(filename: string, csv: string) {
+  if (typeof window === "undefined") return;
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
