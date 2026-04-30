@@ -513,11 +513,13 @@ function RidePage() {
           <Label htmlFor="dropoff">
             <Navigation className="mr-1 inline h-3.5 w-3.5 text-primary-glow" /> Destination
           </Label>
-          <Input
+          <PlaceAutocomplete
             id="dropoff"
             placeholder="Where to?"
             value={dropoff}
-            onChange={(e) => setDropoff(e.target.value)}
+            onValueChange={setDropoff}
+            onPick={(hit) => setDropoffCoords({ lat: hit.lat, lng: hit.lng })}
+            bias={pickupCoords}
           />
           <MapClientOnly>
             <MapPicker
