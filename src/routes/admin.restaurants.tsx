@@ -71,10 +71,8 @@ function AdminRestaurantsPage() {
   }
 
   const toggleActive = async (r: Restaurant, field: "is_open" | "is_active") => {
-    const { error } = await supabase
-      .from("restaurants")
-      .update({ [field]: !r[field] })
-      .eq("id", r.id);
+    const update = field === "is_open" ? { is_open: !r.is_open } : { is_active: !r.is_active };
+    const { error } = await supabase.from("restaurants").update(update).eq("id", r.id);
     if (error) {
       toast.error(error.message);
       return;
