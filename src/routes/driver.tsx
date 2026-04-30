@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Bike, Loader2, MapPin, Navigation, Power, ShieldAlert, Zap } from "lucide-react";
+import { Bell, BellOff, Bike, Loader2, MapPin, Navigation, Power, ShieldAlert, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
