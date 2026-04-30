@@ -64,9 +64,11 @@ function DriverPage() {
   const [myCoords, setMyCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [myHistory, setMyHistory] = useState<LocationSample[]>([]);
   const [adaptive, setAdaptive] = useState(true);
+  const [soundOn, setSoundOn] = useState(true);
   const [, setTick] = useState(0);
   const watchIdRef = useRef<number | null>(null);
   const activeOrderIdRef = useRef<string | null>(null);
+  const seenOrderIdsRef = useRef<Set<string>>(new Set());
 
   const allowed = isRider || isAdmin;
   const mySmoothedMps = smoothedSpeedMps(myHistory);
