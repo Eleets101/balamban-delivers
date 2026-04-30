@@ -27,6 +27,7 @@ export type Database = {
           notes: string | null
           pending_settlements_amount: number
           pending_settlements_count: number
+          rider_breakdown: Json
           rider_earnings: number
           total_orders: number
         }
@@ -42,6 +43,7 @@ export type Database = {
           notes?: string | null
           pending_settlements_amount?: number
           pending_settlements_count?: number
+          rider_breakdown?: Json
           rider_earnings?: number
           total_orders?: number
         }
@@ -57,6 +59,7 @@ export type Database = {
           notes?: string | null
           pending_settlements_amount?: number
           pending_settlements_count?: number
+          rider_breakdown?: Json
           rider_earnings?: number
           total_orders?: number
         }
