@@ -67,6 +67,7 @@ function DriverPage() {
   const { user, loading, isRider, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<DriverOrder[] | null>(null);
+  const [customers, setCustomers] = useState<Record<string, CustomerProfile>>({});
   const [sharing, setSharing] = useState(false);
   const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null);
   const [myCoords, setMyCoords] = useState<{ lat: number; lng: number } | null>(null);
