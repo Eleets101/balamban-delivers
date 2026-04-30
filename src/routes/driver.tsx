@@ -85,7 +85,7 @@ function DriverPage() {
     // Available (pending, no rider) + my assigned active orders
     const { data } = await supabase
       .from("orders")
-      .select("id, customer_id, rider_id, service_type, status, pickup_address, dropoff_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, estimated_price, details, notes, created_at")
+      .select("id, customer_id, rider_id, service_type, status, pickup_address, dropoff_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, estimated_price, payment_method, details, notes, created_at")
       .or(`status.eq.pending,rider_id.eq.${user?.id ?? "00000000-0000-0000-0000-000000000000"}`)
       .order("created_at", { ascending: false })
       .limit(50);
