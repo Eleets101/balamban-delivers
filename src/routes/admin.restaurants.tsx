@@ -29,6 +29,40 @@ function AdminRestaurantsPage() {
   const [restaurants, setRestaurants] = useState<Restaurant[] | null>(null);
   const [editing, setEditing] = useState<Restaurant | null>(null);
   const [creating, setCreating] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [publishing, setPublishing] = useState(false);
+  const [filter, setFilter] = useState<"all" | "hidden" | "visible">("all");
+
+  const visible = useMemo(() => {
+    if (!restaurants) return null;
+    if (filter === "hidden") return restaurants.filter((r) => !r.is_active);
+    if (filter === "visible") return restaurants.filter((r) => r.is_active);
+    return restaurants;
+  }, [restaurants, filter]);
+
+  const toggleSelect = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  const selectAllVisible = () => visible && setSelected(new Set(visible.map((r) => r.id)));
+  const clearSelection = () => setSelected(new Set());
+
+  const bulkSetActive = async (active: boolean) => {
+    if (selected.size === 0) return;
+    setPublishing(true);
+    try {
+      const res = await bulkPublishRestaurants({ data: { ids: Array.from(selected), active } });
+      toast.success(`${active ? "Published" : "Hidden"} ${res.updated} restaurant${res.updated === 1 ? "" : "s"}`);
+      clearSelection();
+      refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setPublishing(false);
+    }
+  };
 
   const refresh = async () => {
     const { data, error } = await supabase
