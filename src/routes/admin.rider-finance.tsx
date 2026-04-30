@@ -82,6 +82,7 @@ function AdminRiderFinancePage() {
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
   const refresh = useCallback(async () => {
+    setRefreshing(true);
     try {
       const sinceIso = new Date(Date.now() - ONLINE_WINDOW_MS).toISOString();
       const [
