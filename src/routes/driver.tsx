@@ -48,6 +48,7 @@ interface DriverOrder {
   dropoff_lat: number | null;
   dropoff_lng: number | null;
   estimated_price: number | null;
+  payment_method: string | null;
   details: { description?: string };
   notes: string | null;
   created_at: string;
@@ -84,7 +85,7 @@ function DriverPage() {
     // Available (pending, no rider) + my assigned active orders
     const { data } = await supabase
       .from("orders")
-      .select("id, customer_id, rider_id, service_type, status, pickup_address, dropoff_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, estimated_price, details, notes, created_at")
+      .select("id, customer_id, rider_id, service_type, status, pickup_address, dropoff_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, estimated_price, payment_method, details, notes, created_at")
       .or(`status.eq.pending,rider_id.eq.${user?.id ?? "00000000-0000-0000-0000-000000000000"}`)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -427,24 +428,93 @@ function DriverPage() {
 
         {/* Available orders */}
         <section className="mt-10">
-          <h2 className="font-display text-xl font-bold">Available orders</h2>
+          <div className="flex items-end justify-between">
+            <h2 className="font-display text-xl font-bold">Available orders</h2>
+            <span className="text-xs text-muted-foreground">{available.length} pending</span>
+          </div>
           <div className="mt-3 space-y-3">
             {available.length === 0 ? (
               <p className="text-sm text-muted-foreground">No pending orders right now.</p>
             ) : (
-              available.map((o) => (
-                <article key={o.id} className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border/60 p-4" style={{ background: "var(--gradient-card)" }}>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">{SERVICE_LABELS[o.service_type]}</Badge>
-                      {o.estimated_price && <span className="text-sm font-semibold">₱{Number(o.estimated_price).toFixed(2)}</span>}
+              available.map((o) => {
+                const pickup = o.pickup_lat != null && o.pickup_lng != null ? { lat: o.pickup_lat, lng: o.pickup_lng } : null;
+                const dropoff = o.dropoff_lat != null && o.dropoff_lng != null ? { lat: o.dropoff_lat, lng: o.dropoff_lng } : null;
+                const distanceToPickup = myCoords && pickup ? estimateEta(myCoords, pickup, { speedMps: mySmoothedMps }) : null;
+                const tripEta = pickup && dropoff ? estimateEta(pickup, dropoff) : null;
+                const payLabel = (o.payment_method ?? "cash").toLowerCase() === "gcash" ? "GCash" : "Cash on Delivery";
+                const payIcon = payLabel === "GCash" ? "📱" : "💵";
+                // Busy-area bonus: pickup inside a known hotspot (Balamban town, Toledo public market)
+                const HOTSPOTS: Array<{ lat: number; lng: number; radiusKm: number; label: string; bonus: number }> = [
+                  { lat: 10.4456, lng: 123.7016, radiusKm: 1.5, label: "Balamban town center", bonus: 10 },
+                  { lat: 10.3787, lng: 123.6386, radiusKm: 1.5, label: "Toledo public market", bonus: 10 },
+                ];
+                const bonus = pickup
+                  ? HOTSPOTS.find((h) => {
+                      const eta = estimateEta(pickup, { lat: h.lat, lng: h.lng });
+                      return eta != null && eta.km <= h.radiusKm;
+                    })
+                  : undefined;
+                const fare = Number(o.estimated_price ?? 0);
+                const isFresh = Date.now() - new Date(o.created_at).getTime() < 60_000;
+
+                return (
+                  <article
+                    key={o.id}
+                    className="rounded-2xl border border-border/60 p-4 transition-all hover:border-primary/40 hover:shadow-[var(--shadow-glow)]"
+                    style={{ background: "var(--gradient-card)" }}
+                  >
+                    {/* Header: service + fare */}
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-display text-base font-bold">{SERVICE_LABELS[o.service_type]}</h3>
+                          {isFresh && (
+                            <span className="rounded-full bg-warning/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-warning">
+                              New
+                            </span>
+                          )}
+                        </div>
+                        {fare > 0 && (
+                          <p className="mt-0.5 font-display text-2xl font-bold text-primary-glow">
+                            ₱{fare.toFixed(0)} <span className="text-xs font-medium text-muted-foreground">fare</span>
+                          </p>
+                        )}
+                      </div>
+                      <Button size="sm" onClick={() => acceptOrder(o)} className="shrink-0 shadow-[var(--shadow-glow)]">
+                        Accept Order
+                      </Button>
                     </div>
-                    <p className="mt-2 truncate text-sm"><span className="text-muted-foreground">From:</span> {o.pickup_address}</p>
-                    <p className="truncate text-sm"><span className="text-muted-foreground">To:</span> {o.dropoff_address}</p>
-                  </div>
-                  <Button size="sm" onClick={() => acceptOrder(o)}>Accept</Button>
-                </article>
-              ))
+
+                    {/* Quick chips */}
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                      {distanceToPickup && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-background/40 px-2.5 py-1">
+                          📍 {distanceToPickup.km.toFixed(1)} km away
+                        </span>
+                      )}
+                      {tripEta && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-background/40 px-2.5 py-1">
+                          🕒 {tripEta.label} trip · {tripEta.km.toFixed(1)} km
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-background/40 px-2.5 py-1">
+                        {payIcon} {payLabel}
+                      </span>
+                      {bonus && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-warning/15 px-2.5 py-1 font-semibold text-warning">
+                          ⭐ Busy area bonus +₱{bonus.bonus}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Addresses */}
+                    <div className="mt-3 space-y-1 text-sm">
+                      <p className="truncate"><span className="text-muted-foreground">From:</span> {o.pickup_address}</p>
+                      <p className="truncate"><span className="text-muted-foreground">To:</span> {o.dropoff_address}</p>
+                    </div>
+                  </article>
+                );
+              })
             )}
           </div>
         </section>
