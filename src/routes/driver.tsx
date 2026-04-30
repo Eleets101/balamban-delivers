@@ -735,6 +735,15 @@ function DriverPage() {
                       <p className="truncate"><span className="text-muted-foreground">From:</span> {o.pickup_address}</p>
                       <p className="truncate"><span className="text-muted-foreground">To:</span> {o.dropoff_address}</p>
                     </div>
+
+                    {/* Mobile: big full-width Accept */}
+                    <Button
+                      size="lg"
+                      onClick={() => acceptOrder(o)}
+                      className="mt-4 h-14 w-full text-base shadow-[var(--shadow-glow)] sm:hidden"
+                    >
+                      Accept Order · ₱{fare.toFixed(0)}
+                    </Button>
                   </article>
                 );
               })
