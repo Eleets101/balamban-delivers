@@ -60,7 +60,7 @@ function RestaurantPage() {
         supabase
           .from("restaurants")
           .select(
-            "id, name, slug, category, description, address, lat, lng, phone, logo_url, cover_url, open_hours, is_open, is_active, base_delivery_fee, per_km_fee, free_distance_km, estimated_minutes, rating, sort_order",
+            "id, name, slug, category, description, address, lat, lng, phone, logo_url, cover_url, open_hours, open_time, close_time, is_open, is_active, base_delivery_fee, per_km_fee, free_distance_km, estimated_minutes, rating, sort_order",
           )
           .eq("id", restaurantId)
           .maybeSingle(),
