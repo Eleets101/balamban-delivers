@@ -19,6 +19,7 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
@@ -564,10 +565,10 @@ function AdminRiderFinancePage() {
                 <LineChart data={trend7d} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
                   <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => `₱${v >= 1000 ? `${(v/1000).toFixed(1)}k` : v}`} />
+                  <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `₱${v >= 1000 ? `${(v/1000).toFixed(1)}k` : v}`} />
                   <RTooltip
                     contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                    formatter={(v: number, name) => [formatPeso(v), name === "revenue" ? "Gross" : "Profit"]}
+                    formatter={(v: number, name: string) => [formatPeso(v), name === "revenue" ? "Gross" : "Profit"]}
                   />
                   <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ r: 3 }} name="revenue" />
                   <Line type="monotone" dataKey="profit" stroke="hsl(var(--success))" strokeWidth={2.5} dot={{ r: 3 }} name="profit" />
