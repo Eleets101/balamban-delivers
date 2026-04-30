@@ -164,6 +164,7 @@ function AdminRiderFinancePage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "settlements" }, () => void refresh())
       .on("postgres_changes", { event: "*", schema: "public", table: "ledger_adjustments" }, () => void refresh())
       .on("postgres_changes", { event: "*", schema: "public", table: "driver_locations" }, () => void refresh())
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => void refresh())
       .subscribe();
     const t = setInterval(() => void refresh(), 30_000);
     return () => { void supabase.removeChannel(channel); clearInterval(t); };
