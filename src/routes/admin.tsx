@@ -25,8 +25,19 @@ interface AdminOrder {
   status: OrderStatus;
   pickup_address: string;
   dropoff_address: string;
+  pickup_lat: number | null;
+  pickup_lng: number | null;
+  dropoff_lat: number | null;
+  dropoff_lng: number | null;
   estimated_price: number | null;
   created_at: string;
+}
+
+interface RiderLoc {
+  rider_id: string;
+  lat: number;
+  lng: number;
+  updated_at: string;
 }
 
 type AppRole = "admin" | "rider" | "vendor" | "customer";
