@@ -563,10 +563,12 @@ function AdminRiderFinancePage() {
                             </div>
                           </td>
                           <td className="px-3 py-3">
-                            {r.online ? (
-                              <Badge className="border border-success/40 bg-success/15 text-success">● Online</Badge>
+                            {r.busy ? (
+                              <Badge className="border border-warning bg-warning/20 font-semibold text-warning">🟡 Busy</Badge>
+                            ) : r.online ? (
+                              <Badge className="border border-success bg-success/20 font-semibold text-success">🟢 Online</Badge>
                             ) : (
-                              <Badge variant="outline" className="text-muted-foreground">Offline</Badge>
+                              <Badge variant="outline" className="text-muted-foreground">⚫ Offline</Badge>
                             )}
                           </td>
                           <td className="px-3 py-3 text-right font-mono">{r.jobsToday}</td>
