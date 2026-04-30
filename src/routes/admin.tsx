@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Users, Package as PackageIcon, ShieldCheck, Clock, CheckCircle2, UserCog, X, Search, Map as MapIcon, Wallet, CircleDollarSign } from "lucide-react";
 import { toast } from "sonner";
@@ -77,6 +77,8 @@ const STATUSES: OrderStatus[] = ["pending", "accepted", "in_progress", "complete
 function AdminPage() {
   const { isAdmin, loading, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isAdminHome = location.pathname === "/admin";
   const [orders, setOrders] = useState<AdminOrder[] | null>(null);
   const [userCount, setUserCount] = useState<number | null>(null);
   const [profiles, setProfiles] = useState<ProfileRow[] | null>(null);
@@ -128,8 +130,9 @@ function AdminPage() {
       return;
     }
     if (!isAdmin) return;
+    if (!isAdminHome) return;
     refresh();
-  }, [isAdmin, loading, user, navigate]);
+  }, [isAdmin, loading, user, navigate, isAdminHome]);
 
   const updateStatus = async (id: string, status: OrderStatus) => {
     const { error } = await supabase.from("orders").update({ status }).eq("id", id);
@@ -217,6 +220,10 @@ function AdminPage() {
         </div>
       </PageShell>
     );
+  }
+
+  if (!isAdminHome) {
+    return <Outlet />;
   }
 
   const stats = orders
