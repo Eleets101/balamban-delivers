@@ -156,11 +156,18 @@ function AdminFinancePage() {
         ...settlementRows.map(r => r.rider_id),
         ...adjustmentRows.map(r => r.rider_id),
       ]));
-      if (riderIds.length > 0) {
-        const { data: ps } = await supabase.from("profiles").select("id, full_name, phone").in("id", riderIds);
+      const { data: riderRoleRows } = await supabase.from("user_roles").select("user_id").eq("role", "rider");
+      const allRiderIds = Array.from(new Set([
+        ...riderIds,
+        ...((riderRoleRows ?? []) as { user_id: string }[]).map(r => r.user_id),
+      ]));
+      if (allRiderIds.length > 0) {
+        const { data: ps } = await supabase.from("profiles").select("id, full_name, phone").in("id", allRiderIds);
         const map: Record<string, RiderProfile> = {};
         (ps ?? []).forEach(p => { map[p.id] = p as RiderProfile; });
         setProfiles(map);
+      } else {
+        setProfiles({});
       }
 
       // Pull order rows to learn customer ids for the ledger view
@@ -212,36 +219,7 @@ function AdminFinancePage() {
   // Per-rider rollup (lifetime balances + window-scoped order count/cash)
   const perRider = useMemo(() => {
     if (!ledger || !settlements || !adjustments) return null;
-    const ids = Array.from(new Set([
-      ...ledger.map(r => r.rider_id),
-      ...settlements.map(r => r.rider_id),
-      ...adjustments.map(r => r.rider_id),
-    ]));
-    return ids.map(id => {
-      const ll = ledger.filter(r => r.rider_id === id);
-      const ss = settlements.filter(r => r.rider_id === id);
-      const aa = adjustments.filter(r => r.rider_id === id);
-      const wl = summarizeWallet(ll, ss, aa);
-      const inRange = ll.filter(r => r.created_at >= rangeWin.start.toISOString() && r.created_at < rangeWin.end.toISOString());
-      const cashInRange = inRange.filter(r => r.payment_method === "cash").reduce((sum, r) => sum + Number(r.customer_paid), 0);
-      const gcashInRange = inRange.filter(r => r.payment_method === "gcash").reduce((sum, r) => sum + Number(r.customer_paid), 0);
-      const earningsInRange = inRange.reduce((sum, r) => sum + Number(r.rider_earning), 0);
-      const lastApproved = ss.find(s => s.status === "approved");
-      return {
-        id,
-        profile: profiles[id],
-        ordersInRange: inRange.length,
-        cashInRange,
-        gcashInRange,
-        earningsInRange,
-        riderOwes: wl.riderOwes,
-        hatodgoOwes: wl.hatodgoOwes,
-        netBalance: wl.netBalance,
-        cashHeld: wl.cashHeldWeek, // running cash held
-        lastSettlement: lastApproved,
-        hasPending: ss.some(s => s.status === "pending"),
-      };
-    }).sort((a, b) => Math.abs(b.netBalance) - Math.abs(a.netBalance));
+    return buildRiderFinanceRows(ledger, settlements, adjustments, profiles, rangeWin);
   }, [ledger, settlements, adjustments, profiles, rangeWin]);
 
   const alerts = useMemo(() => {
