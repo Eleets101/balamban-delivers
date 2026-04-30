@@ -508,7 +508,7 @@ function UploadZone({
   fileInputRef,
   onFile,
 }: {
-  fileInputRef: React.RefObject<HTMLInputElement>;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
   onFile: (f: File) => void;
 }) {
   const [dragOver, setDragOver] = useState(false);

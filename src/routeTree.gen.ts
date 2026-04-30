@@ -31,6 +31,7 @@ import { Route as ServicesFoodRestaurantIdRouteImport } from './routes/services.
 import { Route as CheckoutOrderIdSuccessRouteImport } from './routes/checkout.$orderId.success'
 import { Route as CheckoutOrderIdPayRouteImport } from './routes/checkout.$orderId.pay'
 import { Route as CheckoutOrderIdFailedRouteImport } from './routes/checkout.$orderId.failed'
+import { Route as AdminRestaurantsImportCsvRouteImport } from './routes/admin.restaurants.import-csv'
 import { Route as AdminRestaurantsImportRouteImport } from './routes/admin.restaurants.import'
 import { Route as AdminRestaurantsRestaurantIdRouteImport } from './routes/admin.restaurants.$restaurantId'
 
@@ -145,6 +146,12 @@ const CheckoutOrderIdFailedRoute = CheckoutOrderIdFailedRouteImport.update({
   path: '/failed',
   getParentRoute: () => CheckoutOrderIdRoute,
 } as any)
+const AdminRestaurantsImportCsvRoute =
+  AdminRestaurantsImportCsvRouteImport.update({
+    id: '/import-csv',
+    path: '/import-csv',
+    getParentRoute: () => AdminRestaurantsRoute,
+  } as any)
 const AdminRestaurantsImportRoute = AdminRestaurantsImportRouteImport.update({
   id: '/import',
   path: '/import',
@@ -176,6 +183,7 @@ export interface FileRoutesByFullPath {
   '/services/ride': typeof ServicesRideRoute
   '/admin/restaurants/$restaurantId': typeof AdminRestaurantsRestaurantIdRoute
   '/admin/restaurants/import': typeof AdminRestaurantsImportRoute
+  '/admin/restaurants/import-csv': typeof AdminRestaurantsImportCsvRoute
   '/checkout/$orderId/failed': typeof CheckoutOrderIdFailedRoute
   '/checkout/$orderId/pay': typeof CheckoutOrderIdPayRoute
   '/checkout/$orderId/success': typeof CheckoutOrderIdSuccessRoute
@@ -202,6 +210,7 @@ export interface FileRoutesByTo {
   '/services/ride': typeof ServicesRideRoute
   '/admin/restaurants/$restaurantId': typeof AdminRestaurantsRestaurantIdRoute
   '/admin/restaurants/import': typeof AdminRestaurantsImportRoute
+  '/admin/restaurants/import-csv': typeof AdminRestaurantsImportCsvRoute
   '/checkout/$orderId/failed': typeof CheckoutOrderIdFailedRoute
   '/checkout/$orderId/pay': typeof CheckoutOrderIdPayRoute
   '/checkout/$orderId/success': typeof CheckoutOrderIdSuccessRoute
@@ -229,6 +238,7 @@ export interface FileRoutesById {
   '/services/ride': typeof ServicesRideRoute
   '/admin/restaurants/$restaurantId': typeof AdminRestaurantsRestaurantIdRoute
   '/admin/restaurants/import': typeof AdminRestaurantsImportRoute
+  '/admin/restaurants/import-csv': typeof AdminRestaurantsImportCsvRoute
   '/checkout/$orderId/failed': typeof CheckoutOrderIdFailedRoute
   '/checkout/$orderId/pay': typeof CheckoutOrderIdPayRoute
   '/checkout/$orderId/success': typeof CheckoutOrderIdSuccessRoute
@@ -257,6 +267,7 @@ export interface FileRouteTypes {
     | '/services/ride'
     | '/admin/restaurants/$restaurantId'
     | '/admin/restaurants/import'
+    | '/admin/restaurants/import-csv'
     | '/checkout/$orderId/failed'
     | '/checkout/$orderId/pay'
     | '/checkout/$orderId/success'
@@ -283,6 +294,7 @@ export interface FileRouteTypes {
     | '/services/ride'
     | '/admin/restaurants/$restaurantId'
     | '/admin/restaurants/import'
+    | '/admin/restaurants/import-csv'
     | '/checkout/$orderId/failed'
     | '/checkout/$orderId/pay'
     | '/checkout/$orderId/success'
@@ -309,6 +321,7 @@ export interface FileRouteTypes {
     | '/services/ride'
     | '/admin/restaurants/$restaurantId'
     | '/admin/restaurants/import'
+    | '/admin/restaurants/import-csv'
     | '/checkout/$orderId/failed'
     | '/checkout/$orderId/pay'
     | '/checkout/$orderId/success'
@@ -487,6 +500,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckoutOrderIdFailedRouteImport
       parentRoute: typeof CheckoutOrderIdRoute
     }
+    '/admin/restaurants/import-csv': {
+      id: '/admin/restaurants/import-csv'
+      path: '/import-csv'
+      fullPath: '/admin/restaurants/import-csv'
+      preLoaderRoute: typeof AdminRestaurantsImportCsvRouteImport
+      parentRoute: typeof AdminRestaurantsRoute
+    }
     '/admin/restaurants/import': {
       id: '/admin/restaurants/import'
       path: '/import'
@@ -507,11 +527,13 @@ declare module '@tanstack/react-router' {
 interface AdminRestaurantsRouteChildren {
   AdminRestaurantsRestaurantIdRoute: typeof AdminRestaurantsRestaurantIdRoute
   AdminRestaurantsImportRoute: typeof AdminRestaurantsImportRoute
+  AdminRestaurantsImportCsvRoute: typeof AdminRestaurantsImportCsvRoute
 }
 
 const AdminRestaurantsRouteChildren: AdminRestaurantsRouteChildren = {
   AdminRestaurantsRestaurantIdRoute: AdminRestaurantsRestaurantIdRoute,
   AdminRestaurantsImportRoute: AdminRestaurantsImportRoute,
+  AdminRestaurantsImportCsvRoute: AdminRestaurantsImportCsvRoute,
 }
 
 const AdminRestaurantsRouteWithChildren =
