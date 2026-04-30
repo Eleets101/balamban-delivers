@@ -119,7 +119,7 @@ function DriverPage() {
           const row = payload.new as { id: string; status: OrderStatus; service_type: ServiceType; estimated_price: number | null };
           if (row.status === "pending" && !seenOrderIdsRef.current.has(row.id)) {
             seenOrderIdsRef.current.add(row.id);
-            playNewOrderAlert({ sound: soundOn, vibrate: true });
+            playNewOrderAlert({ sound: soundOnRef.current, vibrate: true });
             toast.success("New order available!", {
               description: `${SERVICE_LABELS[row.service_type]} · ₱${Number(row.estimated_price ?? 0).toFixed(0)}`,
               duration: 6000,
