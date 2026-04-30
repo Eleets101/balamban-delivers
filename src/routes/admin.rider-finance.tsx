@@ -585,6 +585,17 @@ function AdminRiderFinancePage() {
           )}
         </div>
 
+        {/* Empty state message — shown when no real ledger activity yet */}
+        {!showSample && rows && rows.length === 0 && (
+          <p className="mt-4 rounded-lg border border-border/60 bg-muted/30 px-4 py-3 text-center text-sm text-muted-foreground">
+            No completed trips yet. Values will auto-populate when riders complete orders.
+          </p>
+        )}
+        {!showSample && rows && rows.length > 0 && (rows.every(r => r.jobsToday === 0)) && (
+          <p className="mt-4 rounded-lg border border-border/60 bg-muted/30 px-4 py-3 text-center text-sm text-muted-foreground">
+            No completed trips yet today. Values will auto-populate when riders complete orders.
+          </p>
+        )}
         {/* Adjustment dialog */}
         <Dialog open={!!adjustOpen} onOpenChange={(o) => { if (!o) setAdjustOpen(null); }}>
           <DialogContent>
