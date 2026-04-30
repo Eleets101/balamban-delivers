@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Bike, Loader2, MapPin, Navigation, Power, ShieldAlert, Zap } from "lucide-react";
+import { Bell, BellOff, Bike, Loader2, MapPin, Navigation, Power, ShieldAlert, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { LiveTrackingMap } from "@/components/map/LiveTrackingMap.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
 import { DriverEarningsBar } from "@/components/DriverEarningsBar";
+import { playNewOrderAlert, unlockAlertSound } from "@/lib/alerts";
 import { googleMapsUrl, wazeUrl } from "@/lib/geo";
 import { SERVICE_LABELS, STATUS_LABELS, STATUS_COLORS, type OrderStatus, type ServiceType } from "@/lib/orders";
 import {
@@ -63,15 +64,29 @@ function DriverPage() {
   const [myCoords, setMyCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [myHistory, setMyHistory] = useState<LocationSample[]>([]);
   const [adaptive, setAdaptive] = useState(true);
+  const [soundOn, setSoundOn] = useState(true);
   const [, setTick] = useState(0);
   const watchIdRef = useRef<number | null>(null);
   const activeOrderIdRef = useRef<string | null>(null);
+  const seenOrderIdsRef = useRef<Set<string>>(new Set());
+  const soundOnRef = useRef(true);
 
   const allowed = isRider || isAdmin;
   const mySmoothedMps = smoothedSpeedMps(myHistory);
   const myVariance = speedVariance(myHistory);
   const refreshSec = Math.round((adaptive ? adaptiveRefreshMs(myVariance) : 30_000) / 1000);
   const isFastRefresh = adaptive && myVariance != null && myVariance >= 0.3;
+
+  // Keep latest sound preference accessible inside realtime callbacks
+  useEffect(() => {
+    soundOnRef.current = soundOn;
+  }, [soundOn]);
+
+  // Tick every second so available-order countdown timers re-render
+  useEffect(() => {
+    const id = window.setInterval(() => setTick((n) => n + 1), 1000);
+    return () => window.clearInterval(id);
+  }, []);
 
   // Adaptive ETA tick — recomputes ETA labels on a cadence driven by speed variance.
   useEffect(() => {
@@ -89,7 +104,12 @@ function DriverPage() {
       .or(`status.eq.pending,rider_id.eq.${user?.id ?? "00000000-0000-0000-0000-000000000000"}`)
       .order("created_at", { ascending: false })
       .limit(50);
-    setOrders((data as DriverOrder[]) ?? []);
+    const list = (data as DriverOrder[]) ?? [];
+    // Seed seen-set on first load so we don't alert for pre-existing orders
+    if (seenOrderIdsRef.current.size === 0 && list.length > 0) {
+      list.forEach((o) => seenOrderIdsRef.current.add(o.id));
+    }
+    setOrders(list);
   };
 
   useEffect(() => {
@@ -103,7 +123,24 @@ function DriverPage() {
 
     const channel = supabase
       .channel("driver-orders")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => refresh())
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "orders" },
+        (payload) => {
+          const row = payload.new as { id: string; status: OrderStatus; service_type: ServiceType; estimated_price: number | null };
+          if (row.status === "pending" && !seenOrderIdsRef.current.has(row.id)) {
+            seenOrderIdsRef.current.add(row.id);
+            playNewOrderAlert({ sound: soundOnRef.current, vibrate: true });
+            toast.success("New order available!", {
+              description: `${SERVICE_LABELS[row.service_type]} · ₱${Number(row.estimated_price ?? 0).toFixed(0)}`,
+              duration: 6000,
+            });
+          }
+          refresh();
+        },
+      )
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders" }, () => refresh())
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "orders" }, () => refresh())
       .subscribe();
 
     const notifChannel = supabase
@@ -292,6 +329,26 @@ function DriverPage() {
               </span>
             </span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSoundOn((v) => {
+                const next = !v;
+                if (next) void unlockAlertSound();
+                return next;
+              });
+            }}
+            aria-pressed={soundOn}
+            title={soundOn ? "Sound alerts on — tap to mute" : "Sound alerts off — tap to enable"}
+            className={`flex h-12 w-12 items-center justify-center rounded-full border transition-colors ${
+              soundOn
+                ? "border-primary/40 bg-primary/10 text-primary-glow"
+                : "border-border/60 bg-muted/30 text-muted-foreground"
+            }`}
+          >
+            {soundOn ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
+          </button>
         </div>
 
         {user && (
@@ -455,22 +512,46 @@ function DriverPage() {
                     })
                   : undefined;
                 const fare = Number(o.estimated_price ?? 0);
-                const isFresh = Date.now() - new Date(o.created_at).getTime() < 60_000;
+                const ageMs = Date.now() - new Date(o.created_at).getTime();
+                const isFresh = ageMs < 60_000;
+                // 30s "act fast" countdown after order is created
+                const ACCEPT_WINDOW_MS = 30_000;
+                const secondsLeft = Math.max(0, Math.ceil((ACCEPT_WINDOW_MS - ageMs) / 1000));
+                const showCountdown = secondsLeft > 0;
+                const urgent = secondsLeft > 0 && secondsLeft <= 10;
 
                 return (
                   <article
                     key={o.id}
-                    className="rounded-2xl border border-border/60 p-4 transition-all hover:border-primary/40 hover:shadow-[var(--shadow-glow)]"
+                    className={`rounded-2xl border p-4 transition-all hover:shadow-[var(--shadow-glow)] ${
+                      urgent
+                        ? "border-destructive/60 animate-pulse"
+                        : isFresh
+                        ? "border-primary/50"
+                        : "border-border/60 hover:border-primary/40"
+                    }`}
                     style={{ background: "var(--gradient-card)" }}
                   >
                     {/* Header: service + fare */}
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <h3 className="font-display text-base font-bold">{SERVICE_LABELS[o.service_type]}</h3>
                           {isFresh && (
                             <span className="rounded-full bg-warning/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-warning">
                               New
+                            </span>
+                          )}
+                          {showCountdown && (
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                                urgent
+                                  ? "bg-destructive/20 text-destructive"
+                                  : "bg-primary/15 text-primary-glow"
+                              }`}
+                              aria-live="polite"
+                            >
+                              ⏱ {secondsLeft}s to act
                             </span>
                           )}
                         </div>
