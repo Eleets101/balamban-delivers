@@ -31,6 +31,7 @@ import { Route as ServicesFoodRestaurantIdRouteImport } from './routes/services.
 import { Route as CheckoutOrderIdSuccessRouteImport } from './routes/checkout.$orderId.success'
 import { Route as CheckoutOrderIdPayRouteImport } from './routes/checkout.$orderId.pay'
 import { Route as CheckoutOrderIdFailedRouteImport } from './routes/checkout.$orderId.failed'
+import { Route as AdminRestaurantsImportRouteImport } from './routes/admin.restaurants.import'
 import { Route as AdminRestaurantsRestaurantIdRouteImport } from './routes/admin.restaurants.$restaurantId'
 
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -144,6 +145,11 @@ const CheckoutOrderIdFailedRoute = CheckoutOrderIdFailedRouteImport.update({
   path: '/failed',
   getParentRoute: () => CheckoutOrderIdRoute,
 } as any)
+const AdminRestaurantsImportRoute = AdminRestaurantsImportRouteImport.update({
+  id: '/import',
+  path: '/import',
+  getParentRoute: () => AdminRestaurantsRoute,
+} as any)
 const AdminRestaurantsRestaurantIdRoute =
   AdminRestaurantsRestaurantIdRouteImport.update({
     id: '/$restaurantId',
@@ -169,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/services/padala': typeof ServicesPadalaRoute
   '/services/ride': typeof ServicesRideRoute
   '/admin/restaurants/$restaurantId': typeof AdminRestaurantsRestaurantIdRoute
+  '/admin/restaurants/import': typeof AdminRestaurantsImportRoute
   '/checkout/$orderId/failed': typeof CheckoutOrderIdFailedRoute
   '/checkout/$orderId/pay': typeof CheckoutOrderIdPayRoute
   '/checkout/$orderId/success': typeof CheckoutOrderIdSuccessRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/services/padala': typeof ServicesPadalaRoute
   '/services/ride': typeof ServicesRideRoute
   '/admin/restaurants/$restaurantId': typeof AdminRestaurantsRestaurantIdRoute
+  '/admin/restaurants/import': typeof AdminRestaurantsImportRoute
   '/checkout/$orderId/failed': typeof CheckoutOrderIdFailedRoute
   '/checkout/$orderId/pay': typeof CheckoutOrderIdPayRoute
   '/checkout/$orderId/success': typeof CheckoutOrderIdSuccessRoute
@@ -220,6 +228,7 @@ export interface FileRoutesById {
   '/services/padala': typeof ServicesPadalaRoute
   '/services/ride': typeof ServicesRideRoute
   '/admin/restaurants/$restaurantId': typeof AdminRestaurantsRestaurantIdRoute
+  '/admin/restaurants/import': typeof AdminRestaurantsImportRoute
   '/checkout/$orderId/failed': typeof CheckoutOrderIdFailedRoute
   '/checkout/$orderId/pay': typeof CheckoutOrderIdPayRoute
   '/checkout/$orderId/success': typeof CheckoutOrderIdSuccessRoute
@@ -247,6 +256,7 @@ export interface FileRouteTypes {
     | '/services/padala'
     | '/services/ride'
     | '/admin/restaurants/$restaurantId'
+    | '/admin/restaurants/import'
     | '/checkout/$orderId/failed'
     | '/checkout/$orderId/pay'
     | '/checkout/$orderId/success'
@@ -272,6 +282,7 @@ export interface FileRouteTypes {
     | '/services/padala'
     | '/services/ride'
     | '/admin/restaurants/$restaurantId'
+    | '/admin/restaurants/import'
     | '/checkout/$orderId/failed'
     | '/checkout/$orderId/pay'
     | '/checkout/$orderId/success'
@@ -297,6 +308,7 @@ export interface FileRouteTypes {
     | '/services/padala'
     | '/services/ride'
     | '/admin/restaurants/$restaurantId'
+    | '/admin/restaurants/import'
     | '/checkout/$orderId/failed'
     | '/checkout/$orderId/pay'
     | '/checkout/$orderId/success'
@@ -475,6 +487,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckoutOrderIdFailedRouteImport
       parentRoute: typeof CheckoutOrderIdRoute
     }
+    '/admin/restaurants/import': {
+      id: '/admin/restaurants/import'
+      path: '/import'
+      fullPath: '/admin/restaurants/import'
+      preLoaderRoute: typeof AdminRestaurantsImportRouteImport
+      parentRoute: typeof AdminRestaurantsRoute
+    }
     '/admin/restaurants/$restaurantId': {
       id: '/admin/restaurants/$restaurantId'
       path: '/$restaurantId'
@@ -487,10 +506,12 @@ declare module '@tanstack/react-router' {
 
 interface AdminRestaurantsRouteChildren {
   AdminRestaurantsRestaurantIdRoute: typeof AdminRestaurantsRestaurantIdRoute
+  AdminRestaurantsImportRoute: typeof AdminRestaurantsImportRoute
 }
 
 const AdminRestaurantsRouteChildren: AdminRestaurantsRouteChildren = {
   AdminRestaurantsRestaurantIdRoute: AdminRestaurantsRestaurantIdRoute,
+  AdminRestaurantsImportRoute: AdminRestaurantsImportRoute,
 }
 
 const AdminRestaurantsRouteWithChildren =

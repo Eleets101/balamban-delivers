@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Plus, Pencil, ArrowLeft, Store, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { Loader2, Plus, Pencil, ArrowLeft, Store, Eye, EyeOff, ShieldCheck, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -93,9 +93,16 @@ function AdminRestaurantsPage() {
             <Store className="h-7 w-7 text-primary-glow" />
             <h1 className="font-display text-2xl font-bold sm:text-3xl">Restaurants</h1>
           </div>
-          <Button onClick={() => setCreating(true)}>
-            <Plus className="h-4 w-4" /> Add restaurant
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link to="/admin/restaurants/import">
+                <Download className="h-4 w-4" /> Import from OSM
+              </Link>
+            </Button>
+            <Button onClick={() => setCreating(true)}>
+              <Plus className="h-4 w-4" /> Add restaurant
+            </Button>
+          </div>
         </div>
 
         <div
