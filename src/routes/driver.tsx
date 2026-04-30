@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { LiveTrackingMap } from "@/components/map/LiveTrackingMap.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
+import { DriverEarningsBar } from "@/components/DriverEarningsBar";
 import { googleMapsUrl, wazeUrl } from "@/lib/geo";
 import { SERVICE_LABELS, STATUS_LABELS, STATUS_COLORS, type OrderStatus, type ServiceType } from "@/lib/orders";
 import {
@@ -57,6 +58,7 @@ function DriverPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<DriverOrder[] | null>(null);
   const [sharing, setSharing] = useState(false);
+  const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null);
   const [myCoords, setMyCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [myHistory, setMyHistory] = useState<LocationSample[]>([]);
   const [adaptive, setAdaptive] = useState(true);
@@ -253,13 +255,23 @@ function DriverPage() {
             <p className="mt-1 text-muted-foreground">Accept orders and share your live location.</p>
           </div>
           <Button
-            onClick={() => setSharing((v) => !v)}
+            onClick={() =>
+              setSharing((v) => {
+                const next = !v;
+                setSessionStartedAt(next ? Date.now() : null);
+                return next;
+              })
+            }
             variant={sharing ? "default" : "outline"}
             className={sharing ? "shadow-[var(--shadow-glow)]" : ""}
           >
             <Power className="h-4 w-4" /> {sharing ? "Sharing location — go offline" : "Go online & share location"}
           </Button>
         </div>
+
+        {user && (
+          <DriverEarningsBar userId={user.id} sharing={sharing} sessionStartedAt={sessionStartedAt} />
+        )}
 
         {sharing && (
           <div className="mt-4 space-y-2 rounded-xl border border-primary/30 bg-primary/10 p-3 text-xs text-primary-glow">
