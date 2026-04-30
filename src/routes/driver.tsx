@@ -254,7 +254,8 @@ function DriverPage() {
             </h1>
             <p className="mt-1 text-muted-foreground">Accept orders and share your live location.</p>
           </div>
-          <Button
+          <button
+            type="button"
             onClick={() =>
               setSharing((v) => {
                 const next = !v;
@@ -262,11 +263,34 @@ function DriverPage() {
                 return next;
               })
             }
-            variant={sharing ? "default" : "outline"}
-            className={sharing ? "shadow-[var(--shadow-glow)]" : ""}
+            aria-pressed={sharing}
+            className={`group relative flex min-w-[260px] items-center gap-4 rounded-2xl border px-5 py-4 text-left transition-all ${
+              sharing
+                ? "border-success/60 bg-success/10 shadow-[0_0_0_4px_hsl(var(--success)/0.15),0_10px_40px_-10px_hsl(var(--success)/0.6)]"
+                : "border-border/60 bg-muted/30 hover:border-border"
+            }`}
           >
-            <Power className="h-4 w-4" /> {sharing ? "Sharing location — go offline" : "Go online & share location"}
-          </Button>
+            <span className="relative flex h-12 w-12 items-center justify-center">
+              {sharing && (
+                <span className="absolute inset-0 animate-ping rounded-full bg-success/40" aria-hidden />
+              )}
+              <span
+                className={`relative flex h-12 w-12 items-center justify-center rounded-full ${
+                  sharing ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"
+                }`}
+              >
+                <Power className="h-5 w-5" />
+              </span>
+            </span>
+            <span className="flex flex-col">
+              <span className={`font-display text-lg font-bold leading-tight ${sharing ? "text-success" : "text-foreground"}`}>
+                {sharing ? "🟢 ONLINE" : "⚫ OFFLINE"}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {sharing ? "Receiving orders · tap to go offline" : "Tap to go online & share location"}
+              </span>
+            </span>
+          </button>
         </div>
 
         {user && (
