@@ -19,6 +19,7 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
@@ -231,6 +232,46 @@ function AdminRiderFinancePage() {
       ridersOwing: rows.filter(r => r.riderOwes > 0).length,
     };
   }, [rows, ledger, todayStart]);
+
+  // 7-day trend (orders + revenue per day)
+  const trend7d = useMemo(() => {
+    const days: { key: string; label: string; orders: number; revenue: number; profit: number }[] = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - i);
+      days.push({
+        key: d.toISOString().slice(0, 10),
+        label: d.toLocaleDateString(undefined, { weekday: "short" }),
+        orders: 0,
+        revenue: 0,
+        profit: 0,
+      });
+    }
+    const idx: Record<string, typeof days[number]> = {};
+    days.forEach(d => { idx[d.key] = d; });
+
+    if (showSample) {
+      // deterministic-ish sample momentum
+      const seeds = [12, 18, 22, 19, 28, 34, 30];
+      days.forEach((d, i) => {
+        d.orders = seeds[i];
+        d.revenue = seeds[i] * 165;
+        d.profit = Math.round(seeds[i] * 165 * 0.2);
+      });
+    } else if (ledger) {
+      for (const row of ledger) {
+        const k = new Date(row.created_at).toISOString().slice(0, 10);
+        const bucket = idx[k];
+        if (!bucket) continue;
+        bucket.orders += 1;
+        bucket.revenue += Number(row.customer_paid);
+        bucket.profit += Number(row.platform_commission);
+      }
+    }
+    return days;
+  }, [ledger, showSample]);
 
   // Sample rows for visual inspection (admin-only test toggle, no DB writes)
   const sampleRows = useMemo(() => {
@@ -483,6 +524,56 @@ function AdminRiderFinancePage() {
             </div>
             <div className="flex items-center gap-2 text-success">
               <TrendingUp className="h-10 w-10 sm:h-12 sm:w-12" />
+            </div>
+          </div>
+        </div>
+
+        {/* 7-day trend charts */}
+        <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <div className="rounded-2xl border border-border/60 bg-card/60 p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Orders — last 7 days</h3>
+              <span className="text-xs text-muted-foreground">
+                {trend7d.reduce((s, d) => s + d.orders, 0)} total
+              </span>
+            </div>
+            <div className="h-44">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trend7d} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                  <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <RTooltip
+                    contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                    labelStyle={{ color: "hsl(var(--foreground))" }}
+                  />
+                  <Line type="monotone" dataKey="orders" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-border/60 bg-card/60 p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Revenue — last 7 days</h3>
+              <span className="text-xs text-muted-foreground">
+                {formatPeso(trend7d.reduce((s, d) => s + d.revenue, 0))} gross · {formatPeso(trend7d.reduce((s, d) => s + d.profit, 0))} profit
+              </span>
+            </div>
+            <div className="h-44">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trend7d} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+                  <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `₱${v >= 1000 ? `${(v/1000).toFixed(1)}k` : v}`} />
+                  <RTooltip
+                    contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                    formatter={(v: number, name: string) => [formatPeso(v), name === "revenue" ? "Gross" : "Profit"]}
+                  />
+                  <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ r: 3 }} name="revenue" />
+                  <Line type="monotone" dataKey="profit" stroke="hsl(var(--success))" strokeWidth={2.5} dot={{ r: 3 }} name="profit" />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
