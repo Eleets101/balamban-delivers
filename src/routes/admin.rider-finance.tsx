@@ -518,9 +518,9 @@ function AdminRiderFinancePage() {
                           </td>
                           <td className="px-3 py-3 text-right">
                             <div className="flex flex-wrap justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                              <Button size="sm" variant="outline" disabled={!weOwe || acting === r.id} onClick={() => markRiderPaid(r.id)}>Pay</Button>
-                              <Button size="sm" variant="outline" disabled={!owesUs || acting === r.id} onClick={() => markCashRemitted(r.id)}>Remit</Button>
-                              <Button size="sm" variant="ghost" onClick={() => { setAdjustOpen(r.id); setAdjustAmount(""); setAdjustNote(""); }}>
+                              <Button size="sm" variant="outline" disabled={isSample || !weOwe || acting === r.id} onClick={() => markRiderPaid(r.id)}>Pay</Button>
+                              <Button size="sm" variant="outline" disabled={isSample || !owesUs || acting === r.id} onClick={() => markCashRemitted(r.id)}>Remit</Button>
+                              <Button size="sm" variant="ghost" disabled={isSample} onClick={() => { setAdjustOpen(r.id); setAdjustAmount(""); setAdjustNote(""); }}>
                                 <Pencil className="h-3 w-3" /> Adjust
                               </Button>
                             </div>
