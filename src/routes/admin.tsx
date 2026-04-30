@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Users, Package as PackageIcon, ShieldCheck, Clock, CheckCircle2, UserCog, X, Search } from "lucide-react";
+import { Loader2, Users, Package as PackageIcon, ShieldCheck, Clock, CheckCircle2, UserCog, X, Search, Map as MapIcon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,6 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AdminLiveOrdersMap } from "@/components/map/AdminLiveOrdersMap.lazy";
+import { MapClientOnly } from "@/components/map/MapClientOnly";
 import { SERVICE_LABELS, STATUS_LABELS, STATUS_COLORS, type OrderStatus, type ServiceType } from "@/lib/orders";
 
 interface AdminOrder {
