@@ -74,11 +74,11 @@ function AdminWalletPage() {
   }, []);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || rolesLoading) return;
     if (!user) { navigate({ to: "/auth" }); return; }
     if (!isAdmin) return;
     void refresh();
-  }, [user, loading, isAdmin, navigate, refresh]);
+  }, [user, loading, rolesLoading, isAdmin, navigate, refresh]);
 
   // Realtime
   useEffect(() => {
