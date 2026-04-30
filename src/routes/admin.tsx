@@ -280,6 +280,10 @@ function AdminPage() {
           </MapClientOnly>
         </div>
 
+        <div className="mt-6">
+          <OnlineRiders />
+        </div>
+
         <h2 className="mt-12 font-display text-xl font-bold">Recent orders</h2>
         <div
           className="mt-4 overflow-hidden rounded-2xl border border-border/60"
