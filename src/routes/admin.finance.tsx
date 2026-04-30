@@ -320,7 +320,7 @@ function AdminFinancePage() {
       status: r.netBalance === 0 ? "settled" : r.netBalance > 0 ? "hatodgo_owes_rider" : "rider_owes_hatodgo",
     }));
     try {
-      const { error } = await supabase.from("daily_finance_snapshots").upsert({
+      const snapshotPayload = {
         day: dayStr,
         gross_sales: fin.grossSales,
         total_orders: fin.totalOrders,
@@ -333,7 +333,8 @@ function AdminFinancePage() {
         rider_breakdown: riderBreakdown,
         notes: notes.trim() || null,
         generated_by: user.id,
-      }, { onConflict: "day" });
+      };
+      const { error } = await supabase.from("daily_finance_snapshots").upsert(snapshotPayload as never, { onConflict: "day" });
       if (error) throw error;
       toast.success("End-of-day saved", { description: `Snapshot for ${dayStr} stored.` });
       setEodOpen(false);
