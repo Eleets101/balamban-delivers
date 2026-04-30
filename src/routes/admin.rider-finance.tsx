@@ -202,13 +202,19 @@ function AdminRiderFinancePage() {
 
   const summary = useMemo(() => {
     if (!rows) return null;
+    const todayLedger = ledger?.filter(r => new Date(r.created_at) >= todayStart) ?? [];
+    const grossSalesToday = todayLedger.reduce((s, r) => s + Number(r.customer_paid), 0);
+    const riderCostToday = todayLedger.reduce((s, r) => s + Number(r.rider_earning), 0);
+    const companyRevenue = todayLedger.reduce((s, r) => s + Number(r.platform_commission), 0);
     return {
       ridersToday: rows.filter(r => r.jobsToday > 0).length,
       jobsToday: rows.reduce((s, r) => s + r.jobsToday, 0),
       cashCollected: rows.reduce((s, r) => s + r.cashHeldToday, 0),
       gcashCollected: rows.reduce((s, r) => s + r.gcashToday, 0),
-      companyRevenue: ledger?.filter(r => new Date(r.created_at) >= todayStart)
-        .reduce((s, r) => s + Number(r.platform_commission), 0) ?? 0,
+      companyRevenue,
+      grossSalesToday,
+      riderCostToday,
+      netProfitToday: grossSalesToday - riderCostToday,
       riderEarningsUnpaid: rows.reduce((s, r) => s + r.hatodgoOwes, 0),
       ridersOwing: rows.filter(r => r.riderOwes > 0).length,
     };
