@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   AlertTriangle,
@@ -369,7 +369,7 @@ function AdminRiderFinancePage() {
                       ? "bg-destructive/5 hover:bg-destructive/10"
                       : weOwe ? "bg-warning/5 hover:bg-warning/10" : "hover:bg-secondary/40";
                     return (
-                      <>
+                      <Fragment key={r.id}>
                         <tr
                           key={r.id}
                           className={`cursor-pointer border-b border-border/40 transition ${rowAccent}`}
@@ -459,7 +459,7 @@ function AdminRiderFinancePage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </Fragment>
                     );
                   })}
                 </tbody>
