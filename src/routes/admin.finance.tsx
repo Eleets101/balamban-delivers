@@ -160,10 +160,10 @@ function AdminFinancePage() {
     return () => { void supabase.removeChannel(channel); };
   }, [isAdmin, refresh]);
 
-  const window = useMemo(() => rangeWindow(range), [range]);
+  const rangeWin = useMemo(() => rangeWindow(range), [range]);
   const summary = useMemo(() => {
     if (!ledger || !settlements) return null;
-    return summarizeFinance(ledger, settlements, window);
+    return summarizeFinance(ledger, settlements, rangeWin);
   }, [ledger, settlements, window]);
 
   // Per-rider rollup (lifetime balances + window-scoped order count/cash)
@@ -179,7 +179,7 @@ function AdminFinancePage() {
       const ss = settlements.filter(r => r.rider_id === id);
       const aa = adjustments.filter(r => r.rider_id === id);
       const wl = summarizeWallet(ll, ss, aa);
-      const inRange = ll.filter(r => r.created_at >= window.start.toISOString() && r.created_at < window.end.toISOString());
+      const inRange = ll.filter(r => r.created_at >= rangeWin.start.toISOString() && r.created_at < rangeWin.end.toISOString());
       const cashInRange = inRange.filter(r => r.payment_method === "cash").reduce((sum, r) => sum + Number(r.customer_paid), 0);
       const gcashInRange = inRange.filter(r => r.payment_method === "gcash").reduce((sum, r) => sum + Number(r.customer_paid), 0);
       const earningsInRange = inRange.reduce((sum, r) => sum + Number(r.rider_earning), 0);
@@ -215,7 +215,7 @@ function AdminFinancePage() {
 
   const ledgerInRange = useMemo(() => {
     if (!ledger) return [];
-    return ledger.filter(r => r.created_at >= window.start.toISOString() && r.created_at < window.end.toISOString());
+    return ledger.filter(r => r.created_at >= rangeWin.start.toISOString() && r.created_at < rangeWin.end.toISOString());
   }, [ledger, window]);
 
   const exportCsv = () => {
