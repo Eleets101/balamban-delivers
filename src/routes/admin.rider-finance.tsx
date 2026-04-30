@@ -92,12 +92,14 @@ function AdminRiderFinancePage() {
         { data: a, error: ae },
         { data: rr, error: re },
         { data: locs },
+        { data: activeOrders },
       ] = await Promise.all([
         supabase.from("wallet_ledger").select("*").order("created_at", { ascending: false }),
         supabase.from("settlements").select("*").order("created_at", { ascending: false }),
         supabase.from("ledger_adjustments").select("*").order("created_at", { ascending: false }),
         supabase.from("user_roles").select("user_id").eq("role", "rider"),
         supabase.from("driver_locations").select("rider_id, updated_at").gte("updated_at", sinceIso),
+        supabase.from("orders").select("rider_id, status").in("status", ["accepted", "in_progress"]).not("rider_id", "is", null),
       ]);
       if (le) throw le;
       if (se) throw se;
