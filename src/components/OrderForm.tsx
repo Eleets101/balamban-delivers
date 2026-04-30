@@ -104,6 +104,7 @@ export function OrderForm({
 
     const detailsText = String(fd.get("details") ?? "");
     const details: Record<string, unknown> = { description: detailsText };
+    if (landmark.trim()) details.landmark = landmark.trim();
     if (showParcelSize) details.parcel_size = parcelSize;
     if (fareBreakdown) details.fare_breakdown = fareBreakdown;
 
@@ -160,6 +161,7 @@ export function OrderForm({
         <MapClientOnly>
           <MapPicker value={pickupCoords} onChange={setPickupCoords} onAddressResolved={setPickupAddress} />
         </MapClientOnly>
+        <ServiceAreaWarning coords={pickupCoords} label="Pickup" />
       </div>
 
       <div className="space-y-2">
@@ -182,6 +184,20 @@ export function OrderForm({
         <MapClientOnly>
           <MapPicker value={dropoffCoords} onChange={setDropoffCoords} onAddressResolved={setDropoffAddress} />
         </MapClientOnly>
+        <ServiceAreaWarning coords={dropoffCoords} label="Drop-off" />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="landmark">Landmark / nearby reference (optional)</Label>
+        <Input
+          id="landmark"
+          value={landmark}
+          onChange={(e) => setLandmark(e.target.value)}
+          placeholder="e.g. near Gaisano, beside church, Purok 3"
+        />
+        <p className="text-xs text-muted-foreground">
+          Helps the rider find you faster — especially in places without street numbers.
+        </p>
       </div>
 
       <div>
