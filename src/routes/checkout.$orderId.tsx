@@ -3,14 +3,14 @@ import { useEffect, useState } from "react";
 import {
   Loader2,
   MapPin,
-  Wallet,
-  Banknote,
   ShieldCheck,
   Sparkles,
   ArrowRight,
   ArrowLeft,
   Receipt,
 } from "lucide-react";
+import gcashIcon from "@/assets/pay-gcash.png";
+import codIcon from "@/assets/pay-cod.png";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -195,12 +195,14 @@ function CheckoutPage() {
             style={{ background: "var(--gradient-card)" }}
           >
             <div className="flex items-center gap-4">
-              <div
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-primary-foreground"
-                style={{ background: "var(--gradient-primary)" }}
-              >
-                <Wallet className="h-6 w-6" />
-              </div>
+              <img
+                src={gcashIcon}
+                alt="GCash"
+                width={48}
+                height={48}
+                loading="lazy"
+                className="h-12 w-12 shrink-0 rounded-xl object-contain"
+              />
               <div>
                 <p className="font-display text-base font-semibold">Pay Now</p>
                 <p className="text-xs text-muted-foreground">Secure payment via GCash or Maya</p>
@@ -218,9 +220,14 @@ function CheckoutPage() {
             style={{ background: "var(--gradient-card)" }}
           >
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-foreground">
-                <Banknote className="h-6 w-6" />
-              </div>
+              <img
+                src={codIcon}
+                alt="Cash on Delivery"
+                width={48}
+                height={48}
+                loading="lazy"
+                className="h-12 w-12 shrink-0 rounded-xl object-contain"
+              />
               <div>
                 <p className="font-display text-base font-semibold">Pay with Cash</p>
                 <p className="text-xs text-muted-foreground">Pay driver upon arrival</p>
