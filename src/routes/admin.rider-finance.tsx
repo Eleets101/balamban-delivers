@@ -301,12 +301,17 @@ function AdminRiderFinancePage() {
 
   const displaySummary = useMemo(() => {
     if (!showSample) return summary;
+    const grossSalesToday = sampleRows.reduce((s, r) => s + r.grossToday, 0);
+    const riderCostToday = sampleRows.reduce((s, r) => s + r.earningsToday, 0);
     return {
       ridersToday: sampleRows.filter(r => r.jobsToday > 0).length,
       jobsToday: sampleRows.reduce((s, r) => s + r.jobsToday, 0),
       cashCollected: sampleRows.reduce((s, r) => s + r.cashHeldToday, 0),
       gcashCollected: sampleRows.reduce((s, r) => s + r.gcashToday, 0),
-      companyRevenue: Math.round(sampleRows.reduce((s, r) => s + r.grossToday, 0) * 0.2),
+      companyRevenue: grossSalesToday - riderCostToday,
+      grossSalesToday,
+      riderCostToday,
+      netProfitToday: grossSalesToday - riderCostToday,
       riderEarningsUnpaid: sampleRows.reduce((s, r) => s + r.hatodgoOwes, 0),
       ridersOwing: sampleRows.filter(r => r.riderOwes > 0).length,
     };
