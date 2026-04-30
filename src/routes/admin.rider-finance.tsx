@@ -202,13 +202,19 @@ function AdminRiderFinancePage() {
 
   const summary = useMemo(() => {
     if (!rows) return null;
+    const todayLedger = ledger?.filter(r => new Date(r.created_at) >= todayStart) ?? [];
+    const grossSalesToday = todayLedger.reduce((s, r) => s + Number(r.customer_paid), 0);
+    const riderCostToday = todayLedger.reduce((s, r) => s + Number(r.rider_earning), 0);
+    const companyRevenue = todayLedger.reduce((s, r) => s + Number(r.platform_commission), 0);
     return {
       ridersToday: rows.filter(r => r.jobsToday > 0).length,
       jobsToday: rows.reduce((s, r) => s + r.jobsToday, 0),
       cashCollected: rows.reduce((s, r) => s + r.cashHeldToday, 0),
       gcashCollected: rows.reduce((s, r) => s + r.gcashToday, 0),
-      companyRevenue: ledger?.filter(r => new Date(r.created_at) >= todayStart)
-        .reduce((s, r) => s + Number(r.platform_commission), 0) ?? 0,
+      companyRevenue,
+      grossSalesToday,
+      riderCostToday,
+      netProfitToday: grossSalesToday - riderCostToday,
       riderEarningsUnpaid: rows.reduce((s, r) => s + r.hatodgoOwes, 0),
       ridersOwing: rows.filter(r => r.riderOwes > 0).length,
     };
@@ -295,12 +301,17 @@ function AdminRiderFinancePage() {
 
   const displaySummary = useMemo(() => {
     if (!showSample) return summary;
+    const grossSalesToday = sampleRows.reduce((s, r) => s + r.grossToday, 0);
+    const riderCostToday = sampleRows.reduce((s, r) => s + r.earningsToday, 0);
     return {
       ridersToday: sampleRows.filter(r => r.jobsToday > 0).length,
       jobsToday: sampleRows.reduce((s, r) => s + r.jobsToday, 0),
       cashCollected: sampleRows.reduce((s, r) => s + r.cashHeldToday, 0),
       gcashCollected: sampleRows.reduce((s, r) => s + r.gcashToday, 0),
-      companyRevenue: Math.round(sampleRows.reduce((s, r) => s + r.grossToday, 0) * 0.2),
+      companyRevenue: grossSalesToday - riderCostToday,
+      grossSalesToday,
+      riderCostToday,
+      netProfitToday: grossSalesToday - riderCostToday,
       riderEarningsUnpaid: sampleRows.reduce((s, r) => s + r.hatodgoOwes, 0),
       ridersOwing: sampleRows.filter(r => r.riderOwes > 0).length,
     };
@@ -440,6 +451,25 @@ function AdminRiderFinancePage() {
             <Sparkles className="mr-1 inline h-3 w-3" /> Showing <strong>sample data</strong> for layout inspection. No real records are affected. Action buttons are disabled.
           </div>
         )}
+
+        {/* Hero KPI — Net profit today (the #1 number) */}
+        <div className="mt-5 rounded-2xl border border-success/40 bg-gradient-to-br from-success/15 via-success/5 to-transparent p-4 sm:p-6 shadow">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-success">Net profit today (after rider costs)</p>
+              <p className="mt-1 font-display text-4xl font-bold text-success sm:text-5xl">
+                {formatPeso(displaySummary?.netProfitToday ?? 0)}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Gross sales <strong className="text-foreground">{formatPeso(displaySummary?.grossSalesToday ?? 0)}</strong>
+                {" − "}rider earnings <strong className="text-foreground">{formatPeso(displaySummary?.riderCostToday ?? 0)}</strong>
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-success">
+              <TrendingUp className="h-10 w-10 sm:h-12 sm:w-12" />
+            </div>
+          </div>
+        </div>
 
         {/* Summary cards — always render, even with zero values */}
         <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
