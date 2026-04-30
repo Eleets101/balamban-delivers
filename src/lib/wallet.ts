@@ -90,7 +90,20 @@ function isThisWeek(iso: string) {
   return d >= start.getTime() && d < start.getTime() + 7 * DAY_MS;
 }
 
-export function summarizeWallet(ledger: LedgerRow[], settlements: Settlement[]): WalletSummary {
+export type LedgerAdjustment = {
+  id: string;
+  rider_id: string;
+  amount: number; // positive = HatodGo owes rider; negative = rider owes HatodGo
+  note: string;
+  admin_id: string;
+  created_at: string;
+};
+
+export function summarizeWallet(
+  ledger: LedgerRow[],
+  settlements: Settlement[],
+  adjustments: LedgerAdjustment[] = [],
+): WalletSummary {
   let lifetimeEarnings = 0;
   let lifetimeCommission = 0;
   let todayEarnings = 0;
