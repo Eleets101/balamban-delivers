@@ -146,23 +146,66 @@ function AdminRestaurantsPage() {
           </div>
         </div>
 
+        {/* Filter + bulk actions */}
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex gap-1 rounded-full border border-border/60 bg-card p-1 text-xs">
+            {(["all", "hidden", "visible"] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`rounded-full px-3 py-1 capitalize ${
+                  filter === f ? "bg-primary/15 text-primary-glow" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {f}{" "}
+                {f !== "all" && restaurants
+                  ? `(${restaurants.filter((r) => (f === "hidden" ? !r.is_active : r.is_active)).length})`
+                  : ""}
+              </button>
+            ))}
+          </div>
+          {selected.size > 0 && (
+            <div className="flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs">
+              <strong>{selected.size}</strong> selected
+              <Button size="sm" variant="ghost" onClick={clearSelection}>
+                Clear
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => bulkSetActive(false)} disabled={publishing}>
+                <EyeOff className="h-3.5 w-3.5" /> Hide
+              </Button>
+              <Button size="sm" onClick={() => bulkSetActive(true)} disabled={publishing}>
+                {publishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                Publish
+              </Button>
+            </div>
+          )}
+        </div>
+
         <div
-          className="mt-6 overflow-hidden rounded-2xl border border-border/60"
+          className="mt-3 overflow-hidden rounded-2xl border border-border/60"
           style={{ background: "var(--gradient-card)" }}
         >
           {restaurants === null ? (
             <div className="flex justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          ) : restaurants.length === 0 ? (
+          ) : !visible || visible.length === 0 ? (
             <p className="py-12 text-center text-sm text-muted-foreground">
-              No restaurants yet. Click "Add restaurant" to create your first one.
+              {restaurants.length === 0
+                ? 'No restaurants yet. Click "Add restaurant" to create your first one.'
+                : "No restaurants match this filter."}
             </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="border-b border-border/60 text-left text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
+                    <th className="px-3 py-3">
+                      <Checkbox
+                        checked={visible.length > 0 && visible.every((r) => selected.has(r.id))}
+                        onCheckedChange={(v) => (v ? selectAllVisible() : clearSelection())}
+                      />
+                    </th>
                     <th className="px-4 py-3">Restaurant</th>
                     <th className="px-4 py-3">Category</th>
                     <th className="px-4 py-3">Delivery</th>
@@ -171,9 +214,14 @@ function AdminRestaurantsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {restaurants.map((r) => (
+                  {visible.map((r) => (
                     <tr key={r.id} className="border-b border-border/40 last:border-0">
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-3">
+                        <Checkbox
+                          checked={selected.has(r.id)}
+                          onCheckedChange={() => toggleSelect(r.id)}
+                        />
+                      </td>
                         <div className="flex items-center gap-3">
                           {r.logo_url ? (
                             <img src={r.logo_url} alt="" className="h-10 w-10 rounded-lg object-cover" />
