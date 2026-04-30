@@ -116,20 +116,20 @@ const ServicesFoodIndexRoute = ServicesFoodIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesFoodManualRoute = ServicesFoodManualRouteImport.update({
-  id: '/manual',
-  path: '/manual',
-  getParentRoute: () => ServicesFoodRoute,
+  id: '/services/food/manual',
+  path: '/services/food/manual',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesFoodCartRoute = ServicesFoodCartRouteImport.update({
-  id: '/cart',
-  path: '/cart',
-  getParentRoute: () => ServicesFoodRoute,
+  id: '/services/food/cart',
+  path: '/services/food/cart',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesFoodRestaurantIdRoute =
   ServicesFoodRestaurantIdRouteImport.update({
-    id: '/$restaurantId',
-    path: '/$restaurantId',
-    getParentRoute: () => ServicesFoodRoute,
+    id: '/services/food/$restaurantId',
+    path: '/services/food/$restaurantId',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const CheckoutOrderIdSuccessRoute = CheckoutOrderIdSuccessRouteImport.update({
   id: '/success',
@@ -341,6 +341,9 @@ export interface RootRouteChildren {
   ServicesPabiliRoute: typeof ServicesPabiliRoute
   ServicesPadalaRoute: typeof ServicesPadalaRoute
   ServicesRideRoute: typeof ServicesRideRoute
+  ServicesFoodRestaurantIdRoute: typeof ServicesFoodRestaurantIdRoute
+  ServicesFoodCartRoute: typeof ServicesFoodCartRoute
+  ServicesFoodManualRoute: typeof ServicesFoodManualRoute
   ServicesFoodIndexRoute: typeof ServicesFoodIndexRoute
 }
 
@@ -460,24 +463,24 @@ declare module '@tanstack/react-router' {
     }
     '/services/food/manual': {
       id: '/services/food/manual'
-      path: '/manual'
+      path: '/services/food/manual'
       fullPath: '/services/food/manual'
       preLoaderRoute: typeof ServicesFoodManualRouteImport
-      parentRoute: typeof ServicesFoodRoute
+      parentRoute: typeof rootRouteImport
     }
     '/services/food/cart': {
       id: '/services/food/cart'
-      path: '/cart'
+      path: '/services/food/cart'
       fullPath: '/services/food/cart'
       preLoaderRoute: typeof ServicesFoodCartRouteImport
-      parentRoute: typeof ServicesFoodRoute
+      parentRoute: typeof rootRouteImport
     }
     '/services/food/$restaurantId': {
       id: '/services/food/$restaurantId'
-      path: '/$restaurantId'
+      path: '/services/food/$restaurantId'
       fullPath: '/services/food/$restaurantId'
       preLoaderRoute: typeof ServicesFoodRestaurantIdRouteImport
-      parentRoute: typeof ServicesFoodRoute
+      parentRoute: typeof rootRouteImport
     }
     '/checkout/$orderId/success': {
       id: '/checkout/$orderId/success'
@@ -593,17 +596,11 @@ const rootRouteChildren: RootRouteChildren = {
   ServicesPabiliRoute: ServicesPabiliRoute,
   ServicesPadalaRoute: ServicesPadalaRoute,
   ServicesRideRoute: ServicesRideRoute,
+  ServicesFoodRestaurantIdRoute: ServicesFoodRestaurantIdRoute,
+  ServicesFoodCartRoute: ServicesFoodCartRoute,
+  ServicesFoodManualRoute: ServicesFoodManualRoute,
   ServicesFoodIndexRoute: ServicesFoodIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
