@@ -58,6 +58,7 @@ function DriverPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<DriverOrder[] | null>(null);
   const [sharing, setSharing] = useState(false);
+  const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null);
   const [myCoords, setMyCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [myHistory, setMyHistory] = useState<LocationSample[]>([]);
   const [adaptive, setAdaptive] = useState(true);
