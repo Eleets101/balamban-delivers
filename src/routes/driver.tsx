@@ -329,6 +329,26 @@ function DriverPage() {
               </span>
             </span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSoundOn((v) => {
+                const next = !v;
+                if (next) void unlockAlertSound();
+                return next;
+              });
+            }}
+            aria-pressed={soundOn}
+            title={soundOn ? "Sound alerts on — tap to mute" : "Sound alerts off — tap to enable"}
+            className={`flex h-12 w-12 items-center justify-center rounded-full border transition-colors ${
+              soundOn
+                ? "border-primary/40 bg-primary/10 text-primary-glow"
+                : "border-border/60 bg-muted/30 text-muted-foreground"
+            }`}
+          >
+            {soundOn ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
+          </button>
         </div>
 
         {user && (
