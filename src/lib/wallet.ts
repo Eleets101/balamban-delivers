@@ -154,7 +154,8 @@ export function summarizeWallet(
 
   const riderOwes = Math.max(0, riderCollectedTotal - approvedRemits);
   const hatodgoOwes = Math.max(0, hatodgoCollectedTotal - approvedPayouts);
-  const netBalance = hatodgoOwes - riderOwes;
+  const adjustmentsTotal = adjustments.reduce((sum, a) => sum + Number(a.amount), 0);
+  const netBalance = hatodgoOwes - riderOwes + adjustmentsTotal;
 
   // Subtract pending remittances from "cash held" so the rider sees only
   // the cash they still physically have.
