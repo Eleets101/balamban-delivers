@@ -576,46 +576,81 @@ function AdminRiderFinancePage() {
                         {isOpen && (
                           <tr key={`${r.id}-details`} className="border-b border-border/40 bg-card/60">
                             <td colSpan={12} className="p-4">
-                              <h3 className="mb-2 text-sm font-semibold">Today's jobs ({r.todayJobs.length})</h3>
-                              {r.todayJobs.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">No completed jobs today.</p>
-                              ) : (
-                                <div className="overflow-x-auto rounded-lg border border-border/60">
-                                  <table className="w-full text-xs">
-                                    <thead className="bg-muted/30 text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-                                      <tr>
-                                        <th className="px-3 py-2">Time</th>
-                                        <th className="px-3 py-2">Service</th>
-                                        <th className="px-3 py-2 text-right">Fare</th>
-                                        <th className="px-3 py-2">Payment</th>
-                                        <th className="px-3 py-2 text-right">Rider share</th>
-                                        <th className="px-3 py-2 text-right">Company share</th>
-                                        <th className="px-3 py-2">Status</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {r.todayJobs.map(j => (
-                                        <tr key={j.id} className="border-t border-border/40">
-                                          <td className="px-3 py-2">{new Date(j.created_at).toLocaleTimeString()}</td>
-                                          <td className="px-3 py-2">{j.service_type}</td>
-                                          <td className="px-3 py-2 text-right font-mono">{formatPeso(Number(j.customer_paid))}</td>
-                                          <td className="px-3 py-2 capitalize">{j.payment_method}{j.gcash_to ? ` → ${j.gcash_to}` : ""}</td>
-                                          <td className="px-3 py-2 text-right font-mono">{formatPeso(Number(j.rider_earning))}</td>
-                                          <td className="px-3 py-2 text-right font-mono">{formatPeso(Number(j.platform_commission))}</td>
-                                          <td className="px-3 py-2">
-                                            {j.settled ? (
-                                              <Badge className="border border-success/40 bg-success/15 text-success">Settled</Badge>
-                                            ) : (
-                                              <Badge variant="outline" className="text-warning">Unpaid</Badge>
-                                            )}
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
+                              <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                                <div>
+                                  <h3 className="font-display text-lg font-bold">
+                                    {r.profile?.full_name ?? `Rider ${r.id.slice(0, 6)}`} — Daily Breakdown
+                                  </h3>
+                                  <p className="text-xs text-muted-foreground">
+                                    {new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })} · {r.todayJobs.length} job{r.todayJobs.length === 1 ? "" : "s"}
+                                  </p>
                                 </div>
+                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                  <div className="rounded-lg border border-border/60 bg-card/80 px-3 py-2">
+                                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Gross today</div>
+                                    <div className="font-mono text-base font-bold">{formatPeso(r.grossToday)}</div>
+                                  </div>
+                                  <div className="rounded-lg border border-border/60 bg-card/80 px-3 py-2">
+                                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Earnings</div>
+                                    <div className="font-mono text-base font-bold">{formatPeso(r.earningsToday)}</div>
+                                  </div>
+                                  <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2">
+                                    <div className="text-[10px] uppercase tracking-wider text-warning">Cash held</div>
+                                    <div className="font-mono text-base font-bold text-warning">{formatPeso(r.cashHeldToday)}</div>
+                                  </div>
+                                  <div className={`rounded-lg border px-3 py-2 ${r.riderOwes > 0 ? "border-destructive bg-destructive/15" : r.hatodgoOwes > 0 ? "border-success bg-success/15" : "border-border/60 bg-card/80"}`}>
+                                    <div className={`text-[10px] uppercase tracking-wider ${r.riderOwes > 0 ? "text-destructive" : r.hatodgoOwes > 0 ? "text-success" : "text-muted-foreground"}`}>
+                                      {r.riderOwes > 0 ? "Need to remit" : r.hatodgoOwes > 0 ? "We owe rider" : "Settled"}
+                                    </div>
+                                    <div className={`font-mono text-base font-bold ${r.riderOwes > 0 ? "text-destructive" : r.hatodgoOwes > 0 ? "text-success" : ""}`}>
+                                      {formatPeso(r.riderOwes > 0 ? r.riderOwes : r.hatodgoOwes)}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {r.todayJobs.length === 0 ? (
+                                <p className="rounded-lg border border-dashed border-border/60 bg-muted/20 px-4 py-6 text-center text-sm text-muted-foreground">
+                                  No completed jobs today.
+                                </p>
+                              ) : (
+                                <ul className="divide-y divide-border/40 overflow-hidden rounded-lg border border-border/60 bg-card/40">
+                                  {r.todayJobs.map(j => {
+                                    const isCash = j.payment_method === "cash";
+                                    return (
+                                      <li key={j.id} className="flex flex-wrap items-center gap-3 px-3 py-2.5 hover:bg-secondary/30">
+                                        <div className="w-16 font-mono text-xs text-muted-foreground">
+                                          {new Date(j.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                                        </div>
+                                        <div className="min-w-[80px] flex-1">
+                                          <div className="text-sm font-medium capitalize">{j.service_type}</div>
+                                          <div className="text-[11px] capitalize text-muted-foreground">
+                                            {j.payment_method}{j.gcash_to ? ` → ${j.gcash_to}` : ""} · rider {formatPeso(Number(j.rider_earning))} · co. {formatPeso(Number(j.platform_commission))}
+                                          </div>
+                                        </div>
+                                        <div className="font-mono text-sm font-semibold">{formatPeso(Number(j.customer_paid))}</div>
+                                        {isCash ? (
+                                          <Badge className="border border-warning/40 bg-warning/15 text-warning">Cash</Badge>
+                                        ) : (
+                                          <Badge className="border border-primary/40 bg-primary/15 text-primary">{j.gcash_to === "rider" ? "GCash→Rider" : "GCash→HatodGo"}</Badge>
+                                        )}
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
                               )}
+
                               <div className="mt-3 flex flex-wrap gap-2">
+                                {r.riderOwes > 0 && (
+                                  <Button size="sm" disabled={isSample || acting === r.id} onClick={() => markCashRemitted(r.id)}>
+                                    Mark {formatPeso(r.riderOwes)} remitted
+                                  </Button>
+                                )}
+                                {r.hatodgoOwes > 0 && (
+                                  <Button size="sm" disabled={isSample || acting === r.id} onClick={() => markRiderPaid(r.id)}>
+                                    Pay rider {formatPeso(r.hatodgoOwes)}
+                                  </Button>
+                                )}
                                 <Button size="sm" variant="outline" asChild>
                                   <Link to="/admin/finance">View weekly history</Link>
                                 </Button>
