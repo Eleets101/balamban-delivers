@@ -300,11 +300,25 @@ function AdminFinancePage() {
 
   // End of day: snapshot today's numbers
   const generateEod = async (notes: string) => {
-    if (!user || !ledger || !settlements) return;
+    if (!user || !ledger || !settlements || !adjustments) return;
     const today = new Date();
     const dayStr = today.toISOString().slice(0, 10);
     const w = rangeWindow("today", today);
     const fin = summarizeFinance(ledger, settlements, w);
+    const riderBreakdown = buildRiderFinanceRows(ledger, settlements, adjustments, profiles, w).map(r => ({
+      rider_id: r.id,
+      rider_name: r.profile?.full_name ?? null,
+      phone: r.profile?.phone ?? null,
+      trips_completed: r.ordersInRange,
+      cash_collected: r.cashInRange,
+      gcash_collected: r.gcashInRange,
+      rider_earnings: r.earningsInRange,
+      company_share: r.companyShareInRange,
+      rider_owes_hatodgo: r.riderOwes,
+      hatodgo_owes_rider: r.hatodgoOwes,
+      net_balance: r.netBalance,
+      status: r.netBalance === 0 ? "settled" : r.netBalance > 0 ? "hatodgo_owes_rider" : "rider_owes_hatodgo",
+    }));
     try {
       const { error } = await supabase.from("daily_finance_snapshots").upsert({
         day: dayStr,
@@ -316,6 +330,7 @@ function AdminFinancePage() {
         gcash_received: fin.gcashReceived,
         pending_settlements_count: fin.pendingSettlementsCount,
         pending_settlements_amount: fin.pendingSettlementsAmount,
+        rider_breakdown: riderBreakdown,
         notes: notes.trim() || null,
         generated_by: user.id,
       }, { onConflict: "day" });
