@@ -752,16 +752,19 @@ function AdjustmentDialog({
 }
 
 function EodForm({
-  todayLedger, settlements, onSubmit, onCancel,
+  todayLedger, settlements, adjustments, profiles, onSubmit, onCancel,
 }: {
   todayLedger: LedgerRow[];
   settlements: Settlement[];
+  adjustments: LedgerAdjustment[];
+  profiles: Record<string, RiderProfile>;
   onSubmit: (notes: string) => void;
   onCancel: () => void;
 }) {
   const [notes, setNotes] = useState("");
   const todayWindow = useMemo(() => rangeWindow("today"), []);
   const fin = useMemo(() => summarizeFinance(todayLedger, settlements, todayWindow), [todayLedger, settlements, todayWindow]);
+  const riders = useMemo(() => buildRiderFinanceRows(todayLedger, settlements, adjustments, profiles, todayWindow), [todayLedger, settlements, adjustments, profiles, todayWindow]);
 
   return (
     <>
@@ -773,6 +776,18 @@ function EodForm({
         <Stat label="Cash collected" value={formatPeso(fin.cashCollected)} />
         <Stat label="GCash received" value={formatPeso(fin.gcashReceived)} />
         <Stat label="Pending settlements" value={`${fin.pendingSettlementsCount} · ${formatPeso(fin.pendingSettlementsAmount)}`} />
+      </div>
+      <div className="mt-3 max-h-56 overflow-auto rounded-xl border border-border bg-card">
+        {riders.length === 0 ? (
+          <p className="p-3 text-sm text-muted-foreground">No rider rows yet.</p>
+        ) : riders.map((r) => (
+          <div key={r.id} className="grid grid-cols-2 gap-2 border-b border-border p-3 text-xs last:border-0 sm:grid-cols-4">
+            <Stat label="Rider" value={r.profile?.full_name ?? r.id.slice(0, 8)} />
+            <Stat label="Trips" value={String(r.ordersInRange)} />
+            <Stat label="Rider owes" value={formatPeso(r.riderOwes)} />
+            <Stat label="Co. owes" value={formatPeso(r.hatodgoOwes)} />
+          </div>
+        ))}
       </div>
       <div className="mt-3">
         <Label htmlFor="eod-notes">Notes (optional)</Label>
