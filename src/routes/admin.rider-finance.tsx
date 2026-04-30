@@ -414,6 +414,18 @@ function AdminRiderFinancePage() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant={showSample ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowSample(s => !s)}
+            >
+              <Sparkles className="h-4 w-4" />
+              {showSample ? "Hide sample data" : "Load sample finance data"}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => void refresh()} disabled={refreshing}>
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
             <Button variant="ghost" size="sm" asChild>
               <Link to="/admin/finance">Company Finance</Link>
             </Button>
@@ -423,24 +435,28 @@ function AdminRiderFinancePage() {
           </div>
         </div>
 
-        {/* Summary cards */}
+        {showSample && (
+          <div className="mt-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">
+            <Sparkles className="mr-1 inline h-3 w-3" /> Showing <strong>sample data</strong> for layout inspection. No real records are affected. Action buttons are disabled.
+          </div>
+        )}
+
+        {/* Summary cards — always render, even with zero values */}
         <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-          <Card icon={<Users />} label="Riders today" value={String(summary?.ridersToday ?? 0)} />
-          <Card icon={<Package />} label="Jobs today" value={String(summary?.jobsToday ?? 0)} />
-          <Card accent="warning" icon={<Banknote />} label="Cash collected" value={formatPeso(summary?.cashCollected ?? 0)} />
-          <Card accent="primary" icon={<Smartphone />} label="GCash collected" value={formatPeso(summary?.gcashCollected ?? 0)} />
-          <Card accent="success" icon={<TrendingUp />} label="Company revenue" value={formatPeso(summary?.companyRevenue ?? 0)} />
-          <Card icon={<Wallet />} label="Rider earnings unpaid" value={formatPeso(summary?.riderEarningsUnpaid ?? 0)} />
-          <Card accent={summary && summary.ridersOwing > 0 ? "danger" : undefined} icon={<AlertTriangle />} label="Riders owing HatodGo" value={String(summary?.ridersOwing ?? 0)} />
-          <Card accent="success" icon={<CheckCircle2 />} label="Settled riders" value={String((rows?.length ?? 0) - (summary?.ridersOwing ?? 0))} />
+          <Card icon={<Users />} label="Total riders today" value={String(displaySummary?.ridersToday ?? 0)} />
+          <Card icon={<Package />} label="Jobs completed today" value={String(displaySummary?.jobsToday ?? 0)} />
+          <Card accent="warning" icon={<Banknote />} label="Cash collected today" value={formatPeso(displaySummary?.cashCollected ?? 0)} />
+          <Card accent="primary" icon={<Smartphone />} label="GCash collected today" value={formatPeso(displaySummary?.gcashCollected ?? 0)} />
+          <Card accent="success" icon={<TrendingUp />} label="Company revenue today" value={formatPeso(displaySummary?.companyRevenue ?? 0)} />
+          <Card icon={<Wallet />} label="Rider earnings owed" value={formatPeso(displaySummary?.riderEarningsUnpaid ?? 0)} />
+          <Card accent={displaySummary && displaySummary.ridersOwing > 0 ? "danger" : undefined} icon={<AlertTriangle />} label="Riders owing company" value={String(displaySummary?.ridersOwing ?? 0)} />
+          <Card accent="success" icon={<CheckCircle2 />} label="Settled riders" value={String(Math.max(0, (displayRows?.filter(r => !("sample" in r) || !r.sample).length ?? 0) - (displaySummary?.ridersOwing ?? 0)))} />
         </div>
 
-        {/* Rider table */}
+        {/* Rider table — always render structure */}
         <div className="mt-6 overflow-hidden rounded-2xl border border-border/60" style={{ background: "var(--gradient-card)" }}>
-          {rows === null ? (
+          {displayRows === null ? (
             <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-          ) : rows.length === 0 ? (
-            <p className="py-12 text-center text-sm text-muted-foreground">No riders yet. Grant the “rider” role in Admin → User roles.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
