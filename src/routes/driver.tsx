@@ -91,6 +91,32 @@ function DriverPage() {
     soundOnRef.current = soundOn;
   }, [soundOn]);
 
+  // Fetch customer profiles for active orders (name + phone for call/chat)
+  useEffect(() => {
+    if (!user || !orders) return;
+    const activeIds = Array.from(
+      new Set(
+        orders
+          .filter((o) => o.rider_id === user.id && o.status !== "completed" && o.status !== "cancelled")
+          .map((o) => o.customer_id),
+      ),
+    );
+    const missing = activeIds.filter((id) => !customers[id]);
+    if (missing.length === 0) return;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, phone")
+        .in("id", missing);
+      if (!data) return;
+      setCustomers((prev) => {
+        const next = { ...prev };
+        for (const p of data) next[p.id] = p as CustomerProfile;
+        return next;
+      });
+    })();
+  }, [orders, user, customers]);
+
   // Tick every second so available-order countdown timers re-render
   useEffect(() => {
     const id = window.setInterval(() => setTick((n) => n + 1), 1000);
