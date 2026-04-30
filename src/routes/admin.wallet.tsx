@@ -38,7 +38,7 @@ export const Route = createFileRoute("/admin/wallet")({
 interface RiderProfile { id: string; full_name: string | null; phone: string | null; }
 
 function AdminWalletPage() {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, rolesLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [ledger, setLedger] = useState<LedgerRow[] | null>(null);
   const [settlements, setSettlements] = useState<Settlement[] | null>(null);
