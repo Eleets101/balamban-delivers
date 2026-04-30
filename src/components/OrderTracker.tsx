@@ -213,9 +213,14 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
             </div>
           </div>
           {target && (
-            <Button size="sm" variant="outline" onClick={() => openInMaps(target.coords)}>
-              <Navigation className="h-4 w-4" /> Navigate to {target.label}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={() => openGoogle(target.coords)}>
+                <Navigation className="h-4 w-4" /> Google Maps
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => openWaze(target.coords)}>
+                <Navigation className="h-4 w-4" /> Waze
+              </Button>
+            </div>
           )}
           <div className="flex w-full items-center justify-between gap-3 border-t border-border/40 pt-3 text-xs">
             <div className="flex items-center gap-2">
@@ -284,14 +289,24 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
 
       <div className="flex flex-wrap gap-2">
         {pickup && (
-          <Button size="sm" variant="outline" onClick={() => openInMaps(pickup)}>
-            <MapPin className="h-4 w-4" /> Pickup directions
-          </Button>
+          <>
+            <Button size="sm" variant="outline" onClick={() => openGoogle(pickup)}>
+              <MapPin className="h-4 w-4" /> Pickup · Google
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => openWaze(pickup)}>
+              <MapPin className="h-4 w-4" /> Pickup · Waze
+            </Button>
+          </>
         )}
         {dropoff && (
-          <Button size="sm" variant="outline" onClick={() => openInMaps(dropoff)}>
-            <MapPin className="h-4 w-4" /> Drop-off directions
-          </Button>
+          <>
+            <Button size="sm" variant="outline" onClick={() => openGoogle(dropoff)}>
+              <MapPin className="h-4 w-4" /> Drop-off · Google
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => openWaze(dropoff)}>
+              <MapPin className="h-4 w-4" /> Drop-off · Waze
+            </Button>
+          </>
         )}
       </div>
 
