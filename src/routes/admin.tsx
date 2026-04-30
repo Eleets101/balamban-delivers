@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AdminLiveOrdersMap } from "@/components/map/AdminLiveOrdersMap.lazy";
+import { OnlineRiders } from "@/components/OnlineRiders";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
 import { SERVICE_LABELS, STATUS_LABELS, STATUS_COLORS, type OrderStatus, type ServiceType } from "@/lib/orders";
 
@@ -277,6 +278,10 @@ function AdminPage() {
               height={460}
             />
           </MapClientOnly>
+        </div>
+
+        <div className="mt-6">
+          <OnlineRiders />
         </div>
 
         <h2 className="mt-12 font-display text-xl font-bold">Recent orders</h2>
