@@ -1,13 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Loader2, Plus, Pencil, ArrowLeft, Store, Eye, EyeOff, ShieldCheck, Download } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Loader2, Plus, Pencil, ArrowLeft, Store, Eye, EyeOff, ShieldCheck, Download, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { RestaurantFormDialog } from "@/components/admin/RestaurantFormDialog";
+import { bulkPublishRestaurants } from "@/server/restaurantImport.functions";
 import {
   CATEGORY_EMOJI,
   CATEGORY_LABELS,
