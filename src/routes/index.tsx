@@ -109,6 +109,27 @@ function HomePage() {
         </div>
       </section>
 
+      {/* Emotional copy */}
+      <section className="mx-auto max-w-6xl px-6 pb-20">
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[
+            { emoji: "🛵", line: "Walay byahe?", sub: "We got you." },
+            { emoji: "⏰", line: "Busy ka?", sub: "We'll deliver it." },
+            { emoji: "📍", line: "Need sakay now?", sub: "Book in minutes." },
+          ].map((e) => (
+            <div
+              key={e.line}
+              className="relative overflow-hidden rounded-2xl border border-border/60 p-6"
+              style={{ background: "var(--gradient-card)", boxShadow: "var(--shadow-card)" }}
+            >
+              <div className="text-3xl">{e.emoji}</div>
+              <div className="mt-3 font-display text-xl font-semibold sm:text-2xl">{e.line}</div>
+              <div className="mt-1 text-base text-primary-glow">{e.sub}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Services */}
       <section className="mx-auto max-w-6xl px-6 pb-20">
         <div className="mb-10 text-center">
