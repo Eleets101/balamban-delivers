@@ -230,9 +230,17 @@ function AdminPage() {
   return (
     <PageShell>
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-        <div className="flex items-center gap-3">
-          <ShieldCheck className="h-7 w-7 text-primary-glow" />
-          <h1 className="font-display text-3xl font-bold sm:text-4xl">Admin Dashboard</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="h-7 w-7 text-primary-glow" />
+            <h1 className="font-display text-3xl font-bold sm:text-4xl">Admin Dashboard</h1>
+          </div>
+          <Link
+            to="/admin/wallet"
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold transition hover:bg-secondary"
+          >
+            <Wallet className="h-4 w-4 text-primary" /> Rider Wallets
+          </Link>
         </div>
         <p className="mt-1 text-muted-foreground">Overview of HatodGo operations.</p>
 
