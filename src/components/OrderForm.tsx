@@ -60,6 +60,7 @@ export function OrderForm({
   const [dropoffAddress, setDropoffAddress] = useState("");
   const [budgetInput, setBudgetInput] = useState("");
   const [parcelSize, setParcelSize] = useState<ParcelSize>("small");
+  const [landmark, setLandmark] = useState("");
 
   const distanceKm = useMemo(() => {
     if (!pickupCoords || !dropoffCoords) return null;
