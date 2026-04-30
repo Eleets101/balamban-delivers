@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { LiveTrackingMap } from "@/components/map/LiveTrackingMap.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
 import { DriverEarningsBar } from "@/components/DriverEarningsBar";
+import { playNewOrderAlert, unlockAlertSound } from "@/lib/alerts";
 import { googleMapsUrl, wazeUrl } from "@/lib/geo";
 import { SERVICE_LABELS, STATUS_LABELS, STATUS_COLORS, type OrderStatus, type ServiceType } from "@/lib/orders";
 import {
