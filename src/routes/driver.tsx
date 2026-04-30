@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { LiveTrackingMap } from "@/components/map/LiveTrackingMap.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
+import { googleMapsUrl, wazeUrl } from "@/lib/geo";
 import { SERVICE_LABELS, STATUS_LABELS, STATUS_COLORS, type OrderStatus, type ServiceType } from "@/lib/orders";
 import {
   adaptiveRefreshMs,
@@ -211,10 +212,8 @@ function DriverPage() {
     refresh();
   };
 
-  const openInMaps = (target: { lat: number; lng: number }) => {
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${target.lat},${target.lng}&travelmode=driving`;
-    window.open(url, "_blank");
-  };
+  const openGoogle = (target: { lat: number; lng: number }) => window.open(googleMapsUrl(target), "_blank");
+  const openWaze = (target: { lat: number; lng: number }) => window.open(wazeUrl(target), "_blank");
 
   if (loading) {
     return (
@@ -353,14 +352,24 @@ function DriverPage() {
 
                     <div className="mt-4 flex flex-wrap gap-2">
                       {pickup && (
-                        <Button size="sm" variant="outline" onClick={() => openInMaps(pickup)}>
-                          <Navigation className="h-4 w-4" /> Navigate to pickup
-                        </Button>
+                        <>
+                          <Button size="sm" variant="outline" onClick={() => openGoogle(pickup)}>
+                            <Navigation className="h-4 w-4" /> Pickup · Google
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => openWaze(pickup)}>
+                            <Navigation className="h-4 w-4" /> Pickup · Waze
+                          </Button>
+                        </>
                       )}
                       {dropoff && (
-                        <Button size="sm" variant="outline" onClick={() => openInMaps(dropoff)}>
-                          <Navigation className="h-4 w-4" /> Navigate to drop-off
-                        </Button>
+                        <>
+                          <Button size="sm" variant="outline" onClick={() => openGoogle(dropoff)}>
+                            <Navigation className="h-4 w-4" /> Drop-off · Google
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => openWaze(dropoff)}>
+                            <Navigation className="h-4 w-4" /> Drop-off · Waze
+                          </Button>
+                        </>
                       )}
                       {o.status === "accepted" && (
                         <Button size="sm" onClick={() => updateStatus(o.id, "in_progress")}>

@@ -21,6 +21,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MapPicker } from "@/components/map/MapPicker.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
+import { PlaceAutocomplete } from "@/components/map/PlaceAutocomplete";
+import { ServiceAreaWarning } from "@/components/map/ServiceAreaWarning";
 import {
   Select,
   SelectContent,
@@ -425,11 +427,13 @@ function RidePage() {
               {locatingMe ? "Locating…" : "Use my location"}
             </Button>
           </div>
-          <Input
+          <PlaceAutocomplete
             id="pickup"
             placeholder="Where are you now?"
             value={pickup}
-            onChange={(e) => setPickup(e.target.value)}
+            onValueChange={setPickup}
+            onPick={(hit) => setPickupCoords({ lat: hit.lat, lng: hit.lng })}
+            bias={dropoffCoords}
           />
 
           {fallbackOptions.length > 0 && (
@@ -509,11 +513,13 @@ function RidePage() {
           <Label htmlFor="dropoff">
             <Navigation className="mr-1 inline h-3.5 w-3.5 text-primary-glow" /> Destination
           </Label>
-          <Input
+          <PlaceAutocomplete
             id="dropoff"
             placeholder="Where to?"
             value={dropoff}
-            onChange={(e) => setDropoff(e.target.value)}
+            onValueChange={setDropoff}
+            onPick={(hit) => setDropoffCoords({ lat: hit.lat, lng: hit.lng })}
+            bias={pickupCoords}
           />
           <MapClientOnly>
             <MapPicker
@@ -523,6 +529,7 @@ function RidePage() {
               height={200}
             />
           </MapClientOnly>
+          <ServiceAreaWarning coords={dropoffCoords} label="Destination" />
         </div>
 
         {/* Ride type */}
