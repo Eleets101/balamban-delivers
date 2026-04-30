@@ -1,13 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Loader2, Plus, Pencil, ArrowLeft, Store, Eye, EyeOff, ShieldCheck, Download } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Loader2, Plus, Pencil, ArrowLeft, Store, Eye, EyeOff, ShieldCheck, Download, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { RestaurantFormDialog } from "@/components/admin/RestaurantFormDialog";
+import { bulkPublishRestaurants } from "@/server/restaurantImport.functions";
 import {
   CATEGORY_EMOJI,
   CATEGORY_LABELS,
@@ -27,6 +29,40 @@ function AdminRestaurantsPage() {
   const [restaurants, setRestaurants] = useState<Restaurant[] | null>(null);
   const [editing, setEditing] = useState<Restaurant | null>(null);
   const [creating, setCreating] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [publishing, setPublishing] = useState(false);
+  const [filter, setFilter] = useState<"all" | "hidden" | "visible">("all");
+
+  const visible = useMemo(() => {
+    if (!restaurants) return null;
+    if (filter === "hidden") return restaurants.filter((r) => !r.is_active);
+    if (filter === "visible") return restaurants.filter((r) => r.is_active);
+    return restaurants;
+  }, [restaurants, filter]);
+
+  const toggleSelect = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  const selectAllVisible = () => visible && setSelected(new Set(visible.map((r) => r.id)));
+  const clearSelection = () => setSelected(new Set());
+
+  const bulkSetActive = async (active: boolean) => {
+    if (selected.size === 0) return;
+    setPublishing(true);
+    try {
+      const res = await bulkPublishRestaurants({ data: { ids: Array.from(selected), active } });
+      toast.success(`${active ? "Published" : "Hidden"} ${res.updated} restaurant${res.updated === 1 ? "" : "s"}`);
+      clearSelection();
+      refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setPublishing(false);
+    }
+  };
 
   const refresh = async () => {
     const { data, error } = await supabase
@@ -93,7 +129,12 @@ function AdminRestaurantsPage() {
             <Store className="h-7 w-7 text-primary-glow" />
             <h1 className="font-display text-2xl font-bold sm:text-3xl">Restaurants</h1>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" asChild>
+              <Link to="/admin/restaurants/import-csv">
+                <Download className="h-4 w-4" /> Import CSV
+              </Link>
+            </Button>
             <Button variant="outline" asChild>
               <Link to="/admin/restaurants/import">
                 <Download className="h-4 w-4" /> Import from OSM
@@ -105,23 +146,66 @@ function AdminRestaurantsPage() {
           </div>
         </div>
 
+        {/* Filter + bulk actions */}
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex gap-1 rounded-full border border-border/60 bg-card p-1 text-xs">
+            {(["all", "hidden", "visible"] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`rounded-full px-3 py-1 capitalize ${
+                  filter === f ? "bg-primary/15 text-primary-glow" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {f}{" "}
+                {f !== "all" && restaurants
+                  ? `(${restaurants.filter((r) => (f === "hidden" ? !r.is_active : r.is_active)).length})`
+                  : ""}
+              </button>
+            ))}
+          </div>
+          {selected.size > 0 && (
+            <div className="flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs">
+              <strong>{selected.size}</strong> selected
+              <Button size="sm" variant="ghost" onClick={clearSelection}>
+                Clear
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => bulkSetActive(false)} disabled={publishing}>
+                <EyeOff className="h-3.5 w-3.5" /> Hide
+              </Button>
+              <Button size="sm" onClick={() => bulkSetActive(true)} disabled={publishing}>
+                {publishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                Publish
+              </Button>
+            </div>
+          )}
+        </div>
+
         <div
-          className="mt-6 overflow-hidden rounded-2xl border border-border/60"
+          className="mt-3 overflow-hidden rounded-2xl border border-border/60"
           style={{ background: "var(--gradient-card)" }}
         >
           {restaurants === null ? (
             <div className="flex justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          ) : restaurants.length === 0 ? (
+          ) : !visible || visible.length === 0 ? (
             <p className="py-12 text-center text-sm text-muted-foreground">
-              No restaurants yet. Click "Add restaurant" to create your first one.
+              {restaurants.length === 0
+                ? 'No restaurants yet. Click "Add restaurant" to create your first one.'
+                : "No restaurants match this filter."}
             </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="border-b border-border/60 text-left text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
+                    <th className="px-3 py-3">
+                      <Checkbox
+                        checked={visible.length > 0 && visible.every((r) => selected.has(r.id))}
+                        onCheckedChange={(v) => (v ? selectAllVisible() : clearSelection())}
+                      />
+                    </th>
                     <th className="px-4 py-3">Restaurant</th>
                     <th className="px-4 py-3">Category</th>
                     <th className="px-4 py-3">Delivery</th>
@@ -130,8 +214,14 @@ function AdminRestaurantsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {restaurants.map((r) => (
+                  {visible.map((r) => (
                     <tr key={r.id} className="border-b border-border/40 last:border-0">
+                      <td className="px-3 py-3">
+                        <Checkbox
+                          checked={selected.has(r.id)}
+                          onCheckedChange={() => toggleSelect(r.id)}
+                        />
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {r.logo_url ? (

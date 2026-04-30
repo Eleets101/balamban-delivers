@@ -369,6 +369,7 @@ export type Database = {
           slug: string | null
           sort_order: number
           source: string
+          tags: string[]
           updated_at: string
           website: string | null
         }
@@ -397,6 +398,7 @@ export type Database = {
           slug?: string | null
           sort_order?: number
           source?: string
+          tags?: string[]
           updated_at?: string
           website?: string | null
         }
@@ -425,6 +427,7 @@ export type Database = {
           slug?: string | null
           sort_order?: number
           source?: string
+          tags?: string[]
           updated_at?: string
           website?: string | null
         }
