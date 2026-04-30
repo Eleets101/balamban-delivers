@@ -78,6 +78,8 @@ function AdminRiderFinancePage() {
   const [adjustAmount, setAdjustAmount] = useState<string>("");
   const [adjustNote, setAdjustNote] = useState<string>("");
   const [acting, setActing] = useState<string | null>(null);
+  const [showSample, setShowSample] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
   const refresh = useCallback(async () => {
     try {
