@@ -30,6 +30,7 @@ import {
 import {
   CATEGORY_EMOJI,
   CATEGORY_LABELS,
+  isRestaurantOpenNow,
   type MenuCategory,
   type MenuItem,
   type Restaurant,
