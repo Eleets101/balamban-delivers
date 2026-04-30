@@ -73,6 +73,7 @@ function AdminRiderFinancePage() {
   const [profiles, setProfiles] = useState<Record<string, RiderProfile>>({});
   const [riderIds, setRiderIds] = useState<string[]>([]);
   const [onlineMap, setOnlineMap] = useState<Record<string, string>>({}); // rider_id -> last update iso
+  const [busyMap, setBusyMap] = useState<Record<string, boolean>>({}); // rider_id -> currently on active order
   const [expanded, setExpanded] = useState<string | null>(null);
   const [adjustOpen, setAdjustOpen] = useState<string | null>(null);
   const [adjustAmount, setAdjustAmount] = useState<string>("");
