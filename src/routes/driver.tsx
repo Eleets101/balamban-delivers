@@ -699,7 +699,11 @@ function DriverPage() {
                           </p>
                         )}
                       </div>
-                      <Button size="sm" onClick={() => acceptOrder(o)} className="shrink-0 shadow-[var(--shadow-glow)]">
+                      <Button
+                        size="lg"
+                        onClick={() => acceptOrder(o)}
+                        className="hidden h-12 shrink-0 px-6 shadow-[var(--shadow-glow)] sm:inline-flex"
+                      >
                         Accept Order
                       </Button>
                     </div>
