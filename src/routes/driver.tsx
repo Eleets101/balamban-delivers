@@ -92,7 +92,12 @@ function DriverPage() {
       .or(`status.eq.pending,rider_id.eq.${user?.id ?? "00000000-0000-0000-0000-000000000000"}`)
       .order("created_at", { ascending: false })
       .limit(50);
-    setOrders((data as DriverOrder[]) ?? []);
+    const list = (data as DriverOrder[]) ?? [];
+    // Seed seen-set on first load so we don't alert for pre-existing orders
+    if (seenOrderIdsRef.current.size === 0 && list.length > 0) {
+      list.forEach((o) => seenOrderIdsRef.current.add(o.id));
+    }
+    setOrders(list);
   };
 
   useEffect(() => {
@@ -106,7 +111,24 @@ function DriverPage() {
 
     const channel = supabase
       .channel("driver-orders")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => refresh())
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "orders" },
+        (payload) => {
+          const row = payload.new as { id: string; status: OrderStatus; service_type: ServiceType; estimated_price: number | null };
+          if (row.status === "pending" && !seenOrderIdsRef.current.has(row.id)) {
+            seenOrderIdsRef.current.add(row.id);
+            playNewOrderAlert({ sound: soundOn, vibrate: true });
+            toast.success("New order available!", {
+              description: `${SERVICE_LABELS[row.service_type]} · ₱${Number(row.estimated_price ?? 0).toFixed(0)}`,
+              duration: 6000,
+            });
+          }
+          refresh();
+        },
+      )
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders" }, () => refresh())
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "orders" }, () => refresh())
       .subscribe();
 
     const notifChannel = supabase
