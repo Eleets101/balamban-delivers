@@ -555,7 +555,7 @@ function AdminFinancePage() {
             </thead>
             <tbody>
               {ledgerInRange.length === 0 ? (
-                <tr><td colSpan={10} className="px-3 py-6 text-center text-sm text-muted-foreground">No orders in this range.</td></tr>
+                <tr><td colSpan={10} className="px-3 py-6 text-center text-sm text-muted-foreground">No completed rider trips in this range yet.</td></tr>
               ) : ledgerInRange.slice(0, 200).map(row => {
                 const ord = orderInfo[row.order_id];
                 const custName = ord ? customerNames[ord.customer_id] : "";
