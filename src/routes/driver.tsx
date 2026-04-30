@@ -69,6 +69,7 @@ function DriverPage() {
   const watchIdRef = useRef<number | null>(null);
   const activeOrderIdRef = useRef<string | null>(null);
   const seenOrderIdsRef = useRef<Set<string>>(new Set());
+  const soundOnRef = useRef(true);
 
   const allowed = isRider || isAdmin;
   const mySmoothedMps = smoothedSpeedMps(myHistory);
