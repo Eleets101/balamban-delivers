@@ -24,7 +24,7 @@ import {
 } from "@/lib/restaurants";
 import { useFoodCart } from "@/hooks/useFoodCart";
 
-export const Route = createFileRoute("/services/food")({
+export const Route = createFileRoute("/services/food/")({
   head: () => ({
     meta: [
       { title: "Order food (Pagkain) — HatodGo" },
