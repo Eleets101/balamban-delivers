@@ -18,13 +18,13 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ServicesRideRouteImport } from './routes/services.ride'
 import { Route as ServicesPadalaRouteImport } from './routes/services.padala'
 import { Route as ServicesPabiliRouteImport } from './routes/services.pabili'
-import { Route as ServicesFoodRouteImport } from './routes/services.food'
 import { Route as DriverWalletRouteImport } from './routes/driver.wallet'
 import { Route as CheckoutOrderIdRouteImport } from './routes/checkout.$orderId'
 import { Route as AdminWalletRouteImport } from './routes/admin.wallet'
 import { Route as AdminRiderFinanceRouteImport } from './routes/admin.rider-finance'
 import { Route as AdminRestaurantsRouteImport } from './routes/admin.restaurants'
 import { Route as AdminFinanceRouteImport } from './routes/admin.finance'
+import { Route as ServicesFoodIndexRouteImport } from './routes/services.food.index'
 import { Route as ServicesFoodManualRouteImport } from './routes/services.food.manual'
 import { Route as ServicesFoodCartRouteImport } from './routes/services.food.cart'
 import { Route as ServicesFoodRestaurantIdRouteImport } from './routes/services.food.$restaurantId'
@@ -80,11 +80,6 @@ const ServicesPabiliRoute = ServicesPabiliRouteImport.update({
   path: '/services/pabili',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ServicesFoodRoute = ServicesFoodRouteImport.update({
-  id: '/services/food',
-  path: '/services/food',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DriverWalletRoute = DriverWalletRouteImport.update({
   id: '/wallet',
   path: '/wallet',
@@ -114,6 +109,11 @@ const AdminFinanceRoute = AdminFinanceRouteImport.update({
   id: '/finance',
   path: '/finance',
   getParentRoute: () => AdminRoute,
+} as any)
+const ServicesFoodIndexRoute = ServicesFoodIndexRouteImport.update({
+  id: '/services/food/',
+  path: '/services/food/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesFoodManualRoute = ServicesFoodManualRouteImport.update({
   id: '/manual',
@@ -177,7 +177,6 @@ export interface FileRoutesByFullPath {
   '/admin/wallet': typeof AdminWalletRoute
   '/checkout/$orderId': typeof CheckoutOrderIdRouteWithChildren
   '/driver/wallet': typeof DriverWalletRoute
-  '/services/food': typeof ServicesFoodRouteWithChildren
   '/services/pabili': typeof ServicesPabiliRoute
   '/services/padala': typeof ServicesPadalaRoute
   '/services/ride': typeof ServicesRideRoute
@@ -190,6 +189,7 @@ export interface FileRoutesByFullPath {
   '/services/food/$restaurantId': typeof ServicesFoodRestaurantIdRoute
   '/services/food/cart': typeof ServicesFoodCartRoute
   '/services/food/manual': typeof ServicesFoodManualRoute
+  '/services/food/': typeof ServicesFoodIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -204,7 +204,6 @@ export interface FileRoutesByTo {
   '/admin/wallet': typeof AdminWalletRoute
   '/checkout/$orderId': typeof CheckoutOrderIdRouteWithChildren
   '/driver/wallet': typeof DriverWalletRoute
-  '/services/food': typeof ServicesFoodRouteWithChildren
   '/services/pabili': typeof ServicesPabiliRoute
   '/services/padala': typeof ServicesPadalaRoute
   '/services/ride': typeof ServicesRideRoute
@@ -217,6 +216,7 @@ export interface FileRoutesByTo {
   '/services/food/$restaurantId': typeof ServicesFoodRestaurantIdRoute
   '/services/food/cart': typeof ServicesFoodCartRoute
   '/services/food/manual': typeof ServicesFoodManualRoute
+  '/services/food': typeof ServicesFoodIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -232,7 +232,6 @@ export interface FileRoutesById {
   '/admin/wallet': typeof AdminWalletRoute
   '/checkout/$orderId': typeof CheckoutOrderIdRouteWithChildren
   '/driver/wallet': typeof DriverWalletRoute
-  '/services/food': typeof ServicesFoodRouteWithChildren
   '/services/pabili': typeof ServicesPabiliRoute
   '/services/padala': typeof ServicesPadalaRoute
   '/services/ride': typeof ServicesRideRoute
@@ -245,6 +244,7 @@ export interface FileRoutesById {
   '/services/food/$restaurantId': typeof ServicesFoodRestaurantIdRoute
   '/services/food/cart': typeof ServicesFoodCartRoute
   '/services/food/manual': typeof ServicesFoodManualRoute
+  '/services/food/': typeof ServicesFoodIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -261,7 +261,6 @@ export interface FileRouteTypes {
     | '/admin/wallet'
     | '/checkout/$orderId'
     | '/driver/wallet'
-    | '/services/food'
     | '/services/pabili'
     | '/services/padala'
     | '/services/ride'
@@ -274,6 +273,7 @@ export interface FileRouteTypes {
     | '/services/food/$restaurantId'
     | '/services/food/cart'
     | '/services/food/manual'
+    | '/services/food/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -288,7 +288,6 @@ export interface FileRouteTypes {
     | '/admin/wallet'
     | '/checkout/$orderId'
     | '/driver/wallet'
-    | '/services/food'
     | '/services/pabili'
     | '/services/padala'
     | '/services/ride'
@@ -301,6 +300,7 @@ export interface FileRouteTypes {
     | '/services/food/$restaurantId'
     | '/services/food/cart'
     | '/services/food/manual'
+    | '/services/food'
   id:
     | '__root__'
     | '/'
@@ -315,7 +315,6 @@ export interface FileRouteTypes {
     | '/admin/wallet'
     | '/checkout/$orderId'
     | '/driver/wallet'
-    | '/services/food'
     | '/services/pabili'
     | '/services/padala'
     | '/services/ride'
@@ -328,6 +327,7 @@ export interface FileRouteTypes {
     | '/services/food/$restaurantId'
     | '/services/food/cart'
     | '/services/food/manual'
+    | '/services/food/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -338,10 +338,10 @@ export interface RootRouteChildren {
   OrdersRoute: typeof OrdersRoute
   PrivacyRoute: typeof PrivacyRoute
   CheckoutOrderIdRoute: typeof CheckoutOrderIdRouteWithChildren
-  ServicesFoodRoute: typeof ServicesFoodRouteWithChildren
   ServicesPabiliRoute: typeof ServicesPabiliRoute
   ServicesPadalaRoute: typeof ServicesPadalaRoute
   ServicesRideRoute: typeof ServicesRideRoute
+  ServicesFoodIndexRoute: typeof ServicesFoodIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -409,13 +409,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesPabiliRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/services/food': {
-      id: '/services/food'
-      path: '/services/food'
-      fullPath: '/services/food'
-      preLoaderRoute: typeof ServicesFoodRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/driver/wallet': {
       id: '/driver/wallet'
       path: '/wallet'
@@ -457,6 +450,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/finance'
       preLoaderRoute: typeof AdminFinanceRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/services/food/': {
+      id: '/services/food/'
+      path: '/services/food'
+      fullPath: '/services/food/'
+      preLoaderRoute: typeof ServicesFoodIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/services/food/manual': {
       id: '/services/food/manual'
@@ -582,22 +582,6 @@ const CheckoutOrderIdRouteWithChildren = CheckoutOrderIdRoute._addFileChildren(
   CheckoutOrderIdRouteChildren,
 )
 
-interface ServicesFoodRouteChildren {
-  ServicesFoodRestaurantIdRoute: typeof ServicesFoodRestaurantIdRoute
-  ServicesFoodCartRoute: typeof ServicesFoodCartRoute
-  ServicesFoodManualRoute: typeof ServicesFoodManualRoute
-}
-
-const ServicesFoodRouteChildren: ServicesFoodRouteChildren = {
-  ServicesFoodRestaurantIdRoute: ServicesFoodRestaurantIdRoute,
-  ServicesFoodCartRoute: ServicesFoodCartRoute,
-  ServicesFoodManualRoute: ServicesFoodManualRoute,
-}
-
-const ServicesFoodRouteWithChildren = ServicesFoodRoute._addFileChildren(
-  ServicesFoodRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
@@ -606,11 +590,20 @@ const rootRouteChildren: RootRouteChildren = {
   OrdersRoute: OrdersRoute,
   PrivacyRoute: PrivacyRoute,
   CheckoutOrderIdRoute: CheckoutOrderIdRouteWithChildren,
-  ServicesFoodRoute: ServicesFoodRouteWithChildren,
   ServicesPabiliRoute: ServicesPabiliRoute,
   ServicesPadalaRoute: ServicesPadalaRoute,
   ServicesRideRoute: ServicesRideRoute,
+  ServicesFoodIndexRoute: ServicesFoodIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
