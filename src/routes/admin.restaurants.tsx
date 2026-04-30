@@ -93,7 +93,12 @@ function AdminRestaurantsPage() {
             <Store className="h-7 w-7 text-primary-glow" />
             <h1 className="font-display text-2xl font-bold sm:text-3xl">Restaurants</h1>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" asChild>
+              <Link to="/admin/restaurants/import-csv">
+                <Download className="h-4 w-4" /> Import CSV
+              </Link>
+            </Button>
             <Button variant="outline" asChild>
               <Link to="/admin/restaurants/import">
                 <Download className="h-4 w-4" /> Import from OSM
