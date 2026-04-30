@@ -266,7 +266,7 @@ function DriverPage() {
             aria-pressed={sharing}
             className={`group relative flex min-w-[260px] items-center gap-4 rounded-2xl border px-5 py-4 text-left transition-all ${
               sharing
-                ? "border-success/60 bg-success/10 shadow-[0_0_0_4px_hsl(var(--success)/0.15),0_10px_40px_-10px_hsl(var(--success)/0.6)]"
+                ? "border-success/60 bg-success/10 shadow-[0_0_0_4px_color-mix(in_oklab,var(--success)_25%,transparent),0_10px_40px_-10px_color-mix(in_oklab,var(--success)_60%,transparent)]"
                 : "border-border/60 bg-muted/30 hover:border-border"
             }`}
           >
