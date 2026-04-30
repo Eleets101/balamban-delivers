@@ -103,22 +103,30 @@ function AdminWalletPage() {
       .channel("admin:wallet")
       .on("postgres_changes", { event: "*", schema: "public", table: "settlements" }, () => void refresh())
       .on("postgres_changes", { event: "*", schema: "public", table: "wallet_ledger" }, () => void refresh())
+      .on("postgres_changes", { event: "*", schema: "public", table: "ledger_adjustments" }, () => void refresh())
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_roles" }, () => void refresh())
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [isAdmin, refresh]);
 
   // Per-rider summary
   const perRider = useMemo(() => {
-    if (!ledger || !settlements) return null;
-    const riderIds = Array.from(new Set([...ledger.map(r => r.rider_id), ...settlements.map(r => r.rider_id)]));
+    if (!ledger || !settlements || !adjustments) return null;
+    const riderIds = Array.from(new Set([
+      ...Object.keys(profiles),
+      ...ledger.map(r => r.rider_id),
+      ...settlements.map(r => r.rider_id),
+      ...adjustments.map(r => r.rider_id),
+    ]));
     return riderIds.map(id => {
       const ll = ledger.filter(r => r.rider_id === id);
       const ss = settlements.filter(r => r.rider_id === id);
-      const summary = summarizeWallet(ll, ss);
+      const aa = adjustments.filter(r => r.rider_id === id);
+      const summary = summarizeWallet(ll, ss, aa);
       const lastSettlement = ss.find(s => s.status === "approved");
       return { id, profile: profiles[id], summary, lastSettlement };
     }).sort((a, b) => Math.abs(b.summary.netBalance) - Math.abs(a.summary.netBalance));
-  }, [ledger, settlements, profiles]);
+  }, [ledger, settlements, adjustments, profiles]);
 
   const filteredRiders = useMemo(() => {
     if (!perRider) return null;
