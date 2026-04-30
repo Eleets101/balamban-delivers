@@ -103,3 +103,35 @@ export function calcServiceFee(itemsSubtotal: number): number {
   const raw = itemsSubtotal * HATODGO_SERVICE_FEE_RATE;
   return Math.ceil(Math.max(HATODGO_SERVICE_FEE_MIN, Math.min(HATODGO_SERVICE_FEE_MAX, raw)));
 }
+
+/**
+ * Compute whether a restaurant is currently open based on Manila time.
+ * Uses open_time/close_time when present (HH:MM:SS strings), otherwise
+ * falls back to the stored is_open flag.
+ * Handles overnight hours (e.g. 18:00 -> 02:00).
+ */
+export function isRestaurantOpenNow(r: {
+  is_open: boolean;
+  open_time?: string | null;
+  close_time?: string | null;
+}): boolean {
+  if (!r.open_time || !r.close_time) return r.is_open;
+  // Get current time in Asia/Manila as HH:MM
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Manila",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const parts = fmt.format(new Date()).split(":");
+  const nowMin = Number(parts[0]) * 60 + Number(parts[1]);
+  const [oh, om] = r.open_time.split(":").map(Number);
+  const [ch, cm] = r.close_time.split(":").map(Number);
+  const openMin = oh * 60 + om;
+  const closeMin = ch * 60 + cm;
+  if (closeMin > openMin) {
+    return nowMin >= openMin && nowMin < closeMin;
+  }
+  // overnight
+  return nowMin >= openMin || nowMin < closeMin;
+}
