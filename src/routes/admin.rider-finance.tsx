@@ -135,6 +135,8 @@ function AdminRiderFinancePage() {
     } catch (err) {
       console.error("[rider-finance] refresh failed", err);
       toast.error("Couldn't load rider finance data", { description: (err as Error).message });
+    } finally {
+      setRefreshing(false);
     }
   }, []);
 
