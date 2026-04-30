@@ -242,6 +242,43 @@ function AdminPage() {
           <StatCard icon={<CheckCircle2 className="h-5 w-5" />} label="Completed" value={stats?.completed ?? null} />
         </div>
 
+        {/* Live operations map */}
+        <div className="mt-10 flex flex-wrap items-end justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <MapIcon className="h-6 w-6 text-primary-glow" />
+            <h2 className="font-display text-xl font-bold">Live operations map</h2>
+          </div>
+          <Select value={mapFilter} onValueChange={(v) => setMapFilter(v as OrderStatus | "all")}>
+            <SelectTrigger className="h-9 w-44">
+              <SelectValue placeholder="Filter" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              {STATUSES.map((s) => (
+                <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div
+          className="mt-4 rounded-2xl border border-border/60 p-3"
+          style={{ background: "var(--gradient-card)" }}
+        >
+          <MapClientOnly>
+            <AdminLiveOrdersMap
+              orders={(orders ?? []).map((o) => ({
+                id: o.id,
+                status: o.status,
+                pickup: o.pickup_lat != null && o.pickup_lng != null ? { lat: o.pickup_lat, lng: o.pickup_lng } : null,
+                dropoff: o.dropoff_lat != null && o.dropoff_lng != null ? { lat: o.dropoff_lat, lng: o.dropoff_lng } : null,
+              }))}
+              riders={riderLocs.map((r) => ({ id: r.rider_id, coords: { lat: r.lat, lng: r.lng } }))}
+              statusFilter={mapFilter}
+              height={460}
+            />
+          </MapClientOnly>
+        </div>
+
         <h2 className="mt-12 font-display text-xl font-bold">Recent orders</h2>
         <div
           className="mt-4 overflow-hidden rounded-2xl border border-border/60"
