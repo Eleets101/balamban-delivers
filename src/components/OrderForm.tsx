@@ -12,6 +12,7 @@ import { MapPicker } from "@/components/map/MapPicker.lazy";
 import { MapClientOnly } from "@/components/map/MapClientOnly";
 import { PlaceAutocomplete } from "@/components/map/PlaceAutocomplete";
 import { SavedLocations, type SavedLocation } from "@/components/map/SavedLocations";
+import { ServiceAreaWarning } from "@/components/map/ServiceAreaWarning";
 import { haversineM } from "@/lib/geo";
 import {
   calculateFoodFare,
