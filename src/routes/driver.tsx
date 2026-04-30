@@ -412,6 +412,16 @@ function DriverPage() {
           <DriverEarningsBar userId={user.id} sharing={sharing} sessionStartedAt={sessionStartedAt} />
         )}
 
+        <Link
+          to="/driver/wallet"
+          className="mt-3 flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold transition hover:bg-secondary"
+        >
+          <span className="flex items-center gap-2">
+            <Wallet className="h-4 w-4 text-primary" /> Wallet & settlements
+          </span>
+          <span className="text-xs text-muted-foreground">View →</span>
+        </Link>
+
         {sharing && (
           <div className="mt-4 space-y-2 rounded-xl border border-primary/30 bg-primary/10 p-3 text-xs text-primary-glow">
             <div>
