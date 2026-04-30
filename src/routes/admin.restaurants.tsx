@@ -222,6 +222,7 @@ function AdminRestaurantsPage() {
                           onCheckedChange={() => toggleSelect(r.id)}
                         />
                       </td>
+                      <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {r.logo_url ? (
                             <img src={r.logo_url} alt="" className="h-10 w-10 rounded-lg object-cover" />
