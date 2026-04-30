@@ -45,6 +45,8 @@ export interface Restaurant {
   logo_url: string | null;
   cover_url: string | null;
   open_hours: string | null;
+  open_time: string | null;
+  close_time: string | null;
   is_open: boolean;
   is_active: boolean;
   base_delivery_fee: number;
