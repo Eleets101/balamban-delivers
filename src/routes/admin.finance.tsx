@@ -134,7 +134,7 @@ function AdminFinancePage() {
 
   const refresh = useCallback(async () => {
     try {
-      const [{ data: l, error: le }, { data: s, error: se }, { data: a, error: ae }, { data: snaps }] = await Promise.all([
+      const [{ data: l, error: le }, { data: s, error: se }, { data: a, error: ae }, { count: snapshotCount }] = await Promise.all([
         supabase.from("wallet_ledger").select("*").order("created_at", { ascending: false }),
         supabase.from("settlements").select("*").order("created_at", { ascending: false }),
         supabase.from("ledger_adjustments").select("*").order("created_at", { ascending: false }),
@@ -149,7 +149,7 @@ function AdminFinancePage() {
       setLedger(ledgerRows);
       setSettlements(settlementRows);
       setAdjustments(adjustmentRows);
-      setSnapshotsCount(snaps?.length ?? 0);
+      setSnapshotsCount(snapshotCount ?? 0);
 
       const riderIds = Array.from(new Set([
         ...ledgerRows.map(r => r.rider_id),
@@ -608,6 +608,8 @@ function AdminFinancePage() {
           <EodForm
             todayLedger={ledger ?? []}
             settlements={settlements ?? []}
+            adjustments={adjustments ?? []}
+            profiles={profiles}
             onSubmit={(notes) => generateEod(notes)}
             onCancel={() => setEodOpen(false)}
           />
