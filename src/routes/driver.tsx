@@ -287,6 +287,27 @@ function DriverPage() {
     refresh();
   };
 
+  const STAGE_LABELS: Record<TripStage, string> = {
+    enroute_pickup: "En route to pickup",
+    arrived_pickup: "Arrived at pickup",
+    picked_up: "Picked up — heading to drop-off",
+    completed: "Delivered",
+  };
+
+  const advanceStage = async (o: DriverOrder, next: TripStage) => {
+    const newDetails = { ...(o.details ?? {}), trip_stage: next };
+    const patch: { details: typeof newDetails; status?: OrderStatus } = { details: newDetails };
+    if (next === "picked_up") patch.status = "in_progress";
+    if (next === "completed") patch.status = "completed";
+    const { error } = await supabase.from("orders").update(patch).eq("id", o.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(STAGE_LABELS[next]);
+    refresh();
+  };
+
   const openGoogle = (target: { lat: number; lng: number }) => window.open(googleMapsUrl(target), "_blank");
   const openWaze = (target: { lat: number; lng: number }) => window.open(wazeUrl(target), "_blank");
 
