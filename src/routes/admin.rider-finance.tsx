@@ -214,6 +214,99 @@ function AdminRiderFinancePage() {
     };
   }, [rows, ledger, todayStart]);
 
+  // Sample rows for visual inspection (admin-only test toggle, no DB writes)
+  const sampleRows = useMemo(() => {
+    return [
+      {
+        id: "sample-1",
+        profile: { id: "sample-1", full_name: "Juan Dela Cruz (sample)", phone: "0917 000 0001" } as RiderProfile,
+        online: true,
+        lastOnline: new Date().toISOString() as string | undefined,
+        jobsToday: 8,
+        grossToday: 1240,
+        cashHeldToday: 720,
+        gcashToday: 520,
+        earningsToday: 992,
+        riderOwes: 144,
+        hatodgoOwes: 0,
+        lastSettlement: null as Settlement | null,
+        todayJobs: [] as LedgerRow[],
+        sample: true,
+      },
+      {
+        id: "sample-2",
+        profile: { id: "sample-2", full_name: "Maria Santos (sample)", phone: "0917 000 0002" } as RiderProfile,
+        online: true,
+        lastOnline: new Date().toISOString() as string | undefined,
+        jobsToday: 5,
+        grossToday: 860,
+        cashHeldToday: 0,
+        gcashToday: 860,
+        earningsToday: 688,
+        riderOwes: 0,
+        hatodgoOwes: 688,
+        lastSettlement: null as Settlement | null,
+        todayJobs: [] as LedgerRow[],
+        sample: true,
+      },
+      {
+        id: "sample-3",
+        profile: { id: "sample-3", full_name: "Pedro Reyes (sample)", phone: "0917 000 0003" } as RiderProfile,
+        online: false,
+        lastOnline: undefined as string | undefined,
+        jobsToday: 0,
+        grossToday: 0,
+        cashHeldToday: 0,
+        gcashToday: 0,
+        earningsToday: 0,
+        riderOwes: 0,
+        hatodgoOwes: 0,
+        lastSettlement: null as Settlement | null,
+        todayJobs: [] as LedgerRow[],
+        sample: true,
+      },
+    ];
+  }, []);
+
+  // Demo placeholder row used when there are no riders at all
+  const demoRow = useMemo(() => ({
+    id: "demo",
+    profile: { id: "demo", full_name: "Demo Rider", phone: "—" } as RiderProfile,
+    online: false,
+    lastOnline: undefined as string | undefined,
+    jobsToday: 0,
+    grossToday: 0,
+    cashHeldToday: 0,
+    gcashToday: 0,
+    earningsToday: 0,
+    riderOwes: 0,
+    hatodgoOwes: 0,
+    lastSettlement: null as Settlement | null,
+    todayJobs: [] as LedgerRow[],
+    sample: true,
+  }), []);
+
+  const displayRows = useMemo(() => {
+    if (showSample) return sampleRows;
+    if (!rows) return null;
+    if (rows.length === 0) return [demoRow];
+    return rows;
+  }, [showSample, rows, sampleRows, demoRow]);
+
+  const displaySummary = useMemo(() => {
+    if (!showSample) return summary;
+    return {
+      ridersToday: sampleRows.filter(r => r.jobsToday > 0).length,
+      jobsToday: sampleRows.reduce((s, r) => s + r.jobsToday, 0),
+      cashCollected: sampleRows.reduce((s, r) => s + r.cashHeldToday, 0),
+      gcashCollected: sampleRows.reduce((s, r) => s + r.gcashToday, 0),
+      companyRevenue: Math.round(sampleRows.reduce((s, r) => s + r.grossToday, 0) * 0.2),
+      riderEarningsUnpaid: sampleRows.reduce((s, r) => s + r.hatodgoOwes, 0),
+      ridersOwing: sampleRows.filter(r => r.riderOwes > 0).length,
+    };
+  }, [showSample, sampleRows, summary]);
+
+
   const markRiderPaid = async (riderId: string) => {
     if (!user || !rows) return;
     const row = rows.find(r => r.id === riderId);
