@@ -361,12 +361,16 @@ export type Database = {
           logo_url: string | null
           name: string
           open_hours: string | null
+          osm_id: string | null
           per_km_fee: number
           phone: string | null
           rating: number
+          review_count: number
           slug: string | null
           sort_order: number
+          source: string
           updated_at: string
+          website: string | null
         }
         Insert: {
           address: string
@@ -385,12 +389,16 @@ export type Database = {
           logo_url?: string | null
           name: string
           open_hours?: string | null
+          osm_id?: string | null
           per_km_fee?: number
           phone?: string | null
           rating?: number
+          review_count?: number
           slug?: string | null
           sort_order?: number
+          source?: string
           updated_at?: string
+          website?: string | null
         }
         Update: {
           address?: string
@@ -409,12 +417,16 @@ export type Database = {
           logo_url?: string | null
           name?: string
           open_hours?: string | null
+          osm_id?: string | null
           per_km_fee?: number
           phone?: string | null
           rating?: number
+          review_count?: number
           slug?: string | null
           sort_order?: number
+          source?: string
           updated_at?: string
+          website?: string | null
         }
         Relationships: []
       }
