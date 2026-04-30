@@ -53,6 +53,7 @@ import {
   STATUS_LABELS,
   summarizeFinance,
   summarizeWallet,
+  type FinanceWindow,
   type LedgerAdjustment,
   type LedgerRow,
   type ReportRange,
@@ -73,6 +74,48 @@ interface RiderProfile { id: string; full_name: string | null; phone: string | n
 
 const LARGE_CASH_THRESHOLD = 1000; // ₱ — alert when rider holds more than this in unremitted cash
 
+function buildRiderFinanceRows(
+  ledger: LedgerRow[],
+  settlements: Settlement[],
+  adjustments: LedgerAdjustment[],
+  profiles: Record<string, RiderProfile>,
+  window: FinanceWindow,
+) {
+  const ids = Array.from(new Set([
+    ...Object.keys(profiles),
+    ...ledger.map(r => r.rider_id),
+    ...settlements.map(r => r.rider_id),
+    ...adjustments.map(r => r.rider_id),
+  ]));
+  return ids.map(id => {
+    const ll = ledger.filter(r => r.rider_id === id);
+    const ss = settlements.filter(r => r.rider_id === id);
+    const aa = adjustments.filter(r => r.rider_id === id);
+    const wl = summarizeWallet(ll, ss, aa);
+    const inRange = ll.filter(r => r.created_at >= window.start.toISOString() && r.created_at < window.end.toISOString());
+    const cashInRange = inRange.filter(r => r.payment_method === "cash").reduce((sum, r) => sum + Number(r.customer_paid), 0);
+    const gcashInRange = inRange.filter(r => r.payment_method === "gcash").reduce((sum, r) => sum + Number(r.customer_paid), 0);
+    const earningsInRange = inRange.reduce((sum, r) => sum + Number(r.rider_earning), 0);
+    const companyShareInRange = inRange.reduce((sum, r) => sum + Number(r.platform_commission), 0);
+    const lastApproved = ss.find(s => s.status === "approved");
+    return {
+      id,
+      profile: profiles[id],
+      ordersInRange: inRange.length,
+      cashInRange,
+      gcashInRange,
+      earningsInRange,
+      companyShareInRange,
+      riderOwes: wl.riderOwes,
+      hatodgoOwes: wl.hatodgoOwes,
+      netBalance: wl.netBalance,
+      cashHeld: cashInRange,
+      lastSettlement: lastApproved,
+      hasPending: ss.some(s => s.status === "pending"),
+    };
+  }).sort((a, b) => (b.ordersInRange - a.ordersInRange) || (Math.abs(b.netBalance) - Math.abs(a.netBalance)));
+}
+
 function AdminFinancePage() {
   const { user, loading, rolesLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -91,7 +134,7 @@ function AdminFinancePage() {
 
   const refresh = useCallback(async () => {
     try {
-      const [{ data: l, error: le }, { data: s, error: se }, { data: a, error: ae }, { data: snaps }] = await Promise.all([
+      const [{ data: l, error: le }, { data: s, error: se }, { data: a, error: ae }, { count: snapshotCount }] = await Promise.all([
         supabase.from("wallet_ledger").select("*").order("created_at", { ascending: false }),
         supabase.from("settlements").select("*").order("created_at", { ascending: false }),
         supabase.from("ledger_adjustments").select("*").order("created_at", { ascending: false }),
@@ -106,18 +149,25 @@ function AdminFinancePage() {
       setLedger(ledgerRows);
       setSettlements(settlementRows);
       setAdjustments(adjustmentRows);
-      setSnapshotsCount(snaps?.length ?? 0);
+      setSnapshotsCount(snapshotCount ?? 0);
 
       const riderIds = Array.from(new Set([
         ...ledgerRows.map(r => r.rider_id),
         ...settlementRows.map(r => r.rider_id),
         ...adjustmentRows.map(r => r.rider_id),
       ]));
-      if (riderIds.length > 0) {
-        const { data: ps } = await supabase.from("profiles").select("id, full_name, phone").in("id", riderIds);
+      const { data: riderRoleRows } = await supabase.from("user_roles").select("user_id").eq("role", "rider");
+      const allRiderIds = Array.from(new Set([
+        ...riderIds,
+        ...((riderRoleRows ?? []) as { user_id: string }[]).map(r => r.user_id),
+      ]));
+      if (allRiderIds.length > 0) {
+        const { data: ps } = await supabase.from("profiles").select("id, full_name, phone").in("id", allRiderIds);
         const map: Record<string, RiderProfile> = {};
         (ps ?? []).forEach(p => { map[p.id] = p as RiderProfile; });
         setProfiles(map);
+      } else {
+        setProfiles({});
       }
 
       // Pull order rows to learn customer ids for the ledger view
@@ -169,36 +219,7 @@ function AdminFinancePage() {
   // Per-rider rollup (lifetime balances + window-scoped order count/cash)
   const perRider = useMemo(() => {
     if (!ledger || !settlements || !adjustments) return null;
-    const ids = Array.from(new Set([
-      ...ledger.map(r => r.rider_id),
-      ...settlements.map(r => r.rider_id),
-      ...adjustments.map(r => r.rider_id),
-    ]));
-    return ids.map(id => {
-      const ll = ledger.filter(r => r.rider_id === id);
-      const ss = settlements.filter(r => r.rider_id === id);
-      const aa = adjustments.filter(r => r.rider_id === id);
-      const wl = summarizeWallet(ll, ss, aa);
-      const inRange = ll.filter(r => r.created_at >= rangeWin.start.toISOString() && r.created_at < rangeWin.end.toISOString());
-      const cashInRange = inRange.filter(r => r.payment_method === "cash").reduce((sum, r) => sum + Number(r.customer_paid), 0);
-      const gcashInRange = inRange.filter(r => r.payment_method === "gcash").reduce((sum, r) => sum + Number(r.customer_paid), 0);
-      const earningsInRange = inRange.reduce((sum, r) => sum + Number(r.rider_earning), 0);
-      const lastApproved = ss.find(s => s.status === "approved");
-      return {
-        id,
-        profile: profiles[id],
-        ordersInRange: inRange.length,
-        cashInRange,
-        gcashInRange,
-        earningsInRange,
-        riderOwes: wl.riderOwes,
-        hatodgoOwes: wl.hatodgoOwes,
-        netBalance: wl.netBalance,
-        cashHeld: wl.cashHeldWeek, // running cash held
-        lastSettlement: lastApproved,
-        hasPending: ss.some(s => s.status === "pending"),
-      };
-    }).sort((a, b) => Math.abs(b.netBalance) - Math.abs(a.netBalance));
+    return buildRiderFinanceRows(ledger, settlements, adjustments, profiles, rangeWin);
   }, [ledger, settlements, adjustments, profiles, rangeWin]);
 
   const alerts = useMemo(() => {
@@ -279,13 +300,27 @@ function AdminFinancePage() {
 
   // End of day: snapshot today's numbers
   const generateEod = async (notes: string) => {
-    if (!user || !ledger || !settlements) return;
+    if (!user || !ledger || !settlements || !adjustments) return;
     const today = new Date();
     const dayStr = today.toISOString().slice(0, 10);
     const w = rangeWindow("today", today);
     const fin = summarizeFinance(ledger, settlements, w);
+    const riderBreakdown = buildRiderFinanceRows(ledger, settlements, adjustments, profiles, w).map(r => ({
+      rider_id: r.id,
+      rider_name: r.profile?.full_name ?? null,
+      phone: r.profile?.phone ?? null,
+      trips_completed: r.ordersInRange,
+      cash_collected: r.cashInRange,
+      gcash_collected: r.gcashInRange,
+      rider_earnings: r.earningsInRange,
+      company_share: r.companyShareInRange,
+      rider_owes_hatodgo: r.riderOwes,
+      hatodgo_owes_rider: r.hatodgoOwes,
+      net_balance: r.netBalance,
+      status: r.netBalance === 0 ? "settled" : r.netBalance > 0 ? "hatodgo_owes_rider" : "rider_owes_hatodgo",
+    }));
     try {
-      const { error } = await supabase.from("daily_finance_snapshots").upsert({
+      const snapshotPayload = {
         day: dayStr,
         gross_sales: fin.grossSales,
         total_orders: fin.totalOrders,
@@ -295,9 +330,11 @@ function AdminFinancePage() {
         gcash_received: fin.gcashReceived,
         pending_settlements_count: fin.pendingSettlementsCount,
         pending_settlements_amount: fin.pendingSettlementsAmount,
+        rider_breakdown: riderBreakdown,
         notes: notes.trim() || null,
         generated_by: user.id,
-      }, { onConflict: "day" });
+      };
+      const { error } = await supabase.from("daily_finance_snapshots").upsert(snapshotPayload as never, { onConflict: "day" });
       if (error) throw error;
       toast.success("End-of-day saved", { description: `Snapshot for ${dayStr} stored.` });
       setEodOpen(false);
@@ -391,7 +428,7 @@ function AdminFinancePage() {
         {perRider === null ? (
           <div className="h-32 animate-pulse rounded-xl bg-muted" />
         ) : perRider.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border bg-card/50 p-4 text-center text-sm text-muted-foreground">No rider activity yet.</p>
+          <p className="rounded-xl border border-dashed border-border bg-card/50 p-4 text-center text-sm text-muted-foreground">No riders found yet. Add the rider role to drivers from Admin home, then completed trips will appear here.</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border bg-card">
             <table className="w-full text-sm">
@@ -399,9 +436,10 @@ function AdminFinancePage() {
                 <tr>
                   <th className="px-3 py-2 text-left">Rider</th>
                   <th className="px-3 py-2 text-right">Orders ({range})</th>
-                  <th className="px-3 py-2 text-right">Cash held</th>
+                      <th className="px-3 py-2 text-right">Cash ({range})</th>
                   <th className="px-3 py-2 text-right">GCash ({range})</th>
                   <th className="px-3 py-2 text-right">Earnings ({range})</th>
+                      <th className="px-3 py-2 text-right">Co. share ({range})</th>
                   <th className="px-3 py-2 text-right">Owes co.</th>
                   <th className="px-3 py-2 text-right">Co. owes</th>
                   <th className="px-3 py-2 text-center">Status</th>
@@ -420,9 +458,10 @@ function AdminFinancePage() {
                         <p className="text-xs text-muted-foreground">{r.profile?.phone ?? r.id.slice(0, 8)}</p>
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums">{r.ordersInRange}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{formatPeso(r.cashHeld)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{formatPeso(r.cashInRange)}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{formatPeso(r.gcashInRange)}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{formatPeso(r.earningsInRange)}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{formatPeso(r.companyShareInRange)}</td>
                       <td className="px-3 py-2 text-right tabular-nums text-destructive">{formatPeso(r.riderOwes)}</td>
                       <td className="px-3 py-2 text-right tabular-nums text-success">{formatPeso(r.hatodgoOwes)}</td>
                       <td className={`px-3 py-2 text-center text-xs font-bold ${balanceClass}`}>{status}</td>
@@ -516,7 +555,7 @@ function AdminFinancePage() {
             </thead>
             <tbody>
               {ledgerInRange.length === 0 ? (
-                <tr><td colSpan={10} className="px-3 py-6 text-center text-sm text-muted-foreground">No orders in this range.</td></tr>
+                <tr><td colSpan={10} className="px-3 py-6 text-center text-sm text-muted-foreground">No completed rider trips in this range yet.</td></tr>
               ) : ledgerInRange.slice(0, 200).map(row => {
                 const ord = orderInfo[row.order_id];
                 const custName = ord ? customerNames[ord.customer_id] : "";
@@ -570,6 +609,8 @@ function AdminFinancePage() {
           <EodForm
             todayLedger={ledger ?? []}
             settlements={settlements ?? []}
+            adjustments={adjustments ?? []}
+            profiles={profiles}
             onSubmit={(notes) => generateEod(notes)}
             onCancel={() => setEodOpen(false)}
           />
@@ -712,16 +753,19 @@ function AdjustmentDialog({
 }
 
 function EodForm({
-  todayLedger, settlements, onSubmit, onCancel,
+  todayLedger, settlements, adjustments, profiles, onSubmit, onCancel,
 }: {
   todayLedger: LedgerRow[];
   settlements: Settlement[];
+  adjustments: LedgerAdjustment[];
+  profiles: Record<string, RiderProfile>;
   onSubmit: (notes: string) => void;
   onCancel: () => void;
 }) {
   const [notes, setNotes] = useState("");
   const todayWindow = useMemo(() => rangeWindow("today"), []);
   const fin = useMemo(() => summarizeFinance(todayLedger, settlements, todayWindow), [todayLedger, settlements, todayWindow]);
+  const riders = useMemo(() => buildRiderFinanceRows(todayLedger, settlements, adjustments, profiles, todayWindow), [todayLedger, settlements, adjustments, profiles, todayWindow]);
 
   return (
     <>
@@ -733,6 +777,18 @@ function EodForm({
         <Stat label="Cash collected" value={formatPeso(fin.cashCollected)} />
         <Stat label="GCash received" value={formatPeso(fin.gcashReceived)} />
         <Stat label="Pending settlements" value={`${fin.pendingSettlementsCount} · ${formatPeso(fin.pendingSettlementsAmount)}`} />
+      </div>
+      <div className="mt-3 max-h-56 overflow-auto rounded-xl border border-border bg-card">
+        {riders.length === 0 ? (
+          <p className="p-3 text-sm text-muted-foreground">No rider rows yet.</p>
+        ) : riders.map((r) => (
+          <div key={r.id} className="grid grid-cols-2 gap-2 border-b border-border p-3 text-xs last:border-0 sm:grid-cols-4">
+            <Stat label="Rider" value={r.profile?.full_name ?? r.id.slice(0, 8)} />
+            <Stat label="Trips" value={String(r.ordersInRange)} />
+            <Stat label="Rider owes" value={formatPeso(r.riderOwes)} />
+            <Stat label="Co. owes" value={formatPeso(r.hatodgoOwes)} />
+          </div>
+        ))}
       </div>
       <div className="mt-3">
         <Label htmlFor="eod-notes">Notes (optional)</Label>
