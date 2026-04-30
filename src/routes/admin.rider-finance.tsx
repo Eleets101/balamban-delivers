@@ -11,8 +11,10 @@ import {
   Loader2,
   Package,
   Pencil,
+  RefreshCw,
   ShieldAlert,
   Smartphone,
+  Sparkles,
   TrendingUp,
   Users,
   Wallet,
@@ -76,8 +78,11 @@ function AdminRiderFinancePage() {
   const [adjustAmount, setAdjustAmount] = useState<string>("");
   const [adjustNote, setAdjustNote] = useState<string>("");
   const [acting, setActing] = useState<string | null>(null);
+  const [showSample, setShowSample] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
   const refresh = useCallback(async () => {
+    setRefreshing(true);
     try {
       const sinceIso = new Date(Date.now() - ONLINE_WINDOW_MS).toISOString();
       const [
@@ -130,6 +135,8 @@ function AdminRiderFinancePage() {
     } catch (err) {
       console.error("[rider-finance] refresh failed", err);
       toast.error("Couldn't load rider finance data", { description: (err as Error).message });
+    } finally {
+      setRefreshing(false);
     }
   }, []);
 
@@ -206,6 +213,99 @@ function AdminRiderFinancePage() {
       ridersOwing: rows.filter(r => r.riderOwes > 0).length,
     };
   }, [rows, ledger, todayStart]);
+
+  // Sample rows for visual inspection (admin-only test toggle, no DB writes)
+  const sampleRows = useMemo(() => {
+    return [
+      {
+        id: "sample-1",
+        profile: { id: "sample-1", full_name: "Juan Dela Cruz (sample)", phone: "0917 000 0001" } as RiderProfile,
+        online: true,
+        lastOnline: new Date().toISOString() as string | undefined,
+        jobsToday: 8,
+        grossToday: 1240,
+        cashHeldToday: 720,
+        gcashToday: 520,
+        earningsToday: 992,
+        riderOwes: 144,
+        hatodgoOwes: 0,
+        lastSettlement: null as Settlement | null,
+        todayJobs: [] as LedgerRow[],
+        sample: true,
+      },
+      {
+        id: "sample-2",
+        profile: { id: "sample-2", full_name: "Maria Santos (sample)", phone: "0917 000 0002" } as RiderProfile,
+        online: true,
+        lastOnline: new Date().toISOString() as string | undefined,
+        jobsToday: 5,
+        grossToday: 860,
+        cashHeldToday: 0,
+        gcashToday: 860,
+        earningsToday: 688,
+        riderOwes: 0,
+        hatodgoOwes: 688,
+        lastSettlement: null as Settlement | null,
+        todayJobs: [] as LedgerRow[],
+        sample: true,
+      },
+      {
+        id: "sample-3",
+        profile: { id: "sample-3", full_name: "Pedro Reyes (sample)", phone: "0917 000 0003" } as RiderProfile,
+        online: false,
+        lastOnline: undefined as string | undefined,
+        jobsToday: 0,
+        grossToday: 0,
+        cashHeldToday: 0,
+        gcashToday: 0,
+        earningsToday: 0,
+        riderOwes: 0,
+        hatodgoOwes: 0,
+        lastSettlement: null as Settlement | null,
+        todayJobs: [] as LedgerRow[],
+        sample: true,
+      },
+    ];
+  }, []);
+
+  // Demo placeholder row used when there are no riders at all
+  const demoRow = useMemo(() => ({
+    id: "demo",
+    profile: { id: "demo", full_name: "Demo Rider", phone: "—" } as RiderProfile,
+    online: false,
+    lastOnline: undefined as string | undefined,
+    jobsToday: 0,
+    grossToday: 0,
+    cashHeldToday: 0,
+    gcashToday: 0,
+    earningsToday: 0,
+    riderOwes: 0,
+    hatodgoOwes: 0,
+    lastSettlement: null as Settlement | null,
+    todayJobs: [] as LedgerRow[],
+    sample: true,
+  }), []);
+
+  const displayRows = useMemo(() => {
+    if (showSample) return sampleRows;
+    if (!rows) return null;
+    if (rows.length === 0) return [demoRow];
+    return rows;
+  }, [showSample, rows, sampleRows, demoRow]);
+
+  const displaySummary = useMemo(() => {
+    if (!showSample) return summary;
+    return {
+      ridersToday: sampleRows.filter(r => r.jobsToday > 0).length,
+      jobsToday: sampleRows.reduce((s, r) => s + r.jobsToday, 0),
+      cashCollected: sampleRows.reduce((s, r) => s + r.cashHeldToday, 0),
+      gcashCollected: sampleRows.reduce((s, r) => s + r.gcashToday, 0),
+      companyRevenue: Math.round(sampleRows.reduce((s, r) => s + r.grossToday, 0) * 0.2),
+      riderEarningsUnpaid: sampleRows.reduce((s, r) => s + r.hatodgoOwes, 0),
+      ridersOwing: sampleRows.filter(r => r.riderOwes > 0).length,
+    };
+  }, [showSample, sampleRows, summary]);
+
 
   const markRiderPaid = async (riderId: string) => {
     if (!user || !rows) return;
@@ -314,6 +414,18 @@ function AdminRiderFinancePage() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant={showSample ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowSample(s => !s)}
+            >
+              <Sparkles className="h-4 w-4" />
+              {showSample ? "Hide sample data" : "Load sample finance data"}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => void refresh()} disabled={refreshing}>
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
             <Button variant="ghost" size="sm" asChild>
               <Link to="/admin/finance">Company Finance</Link>
             </Button>
@@ -323,24 +435,28 @@ function AdminRiderFinancePage() {
           </div>
         </div>
 
-        {/* Summary cards */}
+        {showSample && (
+          <div className="mt-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">
+            <Sparkles className="mr-1 inline h-3 w-3" /> Showing <strong>sample data</strong> for layout inspection. No real records are affected. Action buttons are disabled.
+          </div>
+        )}
+
+        {/* Summary cards — always render, even with zero values */}
         <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-          <Card icon={<Users />} label="Riders today" value={String(summary?.ridersToday ?? 0)} />
-          <Card icon={<Package />} label="Jobs today" value={String(summary?.jobsToday ?? 0)} />
-          <Card accent="warning" icon={<Banknote />} label="Cash collected" value={formatPeso(summary?.cashCollected ?? 0)} />
-          <Card accent="primary" icon={<Smartphone />} label="GCash collected" value={formatPeso(summary?.gcashCollected ?? 0)} />
-          <Card accent="success" icon={<TrendingUp />} label="Company revenue" value={formatPeso(summary?.companyRevenue ?? 0)} />
-          <Card icon={<Wallet />} label="Rider earnings unpaid" value={formatPeso(summary?.riderEarningsUnpaid ?? 0)} />
-          <Card accent={summary && summary.ridersOwing > 0 ? "danger" : undefined} icon={<AlertTriangle />} label="Riders owing HatodGo" value={String(summary?.ridersOwing ?? 0)} />
-          <Card accent="success" icon={<CheckCircle2 />} label="Settled riders" value={String((rows?.length ?? 0) - (summary?.ridersOwing ?? 0))} />
+          <Card icon={<Users />} label="Total riders today" value={String(displaySummary?.ridersToday ?? 0)} />
+          <Card icon={<Package />} label="Jobs completed today" value={String(displaySummary?.jobsToday ?? 0)} />
+          <Card accent="warning" icon={<Banknote />} label="Cash collected today" value={formatPeso(displaySummary?.cashCollected ?? 0)} />
+          <Card accent="primary" icon={<Smartphone />} label="GCash collected today" value={formatPeso(displaySummary?.gcashCollected ?? 0)} />
+          <Card accent="success" icon={<TrendingUp />} label="Company revenue today" value={formatPeso(displaySummary?.companyRevenue ?? 0)} />
+          <Card icon={<Wallet />} label="Rider earnings owed" value={formatPeso(displaySummary?.riderEarningsUnpaid ?? 0)} />
+          <Card accent={displaySummary && displaySummary.ridersOwing > 0 ? "danger" : undefined} icon={<AlertTriangle />} label="Riders owing company" value={String(displaySummary?.ridersOwing ?? 0)} />
+          <Card accent="success" icon={<CheckCircle2 />} label="Settled riders" value={String(Math.max(0, (displayRows?.filter(r => !("sample" in r) || !r.sample).length ?? 0) - (displaySummary?.ridersOwing ?? 0)))} />
         </div>
 
-        {/* Rider table */}
+        {/* Rider table — always render structure */}
         <div className="mt-6 overflow-hidden rounded-2xl border border-border/60" style={{ background: "var(--gradient-card)" }}>
-          {rows === null ? (
+          {displayRows === null ? (
             <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-          ) : rows.length === 0 ? (
-            <p className="py-12 text-center text-sm text-muted-foreground">No riders yet. Grant the “rider” role in Admin → User roles.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -361,7 +477,8 @@ function AdminRiderFinancePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map(r => {
+                  {displayRows.map(r => {
+                    const isSample = "sample" in r && r.sample;
                     const isOpen = expanded === r.id;
                     const owesUs = r.riderOwes > 0;
                     const weOwe = r.hatodgoOwes > 0;
@@ -401,9 +518,9 @@ function AdminRiderFinancePage() {
                           </td>
                           <td className="px-3 py-3 text-right">
                             <div className="flex flex-wrap justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                              <Button size="sm" variant="outline" disabled={!weOwe || acting === r.id} onClick={() => markRiderPaid(r.id)}>Pay</Button>
-                              <Button size="sm" variant="outline" disabled={!owesUs || acting === r.id} onClick={() => markCashRemitted(r.id)}>Remit</Button>
-                              <Button size="sm" variant="ghost" onClick={() => { setAdjustOpen(r.id); setAdjustAmount(""); setAdjustNote(""); }}>
+                              <Button size="sm" variant="outline" disabled={isSample || !weOwe || acting === r.id} onClick={() => markRiderPaid(r.id)}>Pay</Button>
+                              <Button size="sm" variant="outline" disabled={isSample || !owesUs || acting === r.id} onClick={() => markCashRemitted(r.id)}>Remit</Button>
+                              <Button size="sm" variant="ghost" disabled={isSample} onClick={() => { setAdjustOpen(r.id); setAdjustAmount(""); setAdjustNote(""); }}>
                                 <Pencil className="h-3 w-3" /> Adjust
                               </Button>
                             </div>
@@ -468,6 +585,17 @@ function AdminRiderFinancePage() {
           )}
         </div>
 
+        {/* Empty state message — shown when no real ledger activity yet */}
+        {!showSample && rows && rows.length === 0 && (
+          <p className="mt-4 rounded-lg border border-border/60 bg-muted/30 px-4 py-3 text-center text-sm text-muted-foreground">
+            No completed trips yet. Values will auto-populate when riders complete orders.
+          </p>
+        )}
+        {!showSample && rows && rows.length > 0 && (rows.every(r => r.jobsToday === 0)) && (
+          <p className="mt-4 rounded-lg border border-border/60 bg-muted/30 px-4 py-3 text-center text-sm text-muted-foreground">
+            No completed trips yet today. Values will auto-populate when riders complete orders.
+          </p>
+        )}
         {/* Adjustment dialog */}
         <Dialog open={!!adjustOpen} onOpenChange={(o) => { if (!o) setAdjustOpen(null); }}>
           <DialogContent>
