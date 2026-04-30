@@ -174,9 +174,31 @@ function OrdersPage() {
                     )}
 
                     {o.estimated_price !== null && (
-                      <p className="mt-3 text-sm">
-                        Estimated: <span className="font-semibold">₱{Number(o.estimated_price).toFixed(2)}</span>
-                      </p>
+                      <div className="mt-3">
+                        {o.payment_status === "cod" && o.status !== "completed" && o.status !== "cancelled" ? (
+                          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-accent/40 bg-accent/10 p-3">
+                            <div>
+                              <p className="text-[11px] font-semibold uppercase tracking-wide text-accent-foreground/80">
+                                Cash due on delivery
+                              </p>
+                              <p className="font-display text-xl font-bold">
+                                ₱{Number(o.estimated_price).toFixed(2)}
+                              </p>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Please prepare exact cash for the rider.
+                            </p>
+                          </div>
+                        ) : o.payment_status === "paid" ? (
+                          <p className="text-sm">
+                            Paid: <span className="font-semibold">₱{Number(o.estimated_price).toFixed(2)}</span>
+                          </p>
+                        ) : (
+                          <p className="text-sm">
+                            Estimated: <span className="font-semibold">₱{Number(o.estimated_price).toFixed(2)}</span>
+                          </p>
+                        )}
+                      </div>
                     )}
 
                     {(pickup || dropoff) && (
