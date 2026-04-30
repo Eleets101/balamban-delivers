@@ -1,5 +1,6 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
+import { FoodCartProvider } from "@/hooks/useFoodCart";
 
 import appCss from "../styles.css?url";
 
@@ -73,9 +74,9 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   return (
-    <>
+    <FoodCartProvider>
       <Outlet />
       <Toaster richColors position="top-center" />
-    </>
+    </FoodCartProvider>
   );
 }

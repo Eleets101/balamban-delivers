@@ -128,6 +128,95 @@ export type Database = {
         }
         Relationships: []
       }
+      menu_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          restaurant_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          restaurant_id: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          restaurant_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_categories_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_items: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_available: boolean
+          name: string
+          price: number
+          restaurant_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean
+          name: string
+          price: number
+          restaurant_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean
+          name?: string
+          price?: number
+          restaurant_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "menu_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_items_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null
@@ -250,6 +339,81 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      restaurants: {
+        Row: {
+          address: string
+          base_delivery_fee: number
+          category: Database["public"]["Enums"]["restaurant_category"]
+          cover_url: string | null
+          created_at: string
+          description: string | null
+          estimated_minutes: number
+          free_distance_km: number
+          id: string
+          is_active: boolean
+          is_open: boolean
+          lat: number | null
+          lng: number | null
+          logo_url: string | null
+          name: string
+          open_hours: string | null
+          per_km_fee: number
+          phone: string | null
+          rating: number
+          slug: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          base_delivery_fee?: number
+          category?: Database["public"]["Enums"]["restaurant_category"]
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_minutes?: number
+          free_distance_km?: number
+          id?: string
+          is_active?: boolean
+          is_open?: boolean
+          lat?: number | null
+          lng?: number | null
+          logo_url?: string | null
+          name: string
+          open_hours?: string | null
+          per_km_fee?: number
+          phone?: string | null
+          rating?: number
+          slug?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          base_delivery_fee?: number
+          category?: Database["public"]["Enums"]["restaurant_category"]
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_minutes?: number
+          free_distance_km?: number
+          id?: string
+          is_active?: boolean
+          is_open?: boolean
+          lat?: number | null
+          lng?: number | null
+          logo_url?: string | null
+          name?: string
+          open_hours?: string | null
+          per_km_fee?: number
+          phone?: string | null
+          rating?: number
+          slug?: string | null
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []
@@ -424,6 +588,15 @@ export type Database = {
         | "completed"
         | "cancelled"
       payment_status: "pending" | "paid" | "cod" | "failed"
+      restaurant_category:
+        | "carenderia"
+        | "fast_food"
+        | "snacks"
+        | "drinks"
+        | "pharmacy"
+        | "grocery"
+        | "bakery"
+        | "other"
       saved_location_kind: "home" | "work" | "favorite"
       service_type: "food" | "padali" | "pabili" | "ride"
       settlement_status: "pending" | "approved" | "rejected"
@@ -565,6 +738,16 @@ export const Constants = {
         "cancelled",
       ],
       payment_status: ["pending", "paid", "cod", "failed"],
+      restaurant_category: [
+        "carenderia",
+        "fast_food",
+        "snacks",
+        "drinks",
+        "pharmacy",
+        "grocery",
+        "bakery",
+        "other",
+      ],
       saved_location_kind: ["home", "work", "favorite"],
       service_type: ["food", "padali", "pabili", "ride"],
       settlement_status: ["pending", "approved", "rejected"],
