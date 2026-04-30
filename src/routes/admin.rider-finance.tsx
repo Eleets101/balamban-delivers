@@ -527,6 +527,56 @@ function AdminRiderFinancePage() {
           </div>
         </div>
 
+        {/* 7-day trend charts */}
+        <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <div className="rounded-2xl border border-border/60 bg-card/60 p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Orders — last 7 days</h3>
+              <span className="text-xs text-muted-foreground">
+                {trend7d.reduce((s, d) => s + d.orders, 0)} total
+              </span>
+            </div>
+            <div className="h-44">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trend7d} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                  <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <RTooltip
+                    contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                    labelStyle={{ color: "hsl(var(--foreground))" }}
+                  />
+                  <Line type="monotone" dataKey="orders" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-border/60 bg-card/60 p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Revenue — last 7 days</h3>
+              <span className="text-xs text-muted-foreground">
+                {formatPeso(trend7d.reduce((s, d) => s + d.revenue, 0))} gross · {formatPeso(trend7d.reduce((s, d) => s + d.profit, 0))} profit
+              </span>
+            </div>
+            <div className="h-44">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trend7d} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+                  <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={(v) => `₱${v >= 1000 ? `${(v/1000).toFixed(1)}k` : v}`} />
+                  <RTooltip
+                    contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                    formatter={(v: number, name) => [formatPeso(v), name === "revenue" ? "Gross" : "Profit"]}
+                  />
+                  <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ r: 3 }} name="revenue" />
+                  <Line type="monotone" dataKey="profit" stroke="hsl(var(--success))" strokeWidth={2.5} dot={{ r: 3 }} name="profit" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
         {/* Summary cards — always render, even with zero values */}
         <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
           <Card icon={<Users />} label="Total riders today" value={String(displaySummary?.ridersToday ?? 0)} />
