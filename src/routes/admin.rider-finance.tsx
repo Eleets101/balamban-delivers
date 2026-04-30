@@ -188,10 +188,12 @@ function AdminRiderFinancePage() {
       const earningsToday = today.reduce((s, r) => s + Number(r.rider_earning), 0);
       const lastSettlement = ss.find(x => x.status === "approved");
       const lastOnline = onlineMap[id];
+      const busy = !!busyMap[id];
       return {
         id,
         profile: profiles[id],
         online: !!lastOnline,
+        busy,
         lastOnline,
         jobsToday: today.length,
         grossToday,
@@ -208,7 +210,7 @@ function AdminRiderFinancePage() {
       if ((b.riderOwes > 0 ? 1 : 0) !== (a.riderOwes > 0 ? 1 : 0)) return (b.riderOwes > 0 ? 1 : 0) - (a.riderOwes > 0 ? 1 : 0);
       return b.jobsToday - a.jobsToday;
     });
-  }, [ledger, settlements, adjustments, riderIds, profiles, onlineMap, todayStart]);
+  }, [ledger, settlements, adjustments, riderIds, profiles, onlineMap, busyMap, todayStart]);
 
   const summary = useMemo(() => {
     if (!rows) return null;
