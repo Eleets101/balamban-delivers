@@ -53,6 +53,7 @@ import {
   STATUS_LABELS,
   summarizeFinance,
   summarizeWallet,
+  type FinanceWindow,
   type LedgerAdjustment,
   type LedgerRow,
   type ReportRange,
@@ -72,6 +73,48 @@ export const Route = createFileRoute("/admin/finance")({
 interface RiderProfile { id: string; full_name: string | null; phone: string | null; }
 
 const LARGE_CASH_THRESHOLD = 1000; // ₱ — alert when rider holds more than this in unremitted cash
+
+function buildRiderFinanceRows(
+  ledger: LedgerRow[],
+  settlements: Settlement[],
+  adjustments: LedgerAdjustment[],
+  profiles: Record<string, RiderProfile>,
+  window: FinanceWindow,
+) {
+  const ids = Array.from(new Set([
+    ...Object.keys(profiles),
+    ...ledger.map(r => r.rider_id),
+    ...settlements.map(r => r.rider_id),
+    ...adjustments.map(r => r.rider_id),
+  ]));
+  return ids.map(id => {
+    const ll = ledger.filter(r => r.rider_id === id);
+    const ss = settlements.filter(r => r.rider_id === id);
+    const aa = adjustments.filter(r => r.rider_id === id);
+    const wl = summarizeWallet(ll, ss, aa);
+    const inRange = ll.filter(r => r.created_at >= window.start.toISOString() && r.created_at < window.end.toISOString());
+    const cashInRange = inRange.filter(r => r.payment_method === "cash").reduce((sum, r) => sum + Number(r.customer_paid), 0);
+    const gcashInRange = inRange.filter(r => r.payment_method === "gcash").reduce((sum, r) => sum + Number(r.customer_paid), 0);
+    const earningsInRange = inRange.reduce((sum, r) => sum + Number(r.rider_earning), 0);
+    const companyShareInRange = inRange.reduce((sum, r) => sum + Number(r.platform_commission), 0);
+    const lastApproved = ss.find(s => s.status === "approved");
+    return {
+      id,
+      profile: profiles[id],
+      ordersInRange: inRange.length,
+      cashInRange,
+      gcashInRange,
+      earningsInRange,
+      companyShareInRange,
+      riderOwes: wl.riderOwes,
+      hatodgoOwes: wl.hatodgoOwes,
+      netBalance: wl.netBalance,
+      cashHeld: cashInRange,
+      lastSettlement: lastApproved,
+      hasPending: ss.some(s => s.status === "pending"),
+    };
+  }).sort((a, b) => (b.ordersInRange - a.ordersInRange) || (Math.abs(b.netBalance) - Math.abs(a.netBalance)));
+}
 
 function AdminFinancePage() {
   const { user, loading, rolesLoading, isAdmin } = useAuth();
