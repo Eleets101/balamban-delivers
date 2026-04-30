@@ -331,7 +331,7 @@ function AddToCartDialog({
   if (!item) return null;
 
   const handleAdd = () => {
-    if (!restaurant.is_open) {
+    if (!isRestaurantOpenNow(restaurant)) {
       toast.error("Sorry, this restaurant is closed right now.");
       return;
     }
