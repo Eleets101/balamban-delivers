@@ -513,8 +513,8 @@ function AdminRiderFinancePage() {
                     const owesUs = r.riderOwes > 0;
                     const weOwe = r.hatodgoOwes > 0;
                     const rowAccent = owesUs
-                      ? "bg-destructive/5 hover:bg-destructive/10"
-                      : weOwe ? "bg-warning/5 hover:bg-warning/10" : "hover:bg-secondary/40";
+                      ? "bg-destructive/15 hover:bg-destructive/20 border-l-4 border-l-destructive"
+                      : weOwe ? "bg-success/10 hover:bg-success/15 border-l-4 border-l-success" : "hover:bg-secondary/40 border-l-4 border-l-transparent";
                     return (
                       <Fragment key={r.id}>
                         <tr
@@ -526,8 +526,25 @@ function AdminRiderFinancePage() {
                             {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                           </td>
                           <td className="px-3 py-3">
-                            <div className="font-medium">{r.profile?.full_name ?? `Rider ${r.id.slice(0, 6)}`}</div>
-                            <div className="text-xs text-muted-foreground">{r.profile?.phone ?? "—"}</div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <div>
+                                <div className="font-medium">{r.profile?.full_name ?? `Rider ${r.id.slice(0, 6)}`}</div>
+                                <div className="text-xs text-muted-foreground">{r.profile?.phone ?? "—"}</div>
+                              </div>
+                              {owesUs && (
+                                <Badge className="border border-destructive bg-destructive text-destructive-foreground font-bold uppercase tracking-wide shadow-sm animate-pulse">
+                                  Owes {formatPeso(r.riderOwes)}
+                                </Badge>
+                              )}
+                              {weOwe && (
+                                <Badge className="border border-success bg-success text-success-foreground font-bold uppercase tracking-wide shadow-sm">
+                                  We owe {formatPeso(r.hatodgoOwes)}
+                                </Badge>
+                              )}
+                              {!owesUs && !weOwe && (
+                                <Badge variant="outline" className="text-muted-foreground">Settled</Badge>
+                              )}
+                            </div>
                           </td>
                           <td className="px-3 py-3">
                             {r.online ? (
@@ -541,8 +558,8 @@ function AdminRiderFinancePage() {
                           <td className="px-3 py-3 text-right font-mono">{formatPeso(r.cashHeldToday)}</td>
                           <td className="px-3 py-3 text-right font-mono">{formatPeso(r.gcashToday)}</td>
                           <td className="px-3 py-3 text-right font-mono">{formatPeso(r.earningsToday)}</td>
-                          <td className={`px-3 py-3 text-right font-mono ${owesUs ? "font-semibold text-destructive" : "text-muted-foreground"}`}>{formatPeso(r.riderOwes)}</td>
-                          <td className={`px-3 py-3 text-right font-mono ${weOwe ? "font-semibold text-warning" : "text-muted-foreground"}`}>{formatPeso(r.hatodgoOwes)}</td>
+                          <td className={`px-3 py-3 text-right font-mono ${owesUs ? "bg-destructive/20 font-bold text-destructive" : "text-muted-foreground"}`}>{formatPeso(r.riderOwes)}</td>
+                          <td className={`px-3 py-3 text-right font-mono ${weOwe ? "bg-success/20 font-bold text-success" : "text-muted-foreground"}`}>{formatPeso(r.hatodgoOwes)}</td>
                           <td className="px-3 py-3 text-xs text-muted-foreground">
                             {r.lastSettlement ? new Date(r.lastSettlement.approved_at ?? r.lastSettlement.created_at).toLocaleString() : "—"}
                           </td>
