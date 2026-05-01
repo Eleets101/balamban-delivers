@@ -3,6 +3,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { FoodCartProvider } from "@/hooks/useFoodCart";
 
 import appCss from "../styles.css?url";
+import icon192 from "../assets/icon-192.png?url";
+import icon512 from "../assets/icon-512.png?url";
 
 function NotFoundComponent() {
   return (
@@ -42,9 +44,17 @@ export const Route = createRootRoute({
       { name: "twitter:description", content: "All-in-one delivery, errand and ride app for Balamban, Toledo and Asturias." },
       { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/wZiTqJXzNLZljua9qZ0Bdec2esA3/social-images/social-1777381155290-ChatGPT_Image_Apr_28,_2026,_08_58_49_AM.webp" },
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/wZiTqJXzNLZljua9qZ0Bdec2esA3/social-images/social-1777381155290-ChatGPT_Image_Apr_28,_2026,_08_58_49_AM.webp" },
+      { name: "theme-color", content: "#0F172A" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "HatodGo" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/site.webmanifest" },
+      { rel: "icon", type: "image/png", sizes: "192x192", href: icon192 },
+      { rel: "apple-touch-icon", href: icon192 },
+      { rel: "icon", type: "image/png", sizes: "512x512", href: icon512 },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
