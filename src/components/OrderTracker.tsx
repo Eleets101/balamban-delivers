@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, Circle, MapPin, Navigation, Truck, Zap } from "lucide-react";
 import { googleMapsUrl, wazeUrl } from "@/lib/geo";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,11 +18,8 @@ import {
   type LocationSample,
 } from "@/lib/eta";
 import { STATUS_LABELS, type OrderStatus } from "@/lib/orders";
+import { DevSimulatorPanel } from "@/components/DevSimulatorPanel";
 import { RiderInfoCard } from "@/components/RiderInfoCard";
-
-const DevSimulatorPanel = import.meta.env.DEV
-  ? lazy(() => import("@/components/DevSimulatorPanel").then((module) => ({ default: module.DevSimulatorPanel })))
-  : null;
 
 interface OrderTrackerProps {
   orderId: string;
@@ -177,16 +174,14 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
   return (
     <div className="mt-4 space-y-4">
       {/* Dev-only simulator (hidden in production builds) */}
-      {import.meta.env.DEV && DevSimulatorPanel && (
-        <Suspense fallback={null}>
-          <DevSimulatorPanel
-            orderId={orderId}
-            riderId={riderId}
-            status={status}
-            pickup={pickup}
-            dropoff={dropoff}
-          />
-        </Suspense>
+      {import.meta.env.DEV && (
+        <DevSimulatorPanel
+          orderId={orderId}
+          riderId={riderId}
+          status={status}
+          pickup={pickup}
+          dropoff={dropoff}
+        />
       )}
 
       {/* Rider info — name, vehicle, rating, call & chat */}
