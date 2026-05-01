@@ -97,7 +97,7 @@ function FoodHomePage() {
     <PageShell>
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
         <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Back
+          <ArrowLeft className="h-4 w-4" /> Back to HatodGo
         </Link>
 
         <div className="mt-6 flex flex-wrap items-center gap-4">
@@ -110,7 +110,7 @@ function FoodHomePage() {
           <div className="flex-1 min-w-0">
             <h1 className="font-display text-2xl font-bold sm:text-3xl">Order food (Pagkain)</h1>
             <p className="text-sm text-muted-foreground">
-              Browse local restaurants and shops. Add items to cart and check out.
+              Browse local restaurants and shops in Balamban, Toledo, and Asturias. Add items to cart and check out.
             </p>
           </div>
           {itemsCount > 0 && (
@@ -189,7 +189,7 @@ function FoodHomePage() {
           <div>
             <p className="font-display text-base font-semibold">Can't find your restaurant?</p>
             <p className="text-sm text-muted-foreground">
-              Send us a manual request — our riders will pick it up from anywhere in town.
+              Send us a manual request if your preferred restaurant is not listed yet. Our riders can still pick it up locally.
             </p>
           </div>
           <Button asChild variant="outline">

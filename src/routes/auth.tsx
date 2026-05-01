@@ -133,9 +133,17 @@ function AuthPage() {
           </TabsContent>
         </Tabs>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          By continuing you agree to HatodGo's terms of service.
-        </p>
+        <div className="mt-6 space-y-3 text-center text-xs text-muted-foreground">
+          <p>By continuing you agree to HatodGo's terms of service and privacy policy.</p>
+          <p>
+            Need help signing in or placing an order?{" "}
+            <Link to="/support" className="text-primary underline">
+              Contact support
+            </Link>
+            .
+          </p>
+          <p>Serving Balamban, Toledo, and Asturias.</p>
+        </div>
       </div>
     </div>
   );
