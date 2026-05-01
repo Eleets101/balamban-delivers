@@ -31,18 +31,14 @@ This creates `ios/` and `android/` folders. Commit them.
 
 ## 3. Run during development
 
-The included `capacitor.config.ts` now defaults to a production-safe bundle id
-and local `dist/` assets. If you want a live-web shell during development,
-set `CAP_SERVER_URL` before running Capacitor so the app points at your hosted
-HatodGo site instead of bundled files.
+The included `capacitor.config.ts` points the native shell at your Lovable
+preview URL, so you can iterate on the web app and see changes instantly
+without rebuilding the native app.
 
 ```bash
-CAP_SERVER_URL=https://hatodgo.net npx cap run ios
-CAP_SERVER_URL=https://hatodgo.net npx cap run android
+npx cap run ios         # opens iOS simulator
+npx cap run android     # opens Android emulator
 ```
-
-If you want to bundle local assets instead, build first and do not set
-`CAP_SERVER_URL`.
 
 You'll need:
 - **iOS**: Xcode 15+ on macOS, an iOS simulator or a real device.
@@ -50,28 +46,21 @@ You'll need:
 
 ## 4. Build for production / store submission
 
-This repo can support two native release modes:
+Before building for the stores, **edit `capacitor.config.ts`**:
 
-1. **Hosted web shell**: set `CAP_SERVER_URL=https://hatodgo.net` and ship a
-   native wrapper that loads the live site.
-2. **Bundled local assets**: build local static web assets and sync them into
-   Capacitor.
+1. Change `appId` to a domain you own, e.g. `com.yourcompany.hatodgo`.
+   Apple and Google reject the placeholder ID.
+2. **Remove the entire `server` block** so the app loads bundled assets
+   from `dist/` instead of the Lovable preview URL.
 
-Right now, the app is built with TanStack Start client/server output, so the
-hosted web shell is the fastest release path unless you deliberately add a
-static-export mobile build target.
-
-For hosted shell release builds:
+Then:
 
 ```bash
-CAP_SERVER_URL=https://hatodgo.net npx cap sync ios
-CAP_SERVER_URL=https://hatodgo.net npx cap sync android
+npm run build
+npx cap sync
 npx cap open ios        # → Xcode: Product → Archive → Distribute
 npx cap open android    # → Android Studio: Build → Generate Signed Bundle
 ```
-
-For bundled local assets, you must first produce a Capacitor-compatible static
-web output with an `index.html` at the configured `webDir`.
 
 ## 5. App Store / Play Store accounts
 

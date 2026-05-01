@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SupportRouteImport } from './routes/support'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as DriverRouteImport } from './routes/driver'
@@ -36,11 +35,6 @@ import { Route as AdminRestaurantsImportCsvRouteImport } from './routes/admin.re
 import { Route as AdminRestaurantsImportRouteImport } from './routes/admin.restaurants.import'
 import { Route as AdminRestaurantsRestaurantIdRouteImport } from './routes/admin.restaurants.$restaurantId'
 
-const SupportRoute = SupportRouteImport.update({
-  id: '/support',
-  path: '/support',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
@@ -177,7 +171,6 @@ export interface FileRoutesByFullPath {
   '/driver': typeof DriverRouteWithChildren
   '/orders': typeof OrdersRoute
   '/privacy': typeof PrivacyRoute
-  '/support': typeof SupportRoute
   '/admin/finance': typeof AdminFinanceRoute
   '/admin/restaurants': typeof AdminRestaurantsRouteWithChildren
   '/admin/rider-finance': typeof AdminRiderFinanceRoute
@@ -205,7 +198,6 @@ export interface FileRoutesByTo {
   '/driver': typeof DriverRouteWithChildren
   '/orders': typeof OrdersRoute
   '/privacy': typeof PrivacyRoute
-  '/support': typeof SupportRoute
   '/admin/finance': typeof AdminFinanceRoute
   '/admin/restaurants': typeof AdminRestaurantsRouteWithChildren
   '/admin/rider-finance': typeof AdminRiderFinanceRoute
@@ -234,7 +226,6 @@ export interface FileRoutesById {
   '/driver': typeof DriverRouteWithChildren
   '/orders': typeof OrdersRoute
   '/privacy': typeof PrivacyRoute
-  '/support': typeof SupportRoute
   '/admin/finance': typeof AdminFinanceRoute
   '/admin/restaurants': typeof AdminRestaurantsRouteWithChildren
   '/admin/rider-finance': typeof AdminRiderFinanceRoute
@@ -264,7 +255,6 @@ export interface FileRouteTypes {
     | '/driver'
     | '/orders'
     | '/privacy'
-    | '/support'
     | '/admin/finance'
     | '/admin/restaurants'
     | '/admin/rider-finance'
@@ -292,7 +282,6 @@ export interface FileRouteTypes {
     | '/driver'
     | '/orders'
     | '/privacy'
-    | '/support'
     | '/admin/finance'
     | '/admin/restaurants'
     | '/admin/rider-finance'
@@ -320,7 +309,6 @@ export interface FileRouteTypes {
     | '/driver'
     | '/orders'
     | '/privacy'
-    | '/support'
     | '/admin/finance'
     | '/admin/restaurants'
     | '/admin/rider-finance'
@@ -349,7 +337,6 @@ export interface RootRouteChildren {
   DriverRoute: typeof DriverRouteWithChildren
   OrdersRoute: typeof OrdersRoute
   PrivacyRoute: typeof PrivacyRoute
-  SupportRoute: typeof SupportRoute
   CheckoutOrderIdRoute: typeof CheckoutOrderIdRouteWithChildren
   ServicesPabiliRoute: typeof ServicesPabiliRoute
   ServicesPadalaRoute: typeof ServicesPadalaRoute
@@ -362,13 +349,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/support': {
-      id: '/support'
-      path: '/support'
-      fullPath: '/support'
-      preLoaderRoute: typeof SupportRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/privacy': {
       id: '/privacy'
       path: '/privacy'
@@ -612,7 +592,6 @@ const rootRouteChildren: RootRouteChildren = {
   DriverRoute: DriverRouteWithChildren,
   OrdersRoute: OrdersRoute,
   PrivacyRoute: PrivacyRoute,
-  SupportRoute: SupportRoute,
   CheckoutOrderIdRoute: CheckoutOrderIdRouteWithChildren,
   ServicesPabiliRoute: ServicesPabiliRoute,
   ServicesPadalaRoute: ServicesPadalaRoute,
