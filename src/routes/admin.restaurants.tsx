@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RestaurantFormDialog } from "@/components/admin/RestaurantFormDialog";
-import { bulkPublishRestaurants } from "@/server/restaurantImport.functions";
+import { bulkPublishRestaurants } from "@/lib/restaurantImport.functions";
 import {
   CATEGORY_EMOJI,
   CATEGORY_LABELS,

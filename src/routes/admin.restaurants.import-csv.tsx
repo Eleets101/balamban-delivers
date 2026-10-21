@@ -26,7 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { CATEGORY_EMOJI, CATEGORY_LABELS, type RestaurantCategory } from "@/lib/restaurants";
-import { importCsvRestaurants } from "@/server/restaurantImport.functions";
+import { importCsvRestaurants } from "@/lib/restaurantImport.functions";
 
 export const Route = createFileRoute("/admin/restaurants/import-csv")({
   head: () => ({ meta: [{ title: "Import CSV — Admin — HatodGo" }] }),

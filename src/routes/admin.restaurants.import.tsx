@@ -27,7 +27,7 @@ import { CATEGORY_EMOJI, CATEGORY_LABELS } from "@/lib/restaurants";
 import {
   searchOsmRestaurants,
   importOsmRestaurants,
-} from "@/server/restaurantImport.functions";
+} from "@/lib/restaurantImport.functions";
 
 export const Route = createFileRoute("/admin/restaurants/import")({
   head: () => ({ meta: [{ title: "Import restaurants — Admin — HatodGo" }] }),
