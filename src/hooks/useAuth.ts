@@ -28,7 +28,7 @@ export function useAuth() {
 
     const fetchRoles = async (userId: string): Promise<AppRole[]> => {
       const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
-      return (data?.map((r) => r.role as AppRole)) ?? [];
+      return data?.map((r) => r.role as AppRole) ?? [];
     };
 
     const applySession = async (session: Session | null) => {
@@ -46,7 +46,8 @@ export function useAuth() {
         // Defer role fetch to avoid recursion warnings
         setTimeout(async () => {
           const roles = await fetchRoles(session.user.id);
-          if (mounted && guard.isCurrent(request)) setState((s) => ({ ...s, roles, rolesLoading: false }));
+          if (mounted && guard.isCurrent(request))
+            setState((s) => ({ ...s, roles, rolesLoading: false }));
         }, 0);
       } else {
         setState((s) => ({ ...s, roles: [], rolesLoading: false }));
@@ -55,7 +56,7 @@ export function useAuth() {
 
     const initialRequest = guard.next();
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'TOKEN_REFRESHED') return;
+      if (event === "TOKEN_REFRESHED") return;
       void applySession(session);
     });
 

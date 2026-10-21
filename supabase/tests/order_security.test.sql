@@ -273,13 +273,13 @@ SELECT _eq('adjustments cannot be deleted',
 -- All customer service paths using server-valid minimum fares (scratch only).
 SELECT _ok('customer creates manual food with authoritative minimum', _run_as('00000000-0000-0000-0000-0000000000c1',
  $$INSERT INTO _ids VALUES ('manual-food', create_order('food','A','B',10.4456,123.7016,10.4456,123.7016,null,'{"phone":"09170000001"}',null))$$));
-SELECT _eq('manual food minimum is 25', (SELECT estimated_price::text FROM orders WHERE id=(SELECT v FROM _ids WHERE k='manual-food')), '25');
+SELECT _eq('manual food minimum is 25', (SELECT estimated_price::int::text FROM orders WHERE id=(SELECT v FROM _ids WHERE k='manual-food')), '25');
 SELECT _ok('customer creates pabili with authoritative minimum', _run_as('00000000-0000-0000-0000-0000000000c1',
  $$INSERT INTO _ids VALUES ('pabili', create_order('pabili','A','B',10.4456,123.7016,10.4456,123.7016,null,'{"phone":"09170000001"}',null))$$));
-SELECT _eq('pabili minimum is 40', (SELECT estimated_price::text FROM orders WHERE id=(SELECT v FROM _ids WHERE k='pabili')), '40');
+SELECT _eq('pabili minimum is 40', (SELECT estimated_price::int::text FROM orders WHERE id=(SELECT v FROM _ids WHERE k='pabili')), '40');
 SELECT _ok('customer creates ride with authoritative minimum', _run_as('00000000-0000-0000-0000-0000000000c1',
  $$INSERT INTO _ids VALUES ('ride', create_order('ride','A','B',10.4456,123.7016,10.4456,123.7016,null,'{}',null))$$));
-SELECT _eq('standard ride minimum is 40', (SELECT estimated_price::text FROM orders WHERE id=(SELECT v FROM _ids WHERE k='ride')), '40');
+SELECT _eq('standard ride minimum is 40', (SELECT estimated_price::int::text FROM orders WHERE id=(SELECT v FROM _ids WHERE k='ride')), '40');
 SELECT _ok('customer records Maya reference while unpaid', _run_as('00000000-0000-0000-0000-0000000000c1',
  $$SELECT set_order_payment_method((SELECT v FROM _ids WHERE k='ride'),'maya','MAYA-1234')$$));
 SELECT _eq('Maya reference never marks paid', (SELECT payment_status || '/' || (details->>'payment_reference') FROM orders WHERE id=(SELECT v FROM _ids WHERE k='ride')), 'pending/MAYA-1234');
