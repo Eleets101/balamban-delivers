@@ -132,3 +132,41 @@ export const adminRecordSettlement = (
   amount: number,
   note?: string,
 ) => call<string>("admin_record_settlement", { p_rider_id: riderId, p_type: type, p_amount: amount, p_note: note ?? null });
+
+// ---------- UI guards (mirror the database rules; the database still decides) ----------
+
+/** An e-wallet order an admin can confirm or mark failed. */
+export function isAwaitingPaymentConfirmation(o: {
+  payment_method: string | null;
+  payment_status: string;
+  status?: string;
+}): boolean {
+  return (o.payment_method === "gcash" || o.payment_method === "maya") &&
+    (o.payment_status === "pending" || o.payment_status === "failed") &&
+    o.status !== "cancelled";
+}
+
+/** Riders may cancel only their own request while it is still pending. */
+export function canRiderCancelSettlement(
+  s: { rider_id: string; status: string },
+  userId: string | null | undefined,
+): boolean {
+  return !!userId && s.rider_id === userId && s.status === "pending";
+}
+
+/**
+ * Wrap an async action so a second call while the first is running is
+ * ignored (prevents double submits from double taps).
+ */
+export function singleFlight<A extends unknown[], R>(fn: (...a: A) => Promise<R>) {
+  let running = false;
+  return async (...a: A): Promise<R | undefined> => {
+    if (running) return undefined;
+    running = true;
+    try {
+      return await fn(...a);
+    } finally {
+      running = false;
+    }
+  };
+}
