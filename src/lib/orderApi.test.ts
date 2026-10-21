@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nextTripStage, paymentDisplay } from "./orderApi";
+import { nextTripStage, normalizePaymentReference, paymentDisplay } from "./orderApi";
 
 describe("nextTripStage", () => {
   it("only allows the fixed forward sequence", () => {
@@ -63,5 +63,19 @@ describe("singleFlight", () => {
     await first;
     run(); release();
     expect(calls).toBe(2);
+  });
+});
+
+describe("normalizePaymentReference", () => {
+  it("treats a blank reference as not provided", () => {
+    expect(normalizePaymentReference("   ")).toBeNull();
+    expect(normalizePaymentReference(undefined)).toBeNull();
+  });
+  it("keeps a GCash reference and tidies spaces", () => {
+    expect(normalizePaymentReference(" 1009  2345 6789 ")).toBe("1009 2345 6789");
+  });
+  it("rejects references with symbols or too short", () => {
+    expect(() => normalizePaymentReference("<script>")).toThrow();
+    expect(() => normalizePaymentReference("12")).toThrow();
   });
 });
