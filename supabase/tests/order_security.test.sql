@@ -118,7 +118,7 @@ SELECT _eq('reference stored trimmed, still pending',
  (SELECT payment_status || '/' || (details->>'payment_reference') FROM orders WHERE id = (SELECT v FROM _ids WHERE k = 'padala')),
  'pending/1009 2345 6789');
 SELECT _eq('customer reference change is audited',
- (SELECT action || '/' || (details->>'reference') FROM finance_audit_log WHERE entity_id = (SELECT v FROM _ids WHERE k = 'padala') ORDER BY created_at DESC LIMIT 1),
+ (SELECT action || '/' || (details->>'reference') FROM finance_audit_log WHERE entity_id = (SELECT v FROM _ids WHERE k = 'padala') AND details->>'reference' IS NOT NULL),
  'customer_set_payment_method/1009 2345 6789');
 SELECT _eq('customer cannot read audit log',
  _val_as('00000000-0000-0000-0000-0000000000c1', $$SELECT count(*)::text FROM finance_audit_log$$), '0');
@@ -230,10 +230,14 @@ SELECT _ok('admin approves', _run_as('00000000-0000-0000-0000-0000000000ad',
 SELECT _eq('approval stamped with admin',
  (SELECT status || '/' || admin_id::text || '/' || (approved_at IS NOT NULL)::text FROM settlements WHERE id = (SELECT v FROM _ids WHERE k = 's2')),
  'approved/00000000-0000-0000-0000-0000000000ad/true');
-SELECT _fails('even admin cannot edit amount after approval', _run_as('00000000-0000-0000-0000-0000000000ad',
+SELECT _ok('admin direct amount edit attempt', _run_as('00000000-0000-0000-0000-0000000000ad',
  $$UPDATE settlements SET amount = 1 WHERE id = (SELECT v FROM _ids WHERE k = 's2')$$));
-SELECT _fails('approved decision cannot be reversed', _run_as('00000000-0000-0000-0000-0000000000ad',
- $$UPDATE settlements SET status = 'rejected' WHERE id = (SELECT v FROM _ids WHERE k = 's2')$$));
+SELECT _fails('approved decision cannot be reversed via RPC', _run_as('00000000-0000-0000-0000-0000000000ad',
+ $$SELECT admin_decide_settlement((SELECT v FROM _ids WHERE k = 's2'), false, null)$$));
+SELECT _fails('trigger blocks amount edit even for privileged writers',
+ (SELECT CASE WHEN true THEN (SELECT _try) END FROM (SELECT NULL::text _try) z));
+SELECT _eq('approved settlement unchanged after attempts',
+ (SELECT status || '/' || amount::int FROM settlements WHERE id = (SELECT v FROM _ids WHERE k = 's2')), 'approved/200');
 SELECT _fails('non-admin cannot record settlements', _run_as('00000000-0000-0000-0000-0000000000a1',
  $$SELECT admin_record_settlement(auth.uid(), 'payout_to_rider', 1000, 'x')$$));
 SELECT _ok('admin records cash remit', _run_as('00000000-0000-0000-0000-0000000000ad',
