@@ -142,7 +142,9 @@ function OrdersPage() {
                           {STATUS_LABELS[o.status]}
                         </span>
                         <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${PAYMENT_BADGES[o.payment_status].className}`}>
-                          {PAYMENT_BADGES[o.payment_status].label}
+                          {o.payment_status === "pending" && (o.payment_method === "gcash" || o.payment_method === "maya")
+                          ? "Awaiting manual confirmation"
+                          : PAYMENT_BADGES[o.payment_status].label}
                         </span>
                       </div>
                       <span className="text-xs text-muted-foreground">
