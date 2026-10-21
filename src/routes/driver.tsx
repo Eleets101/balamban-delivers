@@ -84,6 +84,7 @@ function DriverPage() {
   const watchIdRef = useRef<number | null>(null);
   const activeOrderIdRef = useRef<string | null>(null);
   const seenOrderIdsRef = useRef<Set<string>>(new Set());
+  const jobsLoadedRef = useRef(false);
   const soundOnRef = useRef(true);
 
   const allowed = isRider || isAdmin;
@@ -165,7 +166,8 @@ function DriverPage() {
       details: j.details as DriverOrder["details"],
     }));
     const list = [...open, ...(((mine.data as DriverOrder[]) ?? []))];
-    const firstLoad = seenOrderIdsRef.current.size === 0;
+    const firstLoad = !jobsLoadedRef.current;
+    jobsLoadedRef.current = true;
     let hasNew = false;
     for (const o of open) {
       if (!seenOrderIdsRef.current.has(o.id)) {
