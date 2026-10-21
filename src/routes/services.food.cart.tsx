@@ -143,35 +143,30 @@ function CartPage() {
       fare_breakdown: fareBreakdown,
     };
 
-    const { data, error } = await supabase
-      .from("orders")
-      .insert({
-        customer_id: user.id,
-        service_type: "food",
-        pickup_address: cart.restaurant!.address,
-        pickup_lat: cart.restaurant!.lat,
-        pickup_lng: cart.restaurant!.lng,
-        dropoff_address: dropoffAddress || "Customer-pinned location",
-        dropoff_lat: dropoffCoords.lat,
-        dropoff_lng: dropoffCoords.lng,
+    let newId: string;
+    try {
+      newId = await createOrder({
+        serviceType: "food",
+        pickupAddress: cart.restaurant!.address,
+        pickupLat: cart.restaurant!.lat,
+        pickupLng: cart.restaurant!.lng,
+        dropoffAddress: dropoffAddress || "Customer-pinned location",
+        dropoffLat: dropoffCoords.lat,
+        dropoffLng: dropoffCoords.lng,
         notes: notes.trim() || null,
-        details: JSON.parse(JSON.stringify(details)),
-        estimated_price: total,
-        payment_method: "pending",
-      })
-      .select("id")
-      .single();
-
-    setBusy(false);
-
-    if (error || !data) {
-      toast.error(error?.message ?? "Could not place order.");
+        details,
+        estimatedPrice: total,
+      });
+    } catch (err) {
+      setBusy(false);
+      toast.error((err as Error).message || "Could not place order.");
       return;
     }
+    setBusy(false);
 
     cart.clear();
     toast.success("Order placed! Choose how to pay.");
-    navigate({ to: "/checkout/$orderId", params: { orderId: data.id } });
+    navigate({ to: "/checkout/$orderId", params: { orderId: newId } });
   };
 
   return (

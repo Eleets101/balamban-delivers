@@ -4,6 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Receipt } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { createOrder } from "@/lib/orderApi";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -152,32 +153,28 @@ export function OrderForm({
     if (showParcelSize) details.parcel_size = parcelSize;
     if (fareBreakdown) details.fare_breakdown = fareBreakdown;
 
-    const { data, error } = await supabase
-      .from("orders")
-      .insert({
-        customer_id: user.id,
-        service_type: serviceType,
-        pickup_address: pickupAddress || String(fd.get("pickup") ?? ""),
-        dropoff_address: dropoffAddress || String(fd.get("dropoff") ?? ""),
-        pickup_lat: pickupCoords.lat,
-        pickup_lng: pickupCoords.lng,
-        dropoff_lat: dropoffCoords.lat,
-        dropoff_lng: dropoffCoords.lng,
+    let newId: string;
+    try {
+      newId = await createOrder({
+        serviceType,
+        pickupAddress: pickupAddress || String(fd.get("pickup") ?? ""),
+        dropoffAddress: dropoffAddress || String(fd.get("dropoff") ?? ""),
+        pickupLat: pickupCoords.lat,
+        pickupLng: pickupCoords.lng,
+        dropoffLat: dropoffCoords.lat,
+        dropoffLng: dropoffCoords.lng,
         notes: String(fd.get("notes") ?? "") || null,
-        details: JSON.parse(JSON.stringify(details)),
-        estimated_price: fareBreakdown?.total ?? (budgetNum > 0 ? budgetNum : null),
-        payment_method: "pending",
-      })
-      .select("id")
-      .single();
-    setBusy(false);
-
-    if (error || !data) {
-      toast.error(error?.message ?? "Could not place order.");
+        details,
+        estimatedPrice: fareBreakdown?.total ?? (budgetNum > 0 ? budgetNum : null),
+      });
+    } catch (err) {
+      setBusy(false);
+      toast.error((err as Error).message || "Could not place order.");
       return;
     }
+    setBusy(false);
     toast.success("Order placed! Choose how to pay.");
-    navigate({ to: "/checkout/$orderId", params: { orderId: data.id } });
+    navigate({ to: "/checkout/$orderId", params: { orderId: newId } });
   };
 
   return (
