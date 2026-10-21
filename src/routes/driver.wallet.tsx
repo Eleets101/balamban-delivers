@@ -57,6 +57,10 @@ export const Route = createFileRoute("/driver/wallet")({
     meta: [
       { title: "Driver Wallet — HatodGo" },
       { name: "description", content: "Track your earnings, collected cash, GCash payments and balance with HatodGo." },
+      { property: "og:title", content: "Driver Wallet \u2014 HatodGo" },
+      { property: "og:description", content: "Track your earnings, collected cash, GCash payments and balance with HatodGo." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: DriverWalletPage,

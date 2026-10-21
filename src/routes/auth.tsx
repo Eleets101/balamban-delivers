@@ -13,6 +13,10 @@ export const Route = createFileRoute("/auth")({
     meta: [
       { title: "Sign in or sign up — HatodGo" },
       { name: "description", content: "Create your HatodGo account to start ordering food, padala, pabili or rides." },
+      { property: "og:title", content: "Sign in or sign up \u2014 HatodGo" },
+      { property: "og:description", content: "Create your HatodGo account to start ordering food, padala, pabili or rides." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: AuthPage,

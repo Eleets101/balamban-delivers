@@ -38,6 +38,8 @@ export const Route = createFileRoute("/services/food/")({
         property: "og:description",
         content: "Browse restaurants and place orders directly. Cash, GCash, or Maya accepted.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: FoodHomePage,

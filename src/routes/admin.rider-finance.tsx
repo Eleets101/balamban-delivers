@@ -50,6 +50,10 @@ export const Route = createFileRoute("/admin/rider-finance")({
     meta: [
       { title: "Rider Finance Dashboard — Admin — HatodGo" },
       { name: "description", content: "Owner view of every rider's jobs, money collected, money owed, and payouts." },
+      { property: "og:title", content: "Rider Finance Dashboard \u2014 Admin \u2014 HatodGo" },
+      { property: "og:description", content: "Owner view of every rider's jobs, money collected, money owed, and payouts." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: AdminRiderFinancePage,

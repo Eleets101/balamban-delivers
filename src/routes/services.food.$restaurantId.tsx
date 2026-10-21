@@ -39,7 +39,13 @@ import { useFoodCart } from "@/hooks/useFoodCart";
 
 export const Route = createFileRoute("/services/food/$restaurantId")({
   head: () => ({
-    meta: [{ title: "Restaurant menu — HatodGo" }],
+    meta: [{ title: "Restaurant menu — HatodGo" },
+      { name: "description", content: "Browse a local restaurant menu and add items to your HatodGo cart." },
+      { property: "og:title", content: "Restaurant menu \u2014 HatodGo" },
+      { property: "og:description", content: "Browse a local restaurant menu and add items to your HatodGo cart." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
+    ],
   }),
   component: RestaurantPage,
 });

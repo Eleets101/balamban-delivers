@@ -74,6 +74,10 @@ export const Route = createFileRoute("/checkout/$orderId/failed")({
       { title: "Payment failed — HatodGo" },
       { name: "description", content: "Your HatodGo payment didn't go through. Retry or switch payment method." },
       { name: "robots", content: "noindex" },
+      { property: "og:title", content: "Payment failed \u2014 HatodGo" },
+      { property: "og:description", content: "Your HatodGo payment didn't go through. Retry or switch payment method." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: FailedPage,

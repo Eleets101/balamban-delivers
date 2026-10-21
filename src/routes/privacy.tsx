@@ -16,6 +16,8 @@ export const Route = createFileRoute("/privacy")({
         content:
           "How HatodGo collects, uses, and protects your personal information.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: PrivacyPage,

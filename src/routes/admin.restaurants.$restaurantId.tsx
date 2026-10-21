@@ -28,7 +28,13 @@ import { Switch } from "@/components/ui/switch";
 import type { MenuCategory, MenuItem, Restaurant } from "@/lib/restaurants";
 
 export const Route = createFileRoute("/admin/restaurants/$restaurantId")({
-  head: () => ({ meta: [{ title: "Manage menu — Admin — HatodGo" }] }),
+  head: () => ({ meta: [{ title: "Manage menu — Admin — HatodGo" },
+      { name: "description", content: "Manage a HatodGo restaurant menu and item availability." },
+      { property: "og:title", content: "Manage menu \u2014 Admin \u2014 HatodGo" },
+      { property: "og:description", content: "Manage a HatodGo restaurant menu and item availability." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
+    ] }),
   component: AdminRestaurantMenuPage,
 });
 

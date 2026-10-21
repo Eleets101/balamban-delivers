@@ -32,6 +32,10 @@ export const Route = createFileRoute("/driver")({
     meta: [
       { title: "Driver Dashboard — HatodGo" },
       { name: "description", content: "Accept orders, share live location, and navigate to customers." },
+      { property: "og:title", content: "Driver Dashboard \u2014 HatodGo" },
+      { property: "og:description", content: "Accept orders, share live location, and navigate to customers." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: DriverPage,

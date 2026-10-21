@@ -69,6 +69,10 @@ export const Route = createFileRoute("/admin")({
     meta: [
       { title: "Admin Dashboard — HatodGo" },
       { name: "description", content: "Operations dashboard for HatodGo admins." },
+      { property: "og:title", content: "Admin Dashboard \u2014 HatodGo" },
+      { property: "og:description", content: "Operations dashboard for HatodGo admins." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: AdminPage,

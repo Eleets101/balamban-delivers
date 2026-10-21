@@ -38,6 +38,10 @@ export const Route = createFileRoute("/checkout/$orderId")({
     meta: [
       { title: "Checkout — HatodGo" },
       { name: "description", content: "Review your HatodGo order and pay securely with GCash, Maya, or cash on delivery." },
+      { property: "og:title", content: "Checkout \u2014 HatodGo" },
+      { property: "og:description", content: "Review your HatodGo order and pay securely with GCash, Maya, or cash on delivery." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: CheckoutPage,

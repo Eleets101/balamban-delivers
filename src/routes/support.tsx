@@ -19,6 +19,8 @@ export const Route = createFileRoute("/support")({
         content:
           "Get help with HatodGo orders, rides, payments, and account questions.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: SupportPage,

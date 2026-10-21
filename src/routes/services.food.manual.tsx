@@ -11,6 +11,10 @@ export const Route = createFileRoute("/services/food/manual")({
         name: "description",
         content: "Can't find your restaurant? Send a manual food request and a HatodGo rider will pick it up.",
       },
+      { property: "og:title", content: "Manual food request \u2014 HatodGo" },
+      { property: "og:description", content: "Can't find your restaurant? Send a manual food request and a HatodGo rider will pick it up." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: ManualFoodPage,

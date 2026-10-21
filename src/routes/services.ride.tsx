@@ -45,6 +45,8 @@ export const Route = createFileRoute("/services/ride")({
       { name: "description", content: "Book a habal-habal (motorcycle taxi) in Balamban with live fare estimate, ETA and trusted local riders." },
       { property: "og:title", content: "Book a ride (Sakay) — HatodGo" },
       { property: "og:description", content: "Premium ride booking for Balamban, Toledo & Asturias — instant fare, no need to text drivers." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: RidePage,

@@ -32,6 +32,10 @@ export const Route = createFileRoute("/admin/wallet")({
     meta: [
       { title: "Rider Wallets — Admin — HatodGo" },
       { name: "description", content: "Approve rider remittances, payouts, and view per-rider balances." },
+      { property: "og:title", content: "Rider Wallets \u2014 Admin \u2014 HatodGo" },
+      { property: "og:description", content: "Approve rider remittances, payouts, and view per-rider balances." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: AdminWalletPage,

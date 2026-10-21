@@ -52,6 +52,10 @@ export const Route = createFileRoute("/orders")({
     meta: [
       { title: "My Orders — HatodGo" },
       { name: "description", content: "Track your HatodGo orders and ride bookings." },
+      { property: "og:title", content: "My Orders \u2014 HatodGo" },
+      { property: "og:description", content: "Track your HatodGo orders and ride bookings." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: OrdersPage,

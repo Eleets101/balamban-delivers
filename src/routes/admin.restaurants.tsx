@@ -18,7 +18,13 @@ import {
 
 export const Route = createFileRoute("/admin/restaurants")({
   head: () => ({
-    meta: [{ title: "Restaurants — Admin — HatodGo" }],
+    meta: [{ title: "Restaurants — Admin — HatodGo" },
+      { name: "description", content: "Manage HatodGo restaurants and listing availability." },
+      { property: "og:title", content: "Restaurants \u2014 Admin \u2014 HatodGo" },
+      { property: "og:description", content: "Manage HatodGo restaurants and listing availability." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
+    ],
   }),
   component: AdminRestaurantsPage,
 });

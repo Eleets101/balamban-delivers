@@ -18,6 +18,10 @@ export const Route = createFileRoute("/checkout/$orderId/pay")({
       { title: "Secure checkout — HatodGo" },
       { name: "description", content: "Record a manual GCash or Maya payment reference for HatodGo staff to confirm." },
       { name: "robots", content: "noindex" },
+      { property: "og:title", content: "Secure checkout \u2014 HatodGo" },
+      { property: "og:description", content: "Record a manual GCash or Maya payment reference for HatodGo staff to confirm." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: PayPage,

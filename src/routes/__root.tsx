@@ -40,8 +40,6 @@ export const Route = createRootRoute({
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "HatodGo — Food, Padala, Pabili & Ride in Balamban" },
       { name: "twitter:description", content: "All-in-one delivery, errand and ride app for Balamban, Toledo and Asturias." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/wZiTqJXzNLZljua9qZ0Bdec2esA3/social-images/social-1777381155290-ChatGPT_Image_Apr_28,_2026,_08_58_49_AM.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/wZiTqJXzNLZljua9qZ0Bdec2esA3/social-images/social-1777381155290-ChatGPT_Image_Apr_28,_2026,_08_58_49_AM.webp" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

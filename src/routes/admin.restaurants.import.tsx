@@ -30,7 +30,13 @@ import {
 } from "@/lib/restaurantImport.functions";
 
 export const Route = createFileRoute("/admin/restaurants/import")({
-  head: () => ({ meta: [{ title: "Import restaurants — Admin — HatodGo" }] }),
+  head: () => ({ meta: [{ title: "Import restaurants — Admin — HatodGo" },
+      { name: "description", content: "Review local OpenStreetMap restaurants for HatodGo." },
+      { property: "og:title", content: "Import restaurants \u2014 Admin \u2014 HatodGo" },
+      { property: "og:description", content: "Review local OpenStreetMap restaurants for HatodGo." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
+    ] }),
   component: ImportRestaurantsPage,
 });
 
