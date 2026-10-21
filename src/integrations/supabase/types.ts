@@ -101,6 +101,36 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          details: Json
+          entity: string
+          entity_id: string | null
+          id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          entity: string
+          entity_id?: string | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          entity?: string
+          entity_id?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       ledger_adjustments: {
         Row: {
           admin_id: string
@@ -591,12 +621,113 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_order: { Args: { p_order_id: string }; Returns: undefined }
+      admin_confirm_payment: {
+        Args: { p_confirmed: boolean; p_order_id: string }
+        Returns: undefined
+      }
+      admin_decide_settlement: {
+        Args: { p_approve: boolean; p_id: string; p_note: string }
+        Returns: undefined
+      }
+      admin_record_settlement: {
+        Args: {
+          p_amount: number
+          p_note: string
+          p_rider_id: string
+          p_type: Database["public"]["Enums"]["settlement_type"]
+        }
+        Returns: string
+      }
+      advance_trip: {
+        Args: { p_next_stage: string; p_order_id: string }
+        Returns: undefined
+      }
+      cancel_my_order: {
+        Args: {
+          p_note: string
+          p_order_id: string
+          p_reason: string
+          p_reason_label: string
+        }
+        Returns: undefined
+      }
+      create_order: {
+        Args: {
+          p_details: Json
+          p_dropoff_address: string
+          p_dropoff_lat: number
+          p_dropoff_lng: number
+          p_estimated_price: number
+          p_notes: string
+          p_pickup_address: string
+          p_pickup_lat: number
+          p_pickup_lng: number
+          p_service_type: Database["public"]["Enums"]["service_type"]
+        }
+        Returns: string
+      }
+      get_order_contacts: {
+        Args: { p_order_id: string }
+        Returns: {
+          customer_name: string
+          customer_phone: string
+          rider_avatar_url: string
+          rider_name: string
+          rider_phone: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      hg_audit: {
+        Args: {
+          _action: string
+          _details: Json
+          _entity: string
+          _entity_id: string
+        }
+        Returns: undefined
+      }
+      hg_haversine_km: {
+        Args: { lat1: number; lat2: number; lng1: number; lng2: number }
+        Returns: number
+      }
+      hg_min_fee: {
+        Args: {
+          _details: Json
+          _km: number
+          _service: Database["public"]["Enums"]["service_type"]
+        }
+        Returns: number
+      }
+      hg_next_trip_stage: { Args: { _current: string }; Returns: string }
+      list_available_jobs: {
+        Args: never
+        Returns: {
+          created_at: string
+          details: Json
+          dropoff_address: string
+          dropoff_lat: number
+          dropoff_lng: number
+          estimated_price: number
+          id: string
+          payment_method: string
+          pickup_address: string
+          pickup_lat: number
+          pickup_lng: number
+          service_type: Database["public"]["Enums"]["service_type"]
+          status: Database["public"]["Enums"]["order_status"]
+        }[]
+      }
+      rider_cancel_settlement: { Args: { p_id: string }; Returns: undefined }
+      set_order_payment_method: {
+        Args: { p_method: string; p_order_id: string; p_reference?: string }
+        Returns: undefined
       }
     }
     Enums: {
