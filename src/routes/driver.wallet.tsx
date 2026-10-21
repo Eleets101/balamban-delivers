@@ -91,6 +91,25 @@ function DriverWalletPage() {
     }
   }, []);
 
+  const cancelRequest = useMemo(
+    () =>
+      singleFlight(async (id: string) => {
+        if (!user) return;
+        setCancelBusy(true);
+        try {
+          await riderCancelSettlement(id);
+          toast.success("Request cancelled");
+          setCancelTarget(null);
+          await refresh(user.id);
+        } catch (err) {
+          toast.error("Couldn't cancel", { description: (err as Error).message });
+        } finally {
+          setCancelBusy(false);
+        }
+      }),
+    [user, refresh],
+  );
+
   useEffect(() => {
     if (loading) return;
     if (!user) { navigate({ to: "/auth" }); return; }
