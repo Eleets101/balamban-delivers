@@ -17,6 +17,16 @@ import {
   X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { canRiderCancelSettlement, riderCancelSettlement, singleFlight } from "@/lib/orderApi";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
@@ -57,6 +67,8 @@ function DriverWalletPage() {
   const navigate = useNavigate();
   const [ledger, setLedger] = useState<LedgerRow[] | null>(null);
   const [settlements, setSettlements] = useState<Settlement[] | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Settlement | null>(null);
+  const [cancelBusy, setCancelBusy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [dialogType, setDialogType] = useState<SettlementType | null>(null);
 
@@ -217,11 +229,40 @@ function DriverWalletPage() {
                     {s.status === "rejected" && <X className="mr-1 h-3 w-3" />}
                     {STATUS_LABELS[s.status]}
                   </Badge>
+                  {canRiderCancelSettlement(s, user?.id) && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 px-2 text-xs text-destructive"
+                      disabled={cancelBusy}
+                      onClick={() => setCancelTarget(s)}
+                    >
+                      Cancel
+                    </Button>
+                  )}
                 </div>
               </li>
             ))}
           </ul>
         )}
+
+        <AlertDialog open={!!cancelTarget} onOpenChange={(open) => !open && !cancelBusy && setCancelTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Cancel this request?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {cancelTarget &&
+                  `${SETTLEMENT_LABELS[cancelTarget.type]} of ${formatPeso(Number(cancelTarget.amount))} will be withdrawn. You can send a new one any time.`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={cancelBusy}>Keep it</AlertDialogCancel>
+              <Button variant="destructive" disabled={cancelBusy} onClick={() => cancelTarget && void cancelRequest(cancelTarget.id)}>
+                {cancelBusy && <Loader2 className="h-4 w-4 animate-spin" />} Yes, cancel request
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Order ledger */}
         <SectionTitle icon={<ArrowUpFromLine className="h-4 w-4" />}>Order ledger</SectionTitle>
