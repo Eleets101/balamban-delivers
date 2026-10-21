@@ -580,6 +580,7 @@ function DriverPage() {
                             <p className="text-xs text-muted-foreground">Drop-off</p>
                             <p className="font-medium">{o.dropoff_address}</p>
                           </div>
+                        </div>
                       </div>
 
                       {recipient && (recipient.name || recipient.phone) && (
