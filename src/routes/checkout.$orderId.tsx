@@ -65,7 +65,7 @@ function CheckoutPage() {
         .maybeSingle();
       if (error || !data) {
         toast.error("We couldn't find that order.");
-        navigate({ to: "/orders" });
+        setFetching(false);
         return;
       }
       setOrder(data as CheckoutOrder);
@@ -74,7 +74,7 @@ function CheckoutPage() {
     load();
   }, [orderId, user, loading, navigate]);
 
-  if (loading || fetching || !order) {
+  if (loading || fetching) {
     return (
       <PageShell>
         <div className="flex min-h-[60vh] items-center justify-center">
@@ -83,6 +83,14 @@ function CheckoutPage() {
       </PageShell>
     );
   }
+
+  if (!order) return (
+    <PageShell><div className="mx-auto max-w-md px-4 py-12 text-center">
+      <h1 className="font-display text-xl font-bold">Order unavailable</h1>
+      <p className="mt-2 text-sm text-muted-foreground">This order could not be loaded.</p>
+      <Button asChild className="mt-4"><Link to="/orders">My orders</Link></Button>
+    </div></PageShell>
+  );
 
   // If already paid/COD confirmed, jump straight to success
   if (order.payment_status === "paid" || order.payment_status === "cod") {
@@ -93,7 +101,7 @@ function CheckoutPage() {
   // Prefer the saved fare breakdown (new orders). Fall back to estimated_price
   // for legacy orders created before the pricing engine landed.
   const breakdown: FareBreakdown | null = isFareBreakdown(order.details?.fare_breakdown)
-    ? (order.details!.fare_breakdown as FareBreakdown)
+    ? (order.details?.fare_breakdown as FareBreakdown)
     : null;
   const total = breakdown?.total ?? Number(order.estimated_price ?? 0);
 
@@ -204,8 +212,8 @@ function CheckoutPage() {
                 className="h-12 w-12 shrink-0 rounded-xl object-contain"
               />
               <div>
-                <p className="font-display text-base font-semibold">Pay Now</p>
-                <p className="text-xs text-muted-foreground">Secure payment via GCash or Maya</p>
+                <p className="font-display text-base font-semibold">GCash / Maya</p>
+                <p className="text-xs text-muted-foreground">Manual transfer · staff confirmation required</p>
               </div>
             </div>
             <ArrowRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
@@ -245,7 +253,7 @@ function CheckoutPage() {
         <div className="mt-6 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
           <p className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-success" />
-            Secure payments powered by trusted providers
+            No in-app charges or automatic transfers
           </p>
           <p className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary-glow" />

@@ -253,6 +253,7 @@ function CartPage() {
               placeholder="Your address"
               value={dropoffAddress}
               onValueChange={setDropoffAddress}
+              onEdit={() => setDropoffCoords(null)}
               onPick={(hit) => setDropoffCoords({ lat: hit.lat, lng: hit.lng })}
               bias={cart.restaurant.lat != null && cart.restaurant.lng != null ? { lat: cart.restaurant.lat, lng: cart.restaurant.lng } : null}
             />

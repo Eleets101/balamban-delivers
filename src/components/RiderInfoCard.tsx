@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Phone, MessageCircle, Star, Bike } from "lucide-react";
+import { Phone, MessageCircle } from "lucide-react";
 import { getOrderContacts } from "@/lib/orderApi";
 import { Button } from "@/components/ui/button";
 
@@ -19,6 +19,7 @@ export function RiderInfoCard({ orderId, riderId }: RiderInfoCardProps) {
 
   useEffect(() => {
     let cancelled = false;
+    setRider(null);
     // Contact details come from a guarded lookup that only answers the
     // order's customer, its assigned rider, or an admin.
     getOrderContacts(orderId)
@@ -33,9 +34,6 @@ export function RiderInfoCard({ orderId, riderId }: RiderInfoCardProps) {
 
   const name = rider?.full_name?.split(" ")[0] || "Your rider";
   const phone = rider?.phone;
-  // Placeholder vehicle / rating until the rider profile schema captures these fields.
-  const vehicle = "Honda Click";
-  const rating = "4.9";
 
   const initials = (rider?.full_name || "R")
     .split(" ")
@@ -62,15 +60,7 @@ export function RiderInfoCard({ orderId, riderId }: RiderInfoCardProps) {
         )}
         <div className="min-w-0">
           <p className="font-display text-base font-semibold leading-tight">{name}</p>
-          <p className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1">
-              <Bike className="h-3.5 w-3.5" /> {vehicle}
-            </span>
-            <span aria-hidden>•</span>
-            <span className="inline-flex items-center gap-1">
-              <Star className="h-3.5 w-3.5 fill-warning text-warning" /> {rating}
-            </span>
-          </p>
+          {phone && <p className="mt-0.5 text-xs text-muted-foreground">{phone}</p>}
         </div>
       </div>
       <div className="flex gap-2">

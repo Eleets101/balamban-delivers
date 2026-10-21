@@ -241,10 +241,7 @@ function RidePage() {
       return;
     }
     setOrderId(newId);
-    // Short UX delay to match the "preparing your ride" vibe, then jump to checkout
-    setTimeout(() => {
-      navigate({ to: "/checkout/$orderId", params: { orderId: newId } });
-    }, 900);
+    navigate({ to: "/checkout/$orderId", params: { orderId: newId } });
   };
 
   if (stage === "searching") {
@@ -385,8 +382,8 @@ function RidePage() {
               <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-success" />
             </span>
             <div>
-              <p className="text-sm font-semibold">8 drivers nearby</p>
-              <p className="text-xs text-muted-foreground">Avg pickup time: 5–10 mins</p>
+              <p className="text-sm font-semibold">Local rider booking</p>
+              <p className="text-xs text-muted-foreground">Pickup ETA appears after a rider accepts</p>
             </div>
           </div>
           <div className="flex -space-x-2">
@@ -428,6 +425,7 @@ function RidePage() {
             placeholder="Where are you now?"
             value={pickup}
             onValueChange={setPickup}
+            onEdit={() => setPickupCoords(null)}
             onPick={(hit) => setPickupCoords({ lat: hit.lat, lng: hit.lng })}
             bias={dropoffCoords}
           />
@@ -514,6 +512,7 @@ function RidePage() {
             placeholder="Where to?"
             value={dropoff}
             onValueChange={setDropoff}
+            onEdit={() => setDropoffCoords(null)}
             onPick={(hit) => setDropoffCoords({ lat: hit.lat, lng: hit.lng })}
             bias={pickupCoords}
           />

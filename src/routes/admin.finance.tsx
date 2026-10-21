@@ -259,7 +259,7 @@ function AdminFinancePage() {
     setActingId(id);
     try {
       await adminDecideSettlement(id, status === "approved");
-      toast.success(status === "approved" ? "Marked paid" : "Rejected");
+      toast.success(status === "approved" ? "Settlement recorded. No money was sent by this app." : "Rejected");
       void refresh();
     } catch (err) {
       toast.error("Couldn't update", { description: (err as Error).message });
@@ -463,8 +463,8 @@ function AdminFinancePage() {
                             </Button>
                           )}
                           {r.hatodgoOwes > 0 && (
-                            <Button variant="outline" size="sm" title="Mark payout sent" onClick={() => adminCreateSettlement(r.id, "payout_to_rider", r.hatodgoOwes, "Admin marked paid")}>
-                              <CheckCircle2 className="h-3 w-3" /> Paid
+                            <Button variant="outline" size="sm" title="Record an externally completed payout; no money is sent" onClick={() => adminCreateSettlement(r.id, "payout_to_rider", r.hatodgoOwes, "Admin marked paid")}>
+                              <CheckCircle2 className="h-3 w-3" /> Record payout
                             </Button>
                           )}
                           <Button variant="ghost" size="sm" onClick={() => setAdjustRiderId(r.id)}>
@@ -510,7 +510,7 @@ function AdminFinancePage() {
                       )}
                       <Button variant="outline" size="sm" onClick={() => decideSettlement(s.id, "rejected")} disabled={actingId === s.id}>Reject</Button>
                       <Button size="sm" onClick={() => decideSettlement(s.id, "approved")} disabled={actingId === s.id}>
-                        {actingId === s.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />} Mark paid
+                        {actingId === s.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />} Record confirmation
                       </Button>
                     </div>
                   </div>

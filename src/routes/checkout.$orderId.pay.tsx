@@ -16,7 +16,7 @@ export const Route = createFileRoute("/checkout/$orderId/pay")({
   head: () => ({
     meta: [
       { title: "Secure checkout — HatodGo" },
-      { name: "description", content: "Complete your HatodGo payment with GCash or Maya." },
+      { name: "description", content: "Record a manual GCash or Maya payment reference for HatodGo staff to confirm." },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -146,7 +146,7 @@ function PayPage() {
           <div className="mt-6 space-y-3">
             <WalletButton
               label="GCash"
-              sub="Pay from your GCash balance"
+              sub="Record a manual GCash transfer"
               color="#007DFE"
               active={wallet === "gcash"}
               disabled={phase === "processing"}
@@ -154,7 +154,7 @@ function PayPage() {
             />
             <WalletButton
               label="Maya"
-              sub="Pay from your Maya wallet"
+              sub="Record a manual Maya transfer"
               color="#00D632"
               active={wallet === "maya"}
               disabled={phase === "processing"}
