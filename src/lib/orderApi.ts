@@ -82,8 +82,26 @@ export const createOrder = (i: CreateOrderInput) =>
     p_estimated_price: i.estimatedPrice,
   });
 
-export const setPaymentMethod = (orderId: string, method: PaymentChoice) =>
-  call<null>("set_order_payment_method", { p_order_id: orderId, p_method: method });
+/**
+ * Optional GCash/Maya transaction reference typed by the customer.
+ * Mirrors the database rule: 4-40 letters, digits, spaces or dashes.
+ * Returns null for empty input; throws a friendly error when invalid.
+ */
+export function normalizePaymentReference(raw: string | null | undefined): string | null {
+  const v = (raw ?? "").trim().replace(/\s+/g, " ");
+  if (!v) return null;
+  if (!/^[A-Za-z0-9 -]{4,40}$/.test(v)) {
+    throw new Error("Reference number should be 4-40 letters or numbers");
+  }
+  return v;
+}
+
+export const setPaymentMethod = (orderId: string, method: PaymentChoice, reference?: string | null) =>
+  call<null>("set_order_payment_method", {
+    p_order_id: orderId,
+    p_method: method,
+    p_reference: method === "cod" ? null : normalizePaymentReference(reference),
+  });
 
 export const cancelMyOrder = (orderId: string, reason: string, reasonLabel: string, note: string | null) =>
   call<null>("cancel_my_order", { p_order_id: orderId, p_reason: reason, p_reason_label: reasonLabel, p_note: note });
