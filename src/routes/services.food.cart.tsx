@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Minus, Plus, Trash2, ShoppingBag, MapPin, Receipt } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { createOrder } from "@/lib/orderApi";
 import { useAuth } from "@/hooks/useAuth";
 import { useFoodCart } from "@/hooks/useFoodCart";
