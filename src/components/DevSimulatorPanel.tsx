@@ -6,7 +6,7 @@ import {
   devAssignSelfAsRider,
   devPushLocation,
   devAdvanceStatus,
-} from "@/server/devSimulator";
+} from "@/lib/devSimulator.functions";
 import type { OrderStatus } from "@/lib/orders";
 
 interface Props {
