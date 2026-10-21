@@ -467,7 +467,9 @@ function DriverPage() {
                   (o.status === "in_progress" ? "picked_up" : o.status === "completed" ? "completed" : "enroute_pickup");
                 const customer = customers[o.customer_id];
                 const customerName = customer?.full_name?.trim() || "Customer";
-                const customerPhone = customer?.phone?.replace(/\s+/g, "") || null;
+                const orderPhone = typeof o.details?.phone === "string" ? o.details.phone : null;
+                const customerPhone = (orderPhone || customer?.phone)?.replace(/[^\d+]/g, "") || null;
+                const recipient = o.details?.recipient as { name?: string | null; phone?: string | null } | undefined;
 
                 const STEPS: { key: TripStage; label: string; cta: string }[] = [
                   { key: "enroute_pickup", label: "En route", cta: "Start Trip" },
