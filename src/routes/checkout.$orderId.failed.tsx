@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { setPaymentMethod } from "@/lib/orderApi";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
@@ -124,30 +125,20 @@ function FailedPage() {
 
   const retryEwallet = async () => {
     setBusy("retry");
-    // Reset status to pending so the pay page treats it as a fresh attempt
-    const { error } = await supabase
-      .from("orders")
-      .update({ payment_status: "pending" })
-      .eq("id", order.id);
     setBusy(null);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
     navigate({ to: "/checkout/$orderId/pay", params: { orderId } });
   };
 
   const switchToCOD = async () => {
     setBusy("cod");
-    const { error } = await supabase
-      .from("orders")
-      .update({ payment_method: "cod", payment_status: "cod" })
-      .eq("id", order.id);
-    setBusy(null);
-    if (error) {
-      toast.error(error.message);
+    try {
+      await setPaymentMethod(order.id, "cod");
+    } catch (err) {
+      setBusy(null);
+      toast.error((err as Error).message);
       return;
     }
+    setBusy(null);
     toast.success("Switched to cash on delivery. Please have cash ready.");
     navigate({ to: "/checkout/$orderId/success", params: { orderId } });
   };
