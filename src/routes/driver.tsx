@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Bell, BellOff, Bike, Check, Loader2, MapPin, MessageCircle, Navigation, Phone, Power, ShieldAlert, User, Wallet, Zap } from "lucide-react";
@@ -32,10 +32,19 @@ export const Route = createFileRoute("/driver")({
     meta: [
       { title: "Driver Dashboard — HatodGo" },
       { name: "description", content: "Accept orders, share live location, and navigate to customers." },
+      { property: "og:title", content: "Driver Dashboard \u2014 HatodGo" },
+      { property: "og:description", content: "Accept orders, share live location, and navigate to customers." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
-  component: DriverPage,
+  component: DriverRoute,
 });
+
+function DriverRoute() {
+  const { pathname } = useLocation();
+  return pathname === '/driver' ? <DriverPage /> : <Outlet />;
+}
 
 type TripStage = "enroute_pickup" | "arrived_pickup" | "picked_up" | "completed";
 
@@ -528,22 +537,22 @@ function DriverPage() {
                           size="lg"
                           variant="outline"
                           disabled={!customerPhone}
-                          onClick={() => customerPhone && window.open(`tel:${customerPhone}`)}
+                          asChild={!!customerPhone}
                           title={customerPhone ?? "No phone on file"}
                           aria-label={`Call ${customerName}`}
                           className="h-12 flex-1 sm:flex-none"
                         >
-                          <Phone className="h-5 w-5" /> Call
+                          {customerPhone ? <a href={`tel:${customerPhone}`}><Phone className="h-5 w-5" /> Call</a> : <span><Phone className="h-5 w-5" /> Call</span>}
                         </Button>
                         <Button
                           size="lg"
                           variant="outline"
                           disabled={!customerPhone}
-                          onClick={() => customerPhone && window.open(`sms:${customerPhone}`)}
+                          asChild={!!customerPhone}
                           aria-label={`Message ${customerName}`}
                           className="h-12 flex-1 sm:flex-none"
                         >
-                          <MessageCircle className="h-5 w-5" /> Chat
+                          {customerPhone ? <a href={`sms:${customerPhone}`}><MessageCircle className="h-5 w-5" /> Chat</a> : <span><MessageCircle className="h-5 w-5" /> Chat</span>}
                         </Button>
                       </div>
                     </div>

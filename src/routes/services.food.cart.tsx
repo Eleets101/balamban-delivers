@@ -18,7 +18,13 @@ import { calcRestaurantDeliveryFee, calcServiceFee, distanceFromRestaurantKm } f
 
 export const Route = createFileRoute("/services/food/cart")({
   head: () => ({
-    meta: [{ title: "Your cart — HatodGo Food" }],
+    meta: [{ title: "Your cart — HatodGo Food" },
+      { name: "description", content: "Review your HatodGo food cart and delivery details." },
+      { property: "og:title", content: "Your cart \u2014 HatodGo Food" },
+      { property: "og:description", content: "Review your HatodGo food cart and delivery details." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
+    ],
   }),
   component: CartPage,
 });
@@ -253,6 +259,7 @@ function CartPage() {
               placeholder="Your address"
               value={dropoffAddress}
               onValueChange={setDropoffAddress}
+              onEdit={() => setDropoffCoords(null)}
               onPick={(hit) => setDropoffCoords({ lat: hit.lat, lng: hit.lng })}
               bias={cart.restaurant.lat != null && cart.restaurant.lng != null ? { lat: cart.restaurant.lat, lng: cart.restaurant.lng } : null}
             />

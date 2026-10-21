@@ -74,7 +74,8 @@ export function OrderForm({
     let cancelled = false;
     (async () => {
       const { data } = await supabase.from("profiles").select("phone").eq("id", user.id).maybeSingle();
-      if (!cancelled && data?.phone) setPhone((p) => p || data.phone!);
+      const savedPhone = data?.phone;
+      if (!cancelled && savedPhone) setPhone((p) => p || savedPhone);
     })();
     return () => {
       cancelled = true;
@@ -188,6 +189,7 @@ export function OrderForm({
           placeholder={pickupPlaceholder}
           value={pickupAddress}
           onValueChange={setPickupAddress}
+          onEdit={() => setPickupCoords(null)}
           onPick={(hit) => setPickupCoords({ lat: hit.lat, lng: hit.lng })}
           bias={dropoffCoords}
         />
@@ -214,6 +216,7 @@ export function OrderForm({
           placeholder={dropoffPlaceholder}
           value={dropoffAddress}
           onValueChange={setDropoffAddress}
+          onEdit={() => setDropoffCoords(null)}
           onPick={(hit) => setDropoffCoords({ lat: hit.lat, lng: hit.lng })}
           bias={pickupCoords}
         />

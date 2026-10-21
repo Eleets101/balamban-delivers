@@ -26,10 +26,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { CATEGORY_EMOJI, CATEGORY_LABELS, type RestaurantCategory } from "@/lib/restaurants";
-import { importCsvRestaurants } from "@/server/restaurantImport.functions";
+import { importCsvRestaurants } from "@/lib/restaurantImport.functions";
 
 export const Route = createFileRoute("/admin/restaurants/import-csv")({
-  head: () => ({ meta: [{ title: "Import CSV — Admin — HatodGo" }] }),
+  head: () => ({ meta: [{ title: "Import CSV — Admin — HatodGo" },
+      { name: "description", content: "Review CSV restaurant listings before adding them to HatodGo." },
+      { property: "og:title", content: "Import CSV \u2014 Admin \u2014 HatodGo" },
+      { property: "og:description", content: "Review CSV restaurant listings before adding them to HatodGo." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
+    ] }),
   component: CsvImportPage,
 });
 

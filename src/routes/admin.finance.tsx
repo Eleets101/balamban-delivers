@@ -66,6 +66,10 @@ export const Route = createFileRoute("/admin/finance")({
     meta: [
       { title: "Finance Dashboard — Admin — HatodGo" },
       { name: "description", content: "Owner finance dashboard: gross sales, company revenue, rider settlements, alerts, reports." },
+      { property: "og:title", content: "Finance Dashboard \u2014 Admin \u2014 HatodGo" },
+      { property: "og:description", content: "Owner finance dashboard: gross sales, company revenue, rider settlements, alerts, reports." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: AdminFinancePage,
@@ -256,10 +260,11 @@ function AdminFinancePage() {
   // Quick actions on settlements (mark as approved)
   const decideSettlement = async (id: string, status: "approved" | "rejected") => {
     if (!user) return;
+    if (status === 'approved' && !window.confirm('Confirm the payout or remittance happened outside HatodGo before recording it. This updates the balance only; no money is sent.')) return;
     setActingId(id);
     try {
       await adminDecideSettlement(id, status === "approved");
-      toast.success(status === "approved" ? "Marked paid" : "Rejected");
+      toast.success(status === "approved" ? "Settlement recorded. No money was sent by this app." : "Rejected");
       void refresh();
     } catch (err) {
       toast.error("Couldn't update", { description: (err as Error).message });
@@ -276,6 +281,7 @@ function AdminFinancePage() {
     notes?: string,
   ) => {
     if (!user) return;
+    if (!window.confirm('Record an already completed payout or remittance? This updates the balance only; no money is sent by this app.')) return;
     try {
       await adminRecordSettlement(riderId, type, amount, notes ?? "Logged by admin");
       toast.success("Recorded");
@@ -463,8 +469,8 @@ function AdminFinancePage() {
                             </Button>
                           )}
                           {r.hatodgoOwes > 0 && (
-                            <Button variant="outline" size="sm" title="Mark payout sent" onClick={() => adminCreateSettlement(r.id, "payout_to_rider", r.hatodgoOwes, "Admin marked paid")}>
-                              <CheckCircle2 className="h-3 w-3" /> Paid
+                            <Button variant="outline" size="sm" title="Record an externally completed payout; no money is sent" onClick={() => adminCreateSettlement(r.id, "payout_to_rider", r.hatodgoOwes, "Admin marked paid")}>
+                              <CheckCircle2 className="h-3 w-3" /> Record payout
                             </Button>
                           )}
                           <Button variant="ghost" size="sm" onClick={() => setAdjustRiderId(r.id)}>
@@ -510,7 +516,7 @@ function AdminFinancePage() {
                       )}
                       <Button variant="outline" size="sm" onClick={() => decideSettlement(s.id, "rejected")} disabled={actingId === s.id}>Reject</Button>
                       <Button size="sm" onClick={() => decideSettlement(s.id, "approved")} disabled={actingId === s.id}>
-                        {actingId === s.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />} Mark paid
+                        {actingId === s.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />} Record confirmation
                       </Button>
                     </div>
                   </div>

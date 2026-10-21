@@ -32,6 +32,10 @@ export const Route = createFileRoute("/admin/wallet")({
     meta: [
       { title: "Rider Wallets — Admin — HatodGo" },
       { name: "description", content: "Approve rider remittances, payouts, and view per-rider balances." },
+      { property: "og:title", content: "Rider Wallets \u2014 Admin \u2014 HatodGo" },
+      { property: "og:description", content: "Approve rider remittances, payouts, and view per-rider balances." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: AdminWalletPage,
@@ -156,6 +160,7 @@ function AdminWalletPage() {
 
   const decide = async (id: string, status: "approved" | "rejected") => {
     if (!user) return;
+    if (status === 'approved' && !window.confirm('Confirm the payout or remittance happened outside HatodGo before approving. This updates the balance only; no money is sent.')) return;
     setActingId(id);
     try {
       await adminDecideSettlement(id, status === "approved");

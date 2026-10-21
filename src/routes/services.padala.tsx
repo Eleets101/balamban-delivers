@@ -8,6 +8,10 @@ export const Route = createFileRoute("/services/padala")({
     meta: [
       { title: "Padala (Send) — Pickup & Drop-off — HatodGo" },
       { name: "description", content: "Send (padala) documents or items across Balamban — same-day pickup and drop-off." },
+      { property: "og:title", content: "Padala (Send) \u2014 Pickup & Drop-off \u2014 HatodGo" },
+      { property: "og:description", content: "Send (padala) documents or items across Balamban \u2014 same-day pickup and drop-off." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: PadalaPage,

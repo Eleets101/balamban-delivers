@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { sessionGeneration } from "@/lib/sessionGeneration";
 
 export type AppRole = "admin" | "rider" | "vendor" | "customer";
 
@@ -23,18 +24,21 @@ export function useAuth() {
 
   useEffect(() => {
     let mounted = true;
+    const guard = sessionGeneration();
 
     const fetchRoles = async (userId: string): Promise<AppRole[]> => {
       const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
-      return (data?.map((r) => r.role as AppRole)) ?? [];
+      return data?.map((r) => r.role as AppRole) ?? [];
     };
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const applySession = async (session: Session | null) => {
+      const request = guard.next();
       if (!mounted) return;
       setState((s) => ({
         ...s,
         user: session?.user ?? null,
         session,
+        roles: [],
         loading: false,
         rolesLoading: !!session?.user,
       }));
@@ -42,21 +46,28 @@ export function useAuth() {
         // Defer role fetch to avoid recursion warnings
         setTimeout(async () => {
           const roles = await fetchRoles(session.user.id);
-          if (mounted) setState((s) => ({ ...s, roles, rolesLoading: false }));
+          if (mounted && guard.isCurrent(request))
+            setState((s) => ({ ...s, roles, rolesLoading: false }));
         }, 0);
       } else {
         setState((s) => ({ ...s, roles: [], rolesLoading: false }));
       }
+    };
+
+    const initialRequest = guard.next();
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "TOKEN_REFRESHED") return;
+      void applySession(session);
     });
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return;
-      const roles = session?.user ? await fetchRoles(session.user.id) : [];
-      setState({ user: session?.user ?? null, session, roles, loading: false, rolesLoading: false });
+      if (!mounted || !guard.isCurrent(initialRequest)) return;
+      void applySession(session);
     });
 
     return () => {
       mounted = false;
+      guard.next();
       sub.subscription.unsubscribe();
     };
   }, []);

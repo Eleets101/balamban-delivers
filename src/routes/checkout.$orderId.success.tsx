@@ -23,9 +23,13 @@ interface SuccessOrder {
 export const Route = createFileRoute("/checkout/$orderId/success")({
   head: () => ({
     meta: [
-      { title: "Payment successful — HatodGo" },
+      { title: "Order payment status — HatodGo" },
       { name: "description", content: "Your HatodGo order has been confirmed." },
       { name: "robots", content: "noindex" },
+      { property: "og:title", content: "Order payment status \u2014 HatodGo" },
+      { property: "og:description", content: "Your HatodGo order has been confirmed." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: SuccessPage,

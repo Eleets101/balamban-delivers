@@ -50,6 +50,10 @@ export const Route = createFileRoute("/admin/rider-finance")({
     meta: [
       { title: "Rider Finance Dashboard — Admin — HatodGo" },
       { name: "description", content: "Owner view of every rider's jobs, money collected, money owed, and payouts." },
+      { property: "og:title", content: "Rider Finance Dashboard \u2014 Admin \u2014 HatodGo" },
+      { property: "og:description", content: "Owner view of every rider's jobs, money collected, money owed, and payouts." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: AdminRiderFinancePage,
@@ -383,10 +387,11 @@ function AdminRiderFinancePage() {
       toast.info("Nothing to pay this rider.");
       return;
     }
+    if (!window.confirm(`Record ${formatPeso(row.hatodgoOwes)} as already paid outside HatodGo? This reduces the balance. No money will be sent by this app.`)) return;
     setActing(riderId);
     try {
       await adminRecordSettlement(riderId, "payout_to_rider", row.hatodgoOwes, "Marked paid by admin");
-      toast.success(`Paid ${formatPeso(row.hatodgoOwes)} to rider`);
+      toast.success(`Payout recorded: ${formatPeso(row.hatodgoOwes)}. No money was sent by this app.`);
       void refresh();
     } catch (err) {
       toast.error("Couldn't record payout", { description: (err as Error).message });
@@ -657,7 +662,7 @@ function AdminRiderFinancePage() {
                           </td>
                           <td className="px-3 py-3 text-right">
                             <div className="flex flex-wrap justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                              <Button size="sm" variant="outline" disabled={isSample || !weOwe || acting === r.id} onClick={() => markRiderPaid(r.id)}>Pay</Button>
+                              <Button size="sm" variant="outline" disabled={isSample || !weOwe || acting === r.id} onClick={() => markRiderPaid(r.id)}>Record payout</Button>
                               <Button size="sm" variant="outline" disabled={isSample || !owesUs || acting === r.id} onClick={() => markCashRemitted(r.id)}>Remit</Button>
                               <Button size="sm" variant="ghost" disabled={isSample} onClick={() => { setAdjustOpen(r.id); setAdjustAmount(""); setAdjustNote(""); }}>
                                 <Pencil className="h-3 w-3" /> Adjust
@@ -740,7 +745,7 @@ function AdminRiderFinancePage() {
                                 )}
                                 {r.hatodgoOwes > 0 && (
                                   <Button size="sm" disabled={isSample || acting === r.id} onClick={() => markRiderPaid(r.id)}>
-                                    Pay rider {formatPeso(r.hatodgoOwes)}
+                                    Record payout {formatPeso(r.hatodgoOwes)}
                                   </Button>
                                 )}
                                 <Button size="sm" variant="outline" asChild>

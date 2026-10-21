@@ -12,6 +12,7 @@ interface PlaceAutocompleteProps {
   value: string;
   onValueChange: (value: string) => void;
   onPick: (hit: GeoHit) => void;
+  onEdit: () => void;
   /** Bias autocomplete toward this point (e.g. user location or other endpoint). */
   bias?: { lat: number; lng: number } | null;
 }
@@ -25,6 +26,7 @@ export function PlaceAutocomplete({
   value,
   onValueChange,
   onPick,
+  onEdit,
   bias,
 }: PlaceAutocompleteProps) {
   const [hits, setHits] = useState<GeoHit[]>([]);
@@ -36,6 +38,7 @@ export function PlaceAutocomplete({
   // Debounced search
   useEffect(() => {
     const q = value.trim();
+    let cancelled = false;
     if (q.length < 2) {
       setHits([]);
       return;
@@ -45,11 +48,12 @@ export function PlaceAutocomplete({
       lastQueryRef.current = q;
       setLoading(true);
       const results = await searchPlaces(q, bias ?? null, 8);
+      if (cancelled) return;
       setLoading(false);
       setHits(results);
       setOpen(results.length > 0);
     }, 280);
-    return () => window.clearTimeout(t);
+    return () => { cancelled = true; window.clearTimeout(t); };
   }, [value, bias]);
 
   // Close dropdown on outside click
@@ -88,7 +92,13 @@ export function PlaceAutocomplete({
             required={required}
             placeholder={placeholder}
             value={value}
-            onChange={(e) => onValueChange(e.target.value)}
+            onChange={(e) => {
+              setHits([]);
+              setOpen(false);
+              lastQueryRef.current = '';
+              onEdit();
+              onValueChange(e.target.value);
+            }}
             onFocus={() => hits.length > 0 && setOpen(true)}
             onKeyDown={onKeyDown}
             autoComplete="off"

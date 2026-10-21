@@ -10,6 +10,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Order food, send packages (padala), request errands (pabili) or book a ride (sakay). One app for Balamban, Toledo and Asturias." },
       { property: "og:title", content: "HatodGo — Your everyday hatod (delivery) app" },
       { property: "og:description", content: "Food delivery, padala (send), pabili (buy for me) and ride (sakay) booking for Cebu's west coast." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: HomePage,

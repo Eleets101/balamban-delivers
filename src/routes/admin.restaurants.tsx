@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Plus, Pencil, ArrowLeft, Store, Eye, EyeOff, ShieldCheck, Download, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RestaurantFormDialog } from "@/components/admin/RestaurantFormDialog";
-import { bulkPublishRestaurants } from "@/server/restaurantImport.functions";
+import { bulkPublishRestaurants } from "@/lib/restaurantImport.functions";
 import {
   CATEGORY_EMOJI,
   CATEGORY_LABELS,
@@ -18,10 +18,21 @@ import {
 
 export const Route = createFileRoute("/admin/restaurants")({
   head: () => ({
-    meta: [{ title: "Restaurants — Admin — HatodGo" }],
+    meta: [{ title: "Restaurants — Admin — HatodGo" },
+      { name: "description", content: "Manage HatodGo restaurants and listing availability." },
+      { property: "og:title", content: "Restaurants \u2014 Admin \u2014 HatodGo" },
+      { property: "og:description", content: "Manage HatodGo restaurants and listing availability." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
+    ],
   }),
-  component: AdminRestaurantsPage,
+  component: AdminRestaurantsRoute,
 });
+
+function AdminRestaurantsRoute() {
+  const { pathname } = useLocation();
+  return pathname === '/admin/restaurants' ? <AdminRestaurantsPage /> : <Outlet />;
+}
 
 function AdminRestaurantsPage() {
   const { isAdmin, loading } = useAuth();

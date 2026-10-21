@@ -8,6 +8,10 @@ export const Route = createFileRoute("/services/pabili")({
     meta: [
       { title: "Pabili (Buy for me) — HatodGo" },
       { name: "description", content: "Pabili (buy for me) — need something from the store? Our riders will buy it for you." },
+      { property: "og:title", content: "Pabili (Buy for me) \u2014 HatodGo" },
+      { property: "og:description", content: "Pabili (buy for me) \u2014 need something from the store? Our riders will buy it for you." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" }
     ],
   }),
   component: PabiliPage,
