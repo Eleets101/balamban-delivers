@@ -1,7 +1,7 @@
 # Database security tests
 
 `order_security.test.sql` checks the access, order-transition and payout rules in
-`supabase/pending/20261021_secure_order_lifecycle.sql` (62 checks).
+`supabase/pending/20261021_secure_order_lifecycle.sql` (see run output for count).
 
 It runs on a throwaway in-memory Postgres (PGlite) and never touches the real database:
 

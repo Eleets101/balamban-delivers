@@ -110,6 +110,30 @@ SELECT _fails('customer cannot choose "paid" as a method', _run_as('00000000-000
  $$SELECT set_order_payment_method((SELECT v FROM _ids WHERE k = 'padala'), 'paid')$$));
 SELECT _fails('customer cannot confirm own payment', _run_as('00000000-0000-0000-0000-0000000000c1',
  $$SELECT admin_confirm_payment((SELECT v FROM _ids WHERE k = 'padala'), true)$$));
+SELECT _fails('reference with symbols is rejected', _run_as('00000000-0000-0000-0000-0000000000c1',
+ $$SELECT set_order_payment_method((SELECT v FROM _ids WHERE k = 'padala'), 'gcash', '<script>')$$));
+SELECT _ok('customer adds GCash reference', _run_as('00000000-0000-0000-0000-0000000000c1',
+ $$SELECT set_order_payment_method((SELECT v FROM _ids WHERE k = 'padala'), 'gcash', ' 1009 2345 6789 ')$$));
+SELECT _eq('reference stored trimmed, still pending',
+ (SELECT payment_status || '/' || (details->>'payment_reference') FROM orders WHERE id = (SELECT v FROM _ids WHERE k = 'padala')),
+ 'pending/1009 2345 6789');
+SELECT _eq('customer reference change is audited',
+ (SELECT action || '/' || (details->>'reference') FROM finance_audit_log WHERE entity_id = (SELECT v FROM _ids WHERE k = 'padala') ORDER BY created_at DESC LIMIT 1),
+ 'customer_set_payment_method/1009 2345 6789');
+SELECT _eq('customer cannot read audit log',
+ _val_as('00000000-0000-0000-0000-0000000000c1', $$SELECT count(*)::text FROM finance_audit_log$$), '0');
+SELECT _fails('customer cannot write audit log', _run_as('00000000-0000-0000-0000-0000000000c1',
+ $$INSERT INTO finance_audit_log (action, entity) VALUES ('fake', 'order')$$));
+SELECT _fails('customer cannot call audit helper', _run_as('00000000-0000-0000-0000-0000000000c1',
+ $$SELECT hg_audit('fake', 'order', null, '{}')$$));
+SELECT _fails('admin cannot directly mark an order paid', _run_as('00000000-0000-0000-0000-0000000000ad',
+ $$UPDATE orders SET payment_status = 'paid' WHERE id = (SELECT v FROM _ids WHERE k = 'padala')$$));
+SELECT _fails('admin cannot directly edit payment reference', _run_as('00000000-0000-0000-0000-0000000000ad',
+ $$UPDATE orders SET details = details || '{"payment_reference":"X999"}' WHERE id = (SELECT v FROM _ids WHERE k = 'padala')$$));
+SELECT _fails('admin cannot directly insert a paid order', _run_as('00000000-0000-0000-0000-0000000000ad',
+ $$INSERT INTO orders (customer_id, service_type, pickup_address, dropoff_address, payment_status) VALUES (auth.uid(), 'padali', 'a', 'b', 'paid')$$));
+SELECT _ok('admin can still change order status directly', _run_as('00000000-0000-0000-0000-0000000000ad',
+ $$UPDATE orders SET notes = coalesce(notes, '') WHERE id = (SELECT v FROM _ids WHERE k = 'padala')$$));
 
 -- ---------- cancel ----------
 SELECT _fails('other customer cannot cancel', _run_as('00000000-0000-0000-0000-0000000000c2',
@@ -172,6 +196,14 @@ SELECT _eq('rider contacts hidden after completion',
 SELECT _ok('admin confirms GCash payment', _run_as('00000000-0000-0000-0000-0000000000ad',
  $$SELECT admin_confirm_payment((SELECT v FROM _ids WHERE k = 'padala'), true)$$));
 SELECT _eq('payment now paid', (SELECT payment_status::text FROM orders WHERE id = (SELECT v FROM _ids WHERE k = 'padala')), 'paid');
+SELECT _eq('payment confirmation audited with amount and reference',
+ (SELECT action || '/' || actor_id || '/' || (details->>'reference') FROM finance_audit_log
+   WHERE entity_id = (SELECT v FROM _ids WHERE k = 'padala') AND action LIKE 'admin_payment%'),
+ 'admin_payment_confirmed/00000000-0000-0000-0000-0000000000ad/1009 2345 6789');
+SELECT _fails('customer cannot change method after paid', _run_as('00000000-0000-0000-0000-0000000000c1',
+ $$SELECT set_order_payment_method((SELECT v FROM _ids WHERE k = 'padala'), 'cod')$$));
+SELECT _fails('paid payment cannot be re-decided', _run_as('00000000-0000-0000-0000-0000000000ad',
+ $$SELECT admin_confirm_payment((SELECT v FROM _ids WHERE k = 'padala'), false)$$));
 
 -- ---------- settlements ----------
 SELECT _fails('rider cannot create approved settlement', _run_as('00000000-0000-0000-0000-0000000000a1',
@@ -210,3 +242,28 @@ SELECT _ok('admin records cash remit', _run_as('00000000-0000-0000-0000-00000000
 -- ---------- location tagging ----------
 SELECT _fails('rider cannot tag location to an order not theirs', _run_as('00000000-0000-0000-0000-0000000000a2',
  $$INSERT INTO driver_locations (rider_id, order_id, lat, lng) VALUES (auth.uid(), (SELECT v FROM _ids WHERE k = 'padala'), 1, 1)$$));
+
+-- ---------- no direct admin writes to money tables ----------
+SELECT _fails('admin cannot directly insert settlement', _run_as('00000000-0000-0000-0000-0000000000ad',
+ $$INSERT INTO settlements (rider_id, type, amount, status) VALUES ('00000000-0000-0000-0000-0000000000a1', 'payout_to_rider', 10, 'approved')$$));
+SELECT _eq('admin direct settlement UPDATE affects nothing',
+ _val_as('00000000-0000-0000-0000-0000000000ad', $$WITH u AS (UPDATE settlements SET notes = 'x' RETURNING 1) SELECT count(*)::text FROM u$$), '0');
+SELECT _eq('admin direct settlement DELETE affects nothing',
+ _val_as('00000000-0000-0000-0000-0000000000ad', $$WITH u AS (DELETE FROM settlements RETURNING 1) SELECT count(*)::text FROM u$$), '0');
+SELECT _eq('admin direct ledger UPDATE affects nothing',
+ _val_as('00000000-0000-0000-0000-0000000000ad', $$WITH u AS (UPDATE wallet_ledger SET rider_earning = 0 RETURNING 1) SELECT count(*)::text FROM u$$), '0');
+SELECT _eq('admin still reads settlements',
+ _val_as('00000000-0000-0000-0000-0000000000ad', $$SELECT (count(*) > 0)::text FROM settlements$$), 'true');
+SELECT _eq('admin still reads ledger',
+ _val_as('00000000-0000-0000-0000-0000000000ad', $$SELECT (count(*) > 0)::text FROM wallet_ledger$$), 'true');
+SELECT _eq('settlement decisions audited',
+ (SELECT string_agg(action, ',' ORDER BY action) FROM (SELECT DISTINCT action FROM finance_audit_log WHERE entity = 'settlement') x),
+ 'admin_record_settlement,admin_settlement_approved,rider_cancel_settlement');
+SELECT _ok('admin adds manual adjustment with note', _run_as('00000000-0000-0000-0000-0000000000ad',
+ $$INSERT INTO ledger_adjustments (rider_id, amount, note, admin_id) VALUES ('00000000-0000-0000-0000-0000000000a1', 25, 'fuel bonus', auth.uid())$$));
+SELECT _fails('adjustment requires a note', _run_as('00000000-0000-0000-0000-0000000000ad',
+ $$INSERT INTO ledger_adjustments (rider_id, amount, note, admin_id) VALUES ('00000000-0000-0000-0000-0000000000a1', 25, '  ', auth.uid())$$));
+SELECT _eq('adjustments cannot be edited',
+ _val_as('00000000-0000-0000-0000-0000000000ad', $$WITH u AS (UPDATE ledger_adjustments SET amount = 9999 RETURNING 1) SELECT count(*)::text FROM u$$), '0');
+SELECT _eq('adjustments cannot be deleted',
+ _val_as('00000000-0000-0000-0000-0000000000ad', $$WITH u AS (DELETE FROM ledger_adjustments RETURNING 1) SELECT count(*)::text FROM u$$), '0');
