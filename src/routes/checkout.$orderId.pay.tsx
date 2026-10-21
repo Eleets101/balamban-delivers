@@ -2,7 +2,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Loader2, ShieldCheck, Check, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { setPaymentMethod } from "@/lib/orderApi";
+import { normalizePaymentReference, setPaymentMethod } from "@/lib/orderApi";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,8 @@ function PayPage() {
   const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase>("redirecting");
   const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [reference, setReference] = useState("");
+  const [refError, setRefError] = useState<string | null>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -42,10 +46,19 @@ function PayPage() {
   // No payment provider is connected yet. Choosing GCash/Maya records the
   // method only; the order stays unpaid until an admin confirms the transfer.
   const confirmPayment = async (choice: Wallet) => {
+    if (phase === "processing") return;
+    let ref: string | null;
+    try {
+      ref = normalizePaymentReference(reference);
+      setRefError(null);
+    } catch (err) {
+      setRefError((err as Error).message);
+      return;
+    }
     setWallet(choice);
     setPhase("processing");
     try {
-      await setPaymentMethod(orderId, choice);
+      await setPaymentMethod(orderId, choice, ref);
     } catch (err) {
       toast.error((err as Error).message);
       setPhase("select");
@@ -70,7 +83,7 @@ function PayPage() {
               <ShieldCheck className="h-8 w-8" />
             </div>
           </div>
-          <h1 className="mt-6 font-display text-xl font-bold">Redirecting to secure payment…</h1>
+          <h1 className="mt-6 font-display text-xl font-bold">Preparing payment options…</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Please don't close this page. Your checkout is being prepared.
           </p>
@@ -96,10 +109,38 @@ function PayPage() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Hosted checkout</p>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Manual e-wallet transfer</p>
               <h1 className="font-display text-xl font-bold">Choose your e-wallet</h1>
             </div>
             <ShieldCheck className="h-6 w-6 text-success" />
+          </div>
+
+          <p className="mt-3 text-sm text-muted-foreground">
+            Send your payment by GCash or Maya, then pick the wallet you used. HatodGo staff will check
+            and confirm it. Your order shows "Awaiting confirmation" until then.
+          </p>
+
+          <div className="mt-4 space-y-1.5">
+            <Label htmlFor="pay-ref">Reference number (optional)</Label>
+            <Input
+              id="pay-ref"
+              inputMode="text"
+              autoComplete="off"
+              maxLength={40}
+              placeholder="e.g. 1009 2345 6789"
+              value={reference}
+              disabled={phase === "processing"}
+              onChange={(e) => {
+                setReference(e.target.value);
+                if (refError) setRefError(null);
+              }}
+              aria-invalid={!!refError}
+            />
+            {refError ? (
+              <p className="text-xs text-destructive">{refError}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">Found on your GCash/Maya receipt. Helps us confirm faster.</p>
+            )}
           </div>
 
           <div className="mt-6 space-y-3">
@@ -129,7 +170,7 @@ function PayPage() {
           )}
 
           <p className="mt-6 text-center text-[11px] text-muted-foreground">
-            🔒 Encrypted · PCI-compliant · No card details stored
+            No money is charged in this app. Payment is confirmed manually by HatodGo.
           </p>
         </div>
 

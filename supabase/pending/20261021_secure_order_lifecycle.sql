@@ -1,7 +1,7 @@
 -- =============================================================================
 -- HatodGo: secure order lifecycle, contact privacy, payout immutability
--- STATUS: PENDING REVIEW — NOT APPLIED. Do not move into supabase/migrations
--- until approved. Rollback: supabase/pending/20261021_secure_order_lifecycle.rollback.sql
+-- STATUS: Approved by owner pre-launch (2026-10-21) and applied to the shared database.
+-- Rollback: supabase/pending/20261021_secure_order_lifecycle.rollback.sql
 --
 -- Summary
 --   orders       : customers/riders lose direct INSERT/UPDATE; all writes go
@@ -174,25 +174,85 @@ BEGIN
   RETURN new_id;
 END $$;
 
--- ---------- customer: payment method ----------
-CREATE OR REPLACE FUNCTION public.set_order_payment_method(p_order_id uuid, p_method text)
+-- ---------- finance audit log (written only by the RPCs below) ----------
+CREATE TABLE IF NOT EXISTS public.finance_audit_log (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_id uuid,
+  action text NOT NULL,
+  entity text NOT NULL,
+  entity_id uuid,
+  details jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+GRANT SELECT ON public.finance_audit_log TO authenticated;
+GRANT ALL ON public.finance_audit_log TO service_role;
+ALTER TABLE public.finance_audit_log ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Admins view finance audit" ON public.finance_audit_log
+  FOR SELECT TO authenticated USING (public.has_role(auth.uid(), 'admin'));
+CREATE INDEX IF NOT EXISTS finance_audit_log_entity_idx ON public.finance_audit_log (entity, entity_id, created_at DESC);
+
+CREATE OR REPLACE FUNCTION public.hg_audit(_action text, _entity text, _entity_id uuid, _details jsonb)
+RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
+  INSERT INTO finance_audit_log (actor_id, action, entity, entity_id, details)
+  VALUES (auth.uid(), _action, _entity, _entity_id, coalesce(_details, '{}'::jsonb))
+$$;
+
+-- ---------- orders: payment fields writable only inside SECURITY DEFINER RPCs ----------
+-- SECURITY INVOKER on purpose: inside an RPC current_user is the function owner,
+-- so only direct API writes (anon/authenticated) are blocked. Status, rider and
+-- other admin order operations are unaffected.
+CREATE OR REPLACE FUNCTION public.orders_payment_guard()
+RETURNS trigger LANGUAGE plpgsql SET search_path = public AS $$
+BEGIN
+  IF current_user NOT IN ('anon', 'authenticated') THEN RETURN NEW; END IF;
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.payment_status <> 'pending' OR NEW.details ? 'payment_reference' OR NEW.details ? 'payment_confirmed_by' THEN
+      RAISE EXCEPTION 'Payment fields can only be set through payment actions' USING ERRCODE = '42501';
+    END IF;
+    RETURN NEW;
+  END IF;
+  IF NEW.payment_status IS DISTINCT FROM OLD.payment_status
+     OR NEW.payment_method IS DISTINCT FROM OLD.payment_method
+     OR NEW.estimated_price IS DISTINCT FROM OLD.estimated_price
+     OR NEW.details->'payment_reference' IS DISTINCT FROM OLD.details->'payment_reference'
+     OR NEW.details->'payment_review' IS DISTINCT FROM OLD.details->'payment_review'
+     OR NEW.details->'payment_confirmed_by' IS DISTINCT FROM OLD.details->'payment_confirmed_by'
+     OR NEW.details->'payment_confirmed_at' IS DISTINCT FROM OLD.details->'payment_confirmed_at'
+     OR NEW.details->'fare_breakdown' IS DISTINCT FROM OLD.details->'fare_breakdown' THEN
+    RAISE EXCEPTION 'Payment fields can only be changed through payment actions' USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS orders_payment_guard ON public.orders;
+CREATE TRIGGER orders_payment_guard BEFORE INSERT OR UPDATE ON public.orders
+  FOR EACH ROW EXECUTE FUNCTION public.orders_payment_guard();
+
+-- ---------- customer: payment method (+ optional e-wallet reference) ----------
+CREATE OR REPLACE FUNCTION public.set_order_payment_method(p_order_id uuid, p_method text, p_reference text DEFAULT NULL)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE o orders;
+DECLARE o orders; ref text := nullif(btrim(coalesce(p_reference, '')), '');
 BEGIN
   SELECT * INTO o FROM orders WHERE id = p_order_id FOR UPDATE;
   IF NOT FOUND OR o.customer_id IS DISTINCT FROM auth.uid() THEN RAISE EXCEPTION 'Order not found' USING ERRCODE = '42501'; END IF;
   IF o.status IN ('completed', 'cancelled') THEN RAISE EXCEPTION 'Order is closed'; END IF;
   IF o.payment_status = 'paid' THEN RAISE EXCEPTION 'Payment already confirmed'; END IF;
+  IF ref IS NOT NULL AND ref !~ '^[A-Za-z0-9 -]{4,40}$' THEN
+    RAISE EXCEPTION 'Reference number should be 4-40 letters or numbers';
+  END IF;
   IF p_method = 'cod' THEN
     UPDATE orders SET payment_method = 'cod', payment_status = 'cod',
-      details = details - 'payment_review' WHERE id = p_order_id;
+      details = details - 'payment_review' - 'payment_reference' WHERE id = p_order_id;
+    ref := NULL;
   ELSIF p_method IN ('gcash', 'maya') THEN
     UPDATE orders SET payment_method = p_method, payment_status = 'pending',
-      details = details || jsonb_build_object('payment_review', 'awaiting_manual_confirmation')
+      details = (details - 'payment_reference') || jsonb_build_object('payment_review', 'awaiting_manual_confirmation')
+        || CASE WHEN ref IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('payment_reference', ref) END
       WHERE id = p_order_id;
   ELSE
     RAISE EXCEPTION 'Unsupported payment method';
   END IF;
+  PERFORM hg_audit('customer_set_payment_method', 'order', p_order_id,
+    jsonb_build_object('method', p_method, 'reference', ref, 'previous_method', o.payment_method));
 END $$;
 
 -- ---------- customer: cancel ----------
@@ -316,17 +376,40 @@ END $$;
 -- ---------- admin: payment confirmation ----------
 CREATE OR REPLACE FUNCTION public.admin_confirm_payment(p_order_id uuid, p_confirmed boolean)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE o orders;
 BEGIN
   IF NOT has_role(auth.uid(), 'admin') THEN RAISE EXCEPTION 'Admins only' USING ERRCODE = '42501'; END IF;
+  SELECT * INTO o FROM orders WHERE id = p_order_id FOR UPDATE;
+  IF NOT FOUND OR o.payment_method NOT IN ('gcash', 'maya') OR o.payment_status NOT IN ('pending', 'failed')
+     OR o.status = 'cancelled' THEN
+    RAISE EXCEPTION 'No e-wallet payment awaiting confirmation';
+  END IF;
   UPDATE orders SET
     payment_status = CASE WHEN p_confirmed THEN 'paid'::payment_status ELSE 'failed'::payment_status END,
     details = (details - 'payment_review') || jsonb_build_object('payment_confirmed_by', auth.uid(), 'payment_confirmed_at', now())
-  WHERE id = p_order_id AND payment_method IN ('gcash', 'maya') AND payment_status IN ('pending', 'failed');
-  IF NOT FOUND THEN RAISE EXCEPTION 'No e-wallet payment awaiting confirmation'; END IF;
+  WHERE id = p_order_id;
+  PERFORM hg_audit(CASE WHEN p_confirmed THEN 'admin_payment_confirmed' ELSE 'admin_payment_not_received' END,
+    'order', p_order_id, jsonb_build_object('method', o.payment_method, 'previous_status', o.payment_status,
+      'amount', coalesce((o.details->'fare_breakdown'->>'total')::numeric, o.estimated_price),
+      'reference', o.details->>'payment_reference'));
 END $$;
 
 -- ---------- settlements ----------
+-- Riders keep INSERT of their own pending request; admins keep SELECT.
+-- All updates/decisions go through the guarded RPCs below.
 DROP POLICY IF EXISTS "Riders update own pending settlements" ON public.settlements;
+DROP POLICY IF EXISTS "Admins manage settlements" ON public.settlements;
+
+-- wallet_ledger rows are written only by the completion trigger; admins read.
+DROP POLICY IF EXISTS "Admins manage ledger" ON public.wallet_ledger;
+
+-- ledger_adjustments are append-only audit records (no edit/delete).
+DROP POLICY IF EXISTS "Admins manage adjustments" ON public.ledger_adjustments;
+CREATE POLICY "Admins view adjustments" ON public.ledger_adjustments
+  FOR SELECT TO authenticated USING (public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "Admins add adjustments" ON public.ledger_adjustments
+  FOR INSERT TO authenticated
+  WITH CHECK (public.has_role(auth.uid(), 'admin') AND admin_id = auth.uid() AND amount <> 0 AND length(btrim(note)) > 0);
 
 CREATE OR REPLACE FUNCTION public.settlements_guard()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
@@ -358,10 +441,12 @@ BEGIN
     notes = trim(coalesce(notes, '') || ' [Cancelled by rider]')
   WHERE id = p_id AND rider_id = auth.uid() AND status = 'pending';
   IF NOT FOUND THEN RAISE EXCEPTION 'No pending request to cancel'; END IF;
+  PERFORM hg_audit('rider_cancel_settlement', 'settlement', p_id, '{}'::jsonb);
 END $$;
 
 CREATE OR REPLACE FUNCTION public.admin_decide_settlement(p_id uuid, p_approve boolean, p_note text)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE s settlements;
 BEGIN
   IF NOT has_role(auth.uid(), 'admin') THEN RAISE EXCEPTION 'Admins only' USING ERRCODE = '42501'; END IF;
   UPDATE settlements SET
@@ -369,8 +454,11 @@ BEGIN
     admin_id = auth.uid(),
     approved_at = CASE WHEN p_approve THEN now() END,
     notes = CASE WHEN nullif(p_note, '') IS NULL THEN notes ELSE trim(coalesce(notes, '') || ' [Admin: ' || left(p_note, 300) || ']') END
-  WHERE id = p_id AND status = 'pending';
+  WHERE id = p_id AND status = 'pending'
+  RETURNING * INTO s;
   IF NOT FOUND THEN RAISE EXCEPTION 'Settlement is not pending'; END IF;
+  PERFORM hg_audit(CASE WHEN p_approve THEN 'admin_settlement_approved' ELSE 'admin_settlement_rejected' END,
+    'settlement', p_id, jsonb_build_object('rider_id', s.rider_id, 'type', s.type, 'amount', s.amount, 'note', left(p_note, 300)));
 END $$;
 
 CREATE OR REPLACE FUNCTION public.admin_record_settlement(p_rider_id uuid, p_type settlement_type, p_amount numeric, p_note text)
@@ -382,12 +470,14 @@ BEGIN
   INSERT INTO settlements (rider_id, type, amount, status, admin_id, approved_at, notes)
   VALUES (p_rider_id, p_type, p_amount, 'approved', auth.uid(), now(), coalesce(nullif(p_note, ''), 'Logged by admin'))
   RETURNING id INTO new_id;
+  PERFORM hg_audit('admin_record_settlement', 'settlement', new_id,
+    jsonb_build_object('rider_id', p_rider_id, 'type', p_type, 'amount', p_amount, 'note', left(p_note, 300)));
   RETURN new_id;
 END $$;
 
 -- ---------- execute grants ----------
 REVOKE ALL ON FUNCTION public.create_order(service_type, text, text, double precision, double precision, double precision, double precision, text, jsonb, numeric) FROM PUBLIC, anon;
-REVOKE ALL ON FUNCTION public.set_order_payment_method(uuid, text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.set_order_payment_method(uuid, text, text) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.cancel_my_order(uuid, text, text, text) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.list_available_jobs() FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.accept_order(uuid) FROM PUBLIC, anon;
@@ -398,9 +488,10 @@ REVOKE ALL ON FUNCTION public.rider_cancel_settlement(uuid) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.admin_decide_settlement(uuid, boolean, text) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.admin_record_settlement(uuid, settlement_type, numeric, text) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.settlements_guard() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.hg_audit(text, text, uuid, jsonb) FROM PUBLIC, anon, authenticated;
 
 GRANT EXECUTE ON FUNCTION public.create_order(service_type, text, text, double precision, double precision, double precision, double precision, text, jsonb, numeric) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.set_order_payment_method(uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.set_order_payment_method(uuid, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.cancel_my_order(uuid, text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.list_available_jobs() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.accept_order(uuid) TO authenticated;
