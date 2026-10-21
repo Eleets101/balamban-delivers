@@ -580,8 +580,27 @@ function DriverPage() {
                             <p className="text-xs text-muted-foreground">Drop-off</p>
                             <p className="font-medium">{o.dropoff_address}</p>
                           </div>
-                        </div>
                       </div>
+
+                      {recipient && (recipient.name || recipient.phone) && (
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/40 p-3 text-sm">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Recipient</p>
+                            <p className="font-medium">
+                              {recipient.name || "—"}
+                              {recipient.phone ? ` · ${recipient.phone}` : ""}
+                            </p>
+                          </div>
+                          {recipient.phone && (
+                            <Button asChild size="sm" variant="outline">
+                              <a href={`tel:${recipient.phone.replace(/[^\d+]/g, "")}`}>
+                                <Phone className="h-4 w-4" /> Call recipient
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                      )}
+
 
                       {(pickup || dropoff) && (
                         <div className="mt-4">
