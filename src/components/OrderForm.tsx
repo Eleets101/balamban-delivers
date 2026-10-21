@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { normalizePhMobile } from "@/lib/phone";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Receipt } from "lucide-react";
@@ -61,6 +62,23 @@ export function OrderForm({
   const [budgetInput, setBudgetInput] = useState("");
   const [parcelSize, setParcelSize] = useState<ParcelSize>("small");
   const [landmark, setLandmark] = useState("");
+  const [phone, setPhone] = useState("");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [recipientName, setRecipientName] = useState("");
+  const [recipientPhone, setRecipientPhone] = useState("");
+  const [recipientPhoneError, setRecipientPhoneError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from("profiles").select("phone").eq("id", user.id).maybeSingle();
+      if (!cancelled && data?.phone) setPhone((p) => p || data.phone!);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const distanceKm = useMemo(() => {
     if (!pickupCoords || !dropoffCoords) return null;
