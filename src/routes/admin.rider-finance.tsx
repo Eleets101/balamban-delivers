@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
+import { adminRecordSettlement } from "@/lib/orderApi";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
 import { Badge } from "@/components/ui/badge";
@@ -384,16 +385,7 @@ function AdminRiderFinancePage() {
     }
     setActing(riderId);
     try {
-      const { error } = await supabase.from("settlements").insert({
-        rider_id: riderId,
-        type: "payout_to_rider",
-        amount: row.hatodgoOwes,
-        status: "approved",
-        admin_id: user.id,
-        approved_at: new Date().toISOString(),
-        notes: "Marked paid by admin",
-      });
-      if (error) throw error;
+      await adminRecordSettlement(riderId, "payout_to_rider", row.hatodgoOwes, "Marked paid by admin");
       toast.success(`Paid ${formatPeso(row.hatodgoOwes)} to rider`);
       void refresh();
     } catch (err) {
@@ -410,16 +402,7 @@ function AdminRiderFinancePage() {
     }
     setActing(riderId);
     try {
-      const { error } = await supabase.from("settlements").insert({
-        rider_id: riderId,
-        type: "cash_remit",
-        amount: row.riderOwes,
-        status: "approved",
-        admin_id: user.id,
-        approved_at: new Date().toISOString(),
-        notes: "Cash remitted (marked by admin)",
-      });
-      if (error) throw error;
+      await adminRecordSettlement(riderId, "cash_remit", row.riderOwes, "Cash remitted (marked by admin)");
       toast.success(`Recorded ${formatPeso(row.riderOwes)} cash remit`);
       void refresh();
     } catch (err) {

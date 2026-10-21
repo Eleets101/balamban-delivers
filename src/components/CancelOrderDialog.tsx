@@ -3,6 +3,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { X, Loader2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { cancelMyOrder } from "@/lib/orderApi";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -97,20 +98,12 @@ export function CancelOrderDialog({
     const reasonLabel =
       CANCEL_REASONS.find((r) => r.value === parsed.data.reason)?.label ?? parsed.data.reason;
 
-    const mergedDetails = {
-      ...(existingDetails ?? {}),
-      cancellation: {
-        reason: parsed.data.reason,
-        reason_label: reasonLabel,
-        note: parsed.data.note ?? null,
-        cancelled_at: new Date().toISOString(),
-      },
-    };
-
-    const { error } = await supabase
-      .from("orders")
-      .update({ status: "cancelled", details: mergedDetails })
-      .eq("id", orderId);
+    let error: { message: string } | null = null;
+    try {
+      await cancelMyOrder(orderId, parsed.data.reason, reasonLabel, parsed.data.note ?? null);
+    } catch (err) {
+      error = { message: (err as Error).message };
+    }
 
     setBusy(false);
 
