@@ -58,7 +58,12 @@ interface DriverOrder {
   dropoff_lng: number | null;
   estimated_price: number | null;
   payment_method: string | null;
-  details: { description?: string; trip_stage?: TripStage };
+  details: {
+    description?: string;
+    trip_stage?: TripStage;
+    phone?: string;
+    recipient?: { name?: string | null; phone?: string | null };
+  };
   notes: string | null;
   created_at: string;
 }
@@ -467,7 +472,9 @@ function DriverPage() {
                   (o.status === "in_progress" ? "picked_up" : o.status === "completed" ? "completed" : "enroute_pickup");
                 const customer = customers[o.customer_id];
                 const customerName = customer?.full_name?.trim() || "Customer";
-                const customerPhone = customer?.phone?.replace(/\s+/g, "") || null;
+                const orderPhone = typeof o.details?.phone === "string" ? o.details.phone : null;
+                const customerPhone = (orderPhone || customer?.phone)?.replace(/[^\d+]/g, "") || null;
+                const recipient = o.details?.recipient as { name?: string | null; phone?: string | null } | undefined;
 
                 const STEPS: { key: TripStage; label: string; cta: string }[] = [
                   { key: "enroute_pickup", label: "En route", cta: "Start Trip" },
@@ -580,6 +587,26 @@ function DriverPage() {
                           </div>
                         </div>
                       </div>
+
+                      {recipient && (recipient.name || recipient.phone) && (
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/40 p-3 text-sm">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Recipient</p>
+                            <p className="font-medium">
+                              {recipient.name || "—"}
+                              {recipient.phone ? ` · ${recipient.phone}` : ""}
+                            </p>
+                          </div>
+                          {recipient.phone && (
+                            <Button asChild size="sm" variant="outline">
+                              <a href={`tel:${recipient.phone.replace(/[^\d+]/g, "")}`}>
+                                <Phone className="h-4 w-4" /> Call recipient
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                      )}
+
 
                       {(pickup || dropoff) && (
                         <div className="mt-4">

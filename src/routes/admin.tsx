@@ -32,6 +32,7 @@ interface AdminOrder {
   dropoff_lng: number | null;
   estimated_price: number | null;
   created_at: string;
+  details: { phone?: string; recipient?: { name?: string | null; phone?: string | null } } | null;
 }
 
 interface RiderLoc {
@@ -91,7 +92,7 @@ function AdminPage() {
   const refresh = async () => {
     const { data } = await supabase
       .from("orders")
-      .select("id, customer_id, service_type, status, pickup_address, dropoff_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, estimated_price, created_at")
+      .select("id, customer_id, service_type, status, pickup_address, dropoff_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, estimated_price, created_at, details")
       .order("created_at", { ascending: false })
       .limit(100);
     setOrders((data as AdminOrder[]) ?? []);
@@ -349,6 +350,16 @@ function AdminPage() {
                       <td className="px-4 py-3 text-muted-foreground">
                         <div className="max-w-xs truncate">{o.pickup_address}</div>
                         <div className="max-w-xs truncate text-xs">→ {o.dropoff_address}</div>
+                        {o.details?.phone && (
+                          <a href={`tel:${o.details.phone.replace(/[^\d+]/g, "")}`} className="block text-xs text-primary-glow underline">
+                            📞 {o.details.phone}
+                          </a>
+                        )}
+                        {o.details?.recipient?.phone && (
+                          <a href={`tel:${o.details.recipient.phone.replace(/[^\d+]/g, "")}`} className="block text-xs text-primary-glow underline">
+                            Recipient: {o.details.recipient.name || ""} {o.details.recipient.phone}
+                          </a>
+                        )}
                       </td>
                       <td className="px-4 py-3">{o.estimated_price ? `₱${Number(o.estimated_price).toFixed(2)}` : "—"}</td>
                       <td className="px-4 py-3 text-xs text-muted-foreground">

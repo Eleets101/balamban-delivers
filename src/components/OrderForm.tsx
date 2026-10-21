@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { normalizePhMobile } from "@/lib/phone";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Receipt } from "lucide-react";
@@ -61,6 +62,23 @@ export function OrderForm({
   const [budgetInput, setBudgetInput] = useState("");
   const [parcelSize, setParcelSize] = useState<ParcelSize>("small");
   const [landmark, setLandmark] = useState("");
+  const [phone, setPhone] = useState("");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [recipientName, setRecipientName] = useState("");
+  const [recipientPhone, setRecipientPhone] = useState("");
+  const [recipientPhoneError, setRecipientPhoneError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from("profiles").select("phone").eq("id", user.id).maybeSingle();
+      if (!cancelled && data?.phone) setPhone((p) => p || data.phone!);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const distanceKm = useMemo(() => {
     if (!pickupCoords || !dropoffCoords) return null;
@@ -99,12 +117,38 @@ export function OrderForm({
       toast.error("Please pin the drop-off location on the map.");
       return;
     }
+    const normPhone = normalizePhMobile(phone);
+    if (!normPhone) {
+      const msg = phone.trim()
+        ? "Enter a valid PH mobile number, e.g. 0917 123 4567 or +63 917 123 4567."
+        : "Please enter your contact phone number.";
+      setPhoneError(msg);
+      toast.error(msg);
+      document.getElementById("contact_phone")?.focus();
+      return;
+    }
+    let normRecipientPhone: string | null = null;
+    if (serviceType === "padali" && recipientPhone.trim()) {
+      normRecipientPhone = normalizePhMobile(recipientPhone);
+      if (!normRecipientPhone) {
+        const msg = "Recipient phone must be a valid PH mobile number.";
+        setRecipientPhoneError(msg);
+        toast.error(msg);
+        return;
+      }
+    }
     const fd = new FormData(e.currentTarget);
     setBusy(true);
 
     const detailsText = String(fd.get("details") ?? "");
-    const details: Record<string, unknown> = { description: detailsText };
+    const details: Record<string, unknown> = { description: detailsText, phone: normPhone };
     if (landmark.trim()) details.landmark = landmark.trim();
+    if (serviceType === "padali") {
+      const rn = recipientName.trim().slice(0, 80);
+      if (rn || normRecipientPhone) {
+        details.recipient = { name: rn || null, phone: normRecipientPhone };
+      }
+    }
     if (showParcelSize) details.parcel_size = parcelSize;
     if (fareBreakdown) details.fare_breakdown = fareBreakdown;
 
@@ -271,6 +315,63 @@ export function OrderForm({
               </dd>
             </div>
           </dl>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <Label htmlFor="contact_phone">Your contact phone number</Label>
+        <Input
+          id="contact_phone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          maxLength={20}
+          value={phone}
+          onChange={(e) => {
+            setPhone(e.target.value);
+            if (phoneError) setPhoneError(null);
+          }}
+          placeholder="09xx xxx xxxx"
+          aria-invalid={!!phoneError}
+          aria-describedby="contact_phone_hint"
+        />
+        <p
+          id="contact_phone_hint"
+          className={`text-xs ${phoneError ? "text-destructive" : "text-muted-foreground"}`}
+        >
+          {phoneError ?? "The rider will call this number if they can't find the location."}
+        </p>
+      </div>
+
+      {serviceType === "padali" && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="recipient_name">Recipient name (optional)</Label>
+            <Input
+              id="recipient_name"
+              maxLength={80}
+              value={recipientName}
+              onChange={(e) => setRecipientName(e.target.value)}
+              placeholder="Who will receive the parcel"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="recipient_phone">Recipient phone (optional)</Label>
+            <Input
+              id="recipient_phone"
+              type="tel"
+              inputMode="tel"
+              maxLength={20}
+              value={recipientPhone}
+              onChange={(e) => {
+                setRecipientPhone(e.target.value);
+                if (recipientPhoneError) setRecipientPhoneError(null);
+              }}
+              placeholder="09xx xxx xxxx"
+              aria-invalid={!!recipientPhoneError}
+            />
+            {recipientPhoneError && <p className="text-xs text-destructive">{recipientPhoneError}</p>}
+          </div>
         </div>
       )}
 
