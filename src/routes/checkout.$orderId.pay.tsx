@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Loader2, ShieldCheck, Check, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { setPaymentMethod } from "@/lib/orderApi";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
@@ -39,37 +39,15 @@ function PayPage() {
     return () => clearTimeout(t);
   }, [user, loading, navigate]);
 
+  // No payment provider is connected yet. Choosing GCash/Maya records the
+  // method only; the order stays unpaid until an admin confirms the transfer.
   const confirmPayment = async (choice: Wallet) => {
     setWallet(choice);
     setPhase("processing");
-
-    // Simulate provider processing
-    await new Promise((r) => setTimeout(r, 1600));
-
-    // Simulate a ~20% failure rate from the e-wallet provider
-    const reasons = ["declined", "timeout", "insufficient"] as const;
-    const failed = Math.random() < 0.2;
-    if (failed) {
-      const reason = reasons[Math.floor(Math.random() * reasons.length)];
-      await supabase
-        .from("orders")
-        .update({ payment_method: choice, payment_status: "failed" })
-        .eq("id", orderId);
-      navigate({
-        to: "/checkout/$orderId/failed",
-        params: { orderId },
-        search: { reason },
-      });
-      return;
-    }
-
-    const { error } = await supabase
-      .from("orders")
-      .update({ payment_method: choice, payment_status: "paid" })
-      .eq("id", orderId);
-
-    if (error) {
-      toast.error(error.message);
+    try {
+      await setPaymentMethod(orderId, choice);
+    } catch (err) {
+      toast.error((err as Error).message);
       setPhase("select");
       return;
     }
@@ -146,7 +124,7 @@ function PayPage() {
           {phase === "processing" && (
             <div className="mt-6 flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm text-primary-glow">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Processing payment with {wallet === "gcash" ? "GCash" : "Maya"}…
+              Saving {wallet === "gcash" ? "GCash" : "Maya"} as your payment method…
             </div>
           )}
 
