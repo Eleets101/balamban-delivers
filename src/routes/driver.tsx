@@ -58,7 +58,12 @@ interface DriverOrder {
   dropoff_lng: number | null;
   estimated_price: number | null;
   payment_method: string | null;
-  details: { description?: string; trip_stage?: TripStage };
+  details: {
+    description?: string;
+    trip_stage?: TripStage;
+    phone?: string;
+    recipient?: { name?: string | null; phone?: string | null };
+  };
   notes: string | null;
   created_at: string;
 }
