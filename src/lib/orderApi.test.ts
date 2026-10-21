@@ -27,3 +27,41 @@ describe("paymentDisplay", () => {
     expect(paymentDisplay("cod", "cod").key).toBe("cod");
   });
 });
+
+import { canRiderCancelSettlement, isAwaitingPaymentConfirmation, singleFlight } from "./orderApi";
+
+describe("isAwaitingPaymentConfirmation", () => {
+  it("shows confirm action for pending GCash and Maya", () => {
+    expect(isAwaitingPaymentConfirmation({ payment_method: "gcash", payment_status: "pending" })).toBe(true);
+    expect(isAwaitingPaymentConfirmation({ payment_method: "maya", payment_status: "pending" })).toBe(true);
+  });
+  it("hides it once paid, for cash, and for cancelled orders", () => {
+    expect(isAwaitingPaymentConfirmation({ payment_method: "gcash", payment_status: "paid" })).toBe(false);
+    expect(isAwaitingPaymentConfirmation({ payment_method: "cod", payment_status: "cod" })).toBe(false);
+    expect(isAwaitingPaymentConfirmation({ payment_method: "gcash", payment_status: "pending", status: "cancelled" })).toBe(false);
+  });
+});
+
+describe("canRiderCancelSettlement", () => {
+  it("allows only the owner while pending", () => {
+    expect(canRiderCancelSettlement({ rider_id: "r1", status: "pending" }, "r1")).toBe(true);
+    expect(canRiderCancelSettlement({ rider_id: "r1", status: "pending" }, "r2")).toBe(false);
+    expect(canRiderCancelSettlement({ rider_id: "r1", status: "approved" }, "r1")).toBe(false);
+    expect(canRiderCancelSettlement({ rider_id: "r1", status: "rejected" }, "r1")).toBe(false);
+  });
+});
+
+describe("singleFlight", () => {
+  it("ignores a second submit while the first is running", async () => {
+    let calls = 0;
+    let release!: () => void;
+    const run = singleFlight(() => { calls++; return new Promise<void>((r) => { release = r; }); });
+    const first = run();
+    await run();
+    expect(calls).toBe(1);
+    release();
+    await first;
+    run(); release();
+    expect(calls).toBe(2);
+  });
+});

@@ -10,4 +10,5 @@ mkdir -p /tmp/pgtest && cd /tmp/pgtest && echo '{}' > package.json && bun add @e
 cp /dev-server/supabase/tests/run.ts . && bun run.ts           # migrations + pending + tests
 bun run.ts baseline                                             # current rules only (shows today's defects)
 bun run.ts rollback                                             # also checks the rollback script applies
+cp /dev-server/supabase/tests/rollback_diff.ts . && bun rollback_diff.ts   # proves rollback restores exact policies/functions/triggers/grants
 ```
