@@ -152,7 +152,7 @@ SELECT _fails('cannot jump straight to completed', _run_as('00000000-0000-0000-0
 SELECT _fails('other rider cannot advance', _run_as('00000000-0000-0000-0000-0000000000a2',
  $$SELECT advance_trip((SELECT v FROM _ids WHERE k = 'padala'), 'arrived_pickup')$$));
 SELECT _fails('rider cannot set status directly', _run_as('00000000-0000-0000-0000-0000000000a1',
- $$DO $x$ BEGIN UPDATE orders SET status = 'completed'; IF NOT FOUND THEN RAISE EXCEPTION 'no rows'; END IF; END $x$$$));
+ $$WITH u AS (UPDATE orders SET status = 'completed' RETURNING 1) SELECT 1 / count(*) FROM u$$));
 SELECT _ok('arrived at pickup', _run_as('00000000-0000-0000-0000-0000000000a1',
  $$SELECT advance_trip((SELECT v FROM _ids WHERE k = 'padala'), 'arrived_pickup')$$));
 SELECT _ok('picked up', _run_as('00000000-0000-0000-0000-0000000000a1',
