@@ -1,7 +1,7 @@
 -- =============================================================================
 -- HatodGo: secure order lifecycle, contact privacy, payout immutability
--- STATUS: PENDING REVIEW — NOT APPLIED. Do not move into supabase/migrations
--- until approved. Rollback: supabase/pending/20261021_secure_order_lifecycle.rollback.sql
+-- STATUS: Approved by owner pre-launch (2026-10-21) and applied to the shared database.
+-- Rollback: supabase/pending/20261021_secure_order_lifecycle.rollback.sql
 --
 -- Summary
 --   orders       : customers/riders lose direct INSERT/UPDATE; all writes go
