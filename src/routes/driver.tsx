@@ -537,22 +537,22 @@ function DriverPage() {
                           size="lg"
                           variant="outline"
                           disabled={!customerPhone}
-                          onClick={() => customerPhone && window.open(`tel:${customerPhone}`)}
+                          asChild={!!customerPhone}
                           title={customerPhone ?? "No phone on file"}
                           aria-label={`Call ${customerName}`}
                           className="h-12 flex-1 sm:flex-none"
                         >
-                          <Phone className="h-5 w-5" /> Call
+                          {customerPhone ? <a href={`tel:${customerPhone}`}><Phone className="h-5 w-5" /> Call</a> : <span><Phone className="h-5 w-5" /> Call</span>}
                         </Button>
                         <Button
                           size="lg"
                           variant="outline"
                           disabled={!customerPhone}
-                          onClick={() => customerPhone && window.open(`sms:${customerPhone}`)}
+                          asChild={!!customerPhone}
                           aria-label={`Message ${customerName}`}
                           className="h-12 flex-1 sm:flex-none"
                         >
-                          <MessageCircle className="h-5 w-5" /> Chat
+                          {customerPhone ? <a href={`sms:${customerPhone}`}><MessageCircle className="h-5 w-5" /> Chat</a> : <span><MessageCircle className="h-5 w-5" /> Chat</span>}
                         </Button>
                       </div>
                     </div>
