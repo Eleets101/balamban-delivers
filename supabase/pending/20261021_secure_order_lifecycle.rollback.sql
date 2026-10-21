@@ -21,7 +21,23 @@ CREATE POLICY "Riders update own location" ON public.driver_locations FOR UPDATE
 
 CREATE POLICY "Riders update own pending settlements" ON public.settlements FOR UPDATE
   USING ((auth.uid() = rider_id) AND (status = 'pending'::settlement_status));
+CREATE POLICY "Admins manage settlements" ON public.settlements FOR ALL
+  USING (has_role(auth.uid(), 'admin'::app_role));
 DROP TRIGGER IF EXISTS settlements_guard ON public.settlements;
+
+CREATE POLICY "Admins manage ledger" ON public.wallet_ledger FOR ALL
+  USING (has_role(auth.uid(), 'admin'::app_role));
+
+DROP POLICY IF EXISTS "Admins view adjustments" ON public.ledger_adjustments;
+DROP POLICY IF EXISTS "Admins add adjustments" ON public.ledger_adjustments;
+CREATE POLICY "Admins manage adjustments" ON public.ledger_adjustments FOR ALL
+  USING (has_role(auth.uid(), 'admin'::app_role))
+  WITH CHECK (has_role(auth.uid(), 'admin'::app_role) AND (admin_id = auth.uid()));
+
+DROP TRIGGER IF EXISTS orders_payment_guard ON public.orders;
+DROP FUNCTION IF EXISTS public.orders_payment_guard();
+-- NOTE: dropping the audit table discards audit history recorded while enabled.
+DROP TABLE IF EXISTS public.finance_audit_log;
 
 DROP FUNCTION IF EXISTS public.admin_record_settlement(uuid, settlement_type, numeric, text);
 DROP FUNCTION IF EXISTS public.admin_decide_settlement(uuid, boolean, text);
@@ -34,7 +50,8 @@ DROP FUNCTION IF EXISTS public.hg_next_trip_stage(text);
 DROP FUNCTION IF EXISTS public.accept_order(uuid);
 DROP FUNCTION IF EXISTS public.list_available_jobs();
 DROP FUNCTION IF EXISTS public.cancel_my_order(uuid, text, text, text);
-DROP FUNCTION IF EXISTS public.set_order_payment_method(uuid, text);
+DROP FUNCTION IF EXISTS public.set_order_payment_method(uuid, text, text);
+DROP FUNCTION IF EXISTS public.hg_audit(text, text, uuid, jsonb);
 DROP FUNCTION IF EXISTS public.create_order(service_type, text, text, double precision, double precision, double precision, double precision, text, jsonb, numeric);
 DROP FUNCTION IF EXISTS public.hg_min_fee(service_type, numeric, jsonb);
 DROP FUNCTION IF EXISTS public.hg_haversine_km(double precision, double precision, double precision, double precision);

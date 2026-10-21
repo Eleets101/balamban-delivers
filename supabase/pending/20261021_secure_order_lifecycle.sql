@@ -376,17 +376,40 @@ END $$;
 -- ---------- admin: payment confirmation ----------
 CREATE OR REPLACE FUNCTION public.admin_confirm_payment(p_order_id uuid, p_confirmed boolean)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE o orders;
 BEGIN
   IF NOT has_role(auth.uid(), 'admin') THEN RAISE EXCEPTION 'Admins only' USING ERRCODE = '42501'; END IF;
+  SELECT * INTO o FROM orders WHERE id = p_order_id FOR UPDATE;
+  IF NOT FOUND OR o.payment_method NOT IN ('gcash', 'maya') OR o.payment_status NOT IN ('pending', 'failed')
+     OR o.status = 'cancelled' THEN
+    RAISE EXCEPTION 'No e-wallet payment awaiting confirmation';
+  END IF;
   UPDATE orders SET
     payment_status = CASE WHEN p_confirmed THEN 'paid'::payment_status ELSE 'failed'::payment_status END,
     details = (details - 'payment_review') || jsonb_build_object('payment_confirmed_by', auth.uid(), 'payment_confirmed_at', now())
-  WHERE id = p_order_id AND payment_method IN ('gcash', 'maya') AND payment_status IN ('pending', 'failed');
-  IF NOT FOUND THEN RAISE EXCEPTION 'No e-wallet payment awaiting confirmation'; END IF;
+  WHERE id = p_order_id;
+  PERFORM hg_audit(CASE WHEN p_confirmed THEN 'admin_payment_confirmed' ELSE 'admin_payment_not_received' END,
+    'order', p_order_id, jsonb_build_object('method', o.payment_method, 'previous_status', o.payment_status,
+      'amount', coalesce((o.details->'fare_breakdown'->>'total')::numeric, o.estimated_price),
+      'reference', o.details->>'payment_reference'));
 END $$;
 
 -- ---------- settlements ----------
+-- Riders keep INSERT of their own pending request; admins keep SELECT.
+-- All updates/decisions go through the guarded RPCs below.
 DROP POLICY IF EXISTS "Riders update own pending settlements" ON public.settlements;
+DROP POLICY IF EXISTS "Admins manage settlements" ON public.settlements;
+
+-- wallet_ledger rows are written only by the completion trigger; admins read.
+DROP POLICY IF EXISTS "Admins manage ledger" ON public.wallet_ledger;
+
+-- ledger_adjustments are append-only audit records (no edit/delete).
+DROP POLICY IF EXISTS "Admins manage adjustments" ON public.ledger_adjustments;
+CREATE POLICY "Admins view adjustments" ON public.ledger_adjustments
+  FOR SELECT TO authenticated USING (public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "Admins add adjustments" ON public.ledger_adjustments
+  FOR INSERT TO authenticated
+  WITH CHECK (public.has_role(auth.uid(), 'admin') AND admin_id = auth.uid() AND amount <> 0 AND length(btrim(note)) > 0);
 
 CREATE OR REPLACE FUNCTION public.settlements_guard()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
@@ -418,10 +441,12 @@ BEGIN
     notes = trim(coalesce(notes, '') || ' [Cancelled by rider]')
   WHERE id = p_id AND rider_id = auth.uid() AND status = 'pending';
   IF NOT FOUND THEN RAISE EXCEPTION 'No pending request to cancel'; END IF;
+  PERFORM hg_audit('rider_cancel_settlement', 'settlement', p_id, '{}'::jsonb);
 END $$;
 
 CREATE OR REPLACE FUNCTION public.admin_decide_settlement(p_id uuid, p_approve boolean, p_note text)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE s settlements;
 BEGIN
   IF NOT has_role(auth.uid(), 'admin') THEN RAISE EXCEPTION 'Admins only' USING ERRCODE = '42501'; END IF;
   UPDATE settlements SET
@@ -429,8 +454,11 @@ BEGIN
     admin_id = auth.uid(),
     approved_at = CASE WHEN p_approve THEN now() END,
     notes = CASE WHEN nullif(p_note, '') IS NULL THEN notes ELSE trim(coalesce(notes, '') || ' [Admin: ' || left(p_note, 300) || ']') END
-  WHERE id = p_id AND status = 'pending';
+  WHERE id = p_id AND status = 'pending'
+  RETURNING * INTO s;
   IF NOT FOUND THEN RAISE EXCEPTION 'Settlement is not pending'; END IF;
+  PERFORM hg_audit(CASE WHEN p_approve THEN 'admin_settlement_approved' ELSE 'admin_settlement_rejected' END,
+    'settlement', p_id, jsonb_build_object('rider_id', s.rider_id, 'type', s.type, 'amount', s.amount, 'note', left(p_note, 300)));
 END $$;
 
 CREATE OR REPLACE FUNCTION public.admin_record_settlement(p_rider_id uuid, p_type settlement_type, p_amount numeric, p_note text)
@@ -442,12 +470,14 @@ BEGIN
   INSERT INTO settlements (rider_id, type, amount, status, admin_id, approved_at, notes)
   VALUES (p_rider_id, p_type, p_amount, 'approved', auth.uid(), now(), coalesce(nullif(p_note, ''), 'Logged by admin'))
   RETURNING id INTO new_id;
+  PERFORM hg_audit('admin_record_settlement', 'settlement', new_id,
+    jsonb_build_object('rider_id', p_rider_id, 'type', p_type, 'amount', p_amount, 'note', left(p_note, 300)));
   RETURN new_id;
 END $$;
 
 -- ---------- execute grants ----------
 REVOKE ALL ON FUNCTION public.create_order(service_type, text, text, double precision, double precision, double precision, double precision, text, jsonb, numeric) FROM PUBLIC, anon;
-REVOKE ALL ON FUNCTION public.set_order_payment_method(uuid, text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.set_order_payment_method(uuid, text, text) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.cancel_my_order(uuid, text, text, text) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.list_available_jobs() FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.accept_order(uuid) FROM PUBLIC, anon;
@@ -458,9 +488,10 @@ REVOKE ALL ON FUNCTION public.rider_cancel_settlement(uuid) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.admin_decide_settlement(uuid, boolean, text) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.admin_record_settlement(uuid, settlement_type, numeric, text) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.settlements_guard() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.hg_audit(text, text, uuid, jsonb) FROM PUBLIC, anon, authenticated;
 
 GRANT EXECUTE ON FUNCTION public.create_order(service_type, text, text, double precision, double precision, double precision, double precision, text, jsonb, numeric) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.set_order_payment_method(uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.set_order_payment_method(uuid, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.cancel_my_order(uuid, text, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.list_available_jobs() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.accept_order(uuid) TO authenticated;
