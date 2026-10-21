@@ -387,6 +387,7 @@ function AdminRiderFinancePage() {
       toast.info("Nothing to pay this rider.");
       return;
     }
+    if (!window.confirm(`Record ${formatPeso(row.hatodgoOwes)} as already paid outside HatodGo? This reduces the balance. No money will be sent by this app.`)) return;
     setActing(riderId);
     try {
       await adminRecordSettlement(riderId, "payout_to_rider", row.hatodgoOwes, "Marked paid by admin");

@@ -160,6 +160,7 @@ function AdminWalletPage() {
 
   const decide = async (id: string, status: "approved" | "rejected") => {
     if (!user) return;
+    if (status === 'approved' && !window.confirm('Confirm the payout or remittance happened outside HatodGo before approving. This updates the balance only; no money is sent.')) return;
     setActingId(id);
     try {
       await adminDecideSettlement(id, status === "approved");

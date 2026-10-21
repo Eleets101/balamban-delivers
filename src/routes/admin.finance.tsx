@@ -260,6 +260,7 @@ function AdminFinancePage() {
   // Quick actions on settlements (mark as approved)
   const decideSettlement = async (id: string, status: "approved" | "rejected") => {
     if (!user) return;
+    if (status === 'approved' && !window.confirm('Confirm the payout or remittance happened outside HatodGo before recording it. This updates the balance only; no money is sent.')) return;
     setActingId(id);
     try {
       await adminDecideSettlement(id, status === "approved");
@@ -280,6 +281,7 @@ function AdminFinancePage() {
     notes?: string,
   ) => {
     if (!user) return;
+    if (!window.confirm('Record an already completed payout or remittance? This updates the balance only; no money is sent by this app.')) return;
     try {
       await adminRecordSettlement(riderId, type, amount, notes ?? "Logged by admin");
       toast.success("Recorded");
