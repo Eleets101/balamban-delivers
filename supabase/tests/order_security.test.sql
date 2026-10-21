@@ -234,8 +234,10 @@ SELECT _ok('admin direct amount edit attempt', _run_as('00000000-0000-0000-0000-
  $$UPDATE settlements SET amount = 1 WHERE id = (SELECT v FROM _ids WHERE k = 's2')$$));
 SELECT _fails('approved decision cannot be reversed via RPC', _run_as('00000000-0000-0000-0000-0000000000ad',
  $$SELECT admin_decide_settlement((SELECT v FROM _ids WHERE k = 's2'), false, null)$$));
+CREATE FUNCTION _try_super(_sql text) RETURNS text LANGUAGE plpgsql AS $f$
+BEGIN EXECUTE _sql; RETURN NULL; EXCEPTION WHEN others THEN RETURN SQLERRM; END $f$;
 SELECT _fails('trigger blocks amount edit even for privileged writers',
- (SELECT CASE WHEN true THEN (SELECT _try) END FROM (SELECT NULL::text _try) z));
+ _try_super($$UPDATE settlements SET amount = 1 WHERE id = (SELECT v FROM _ids WHERE k = 's2')$$));
 SELECT _eq('approved settlement unchanged after attempts',
  (SELECT status || '/' || amount::int FROM settlements WHERE id = (SELECT v FROM _ids WHERE k = 's2')), 'approved/200');
 SELECT _fails('non-admin cannot record settlements', _run_as('00000000-0000-0000-0000-0000000000a1',
