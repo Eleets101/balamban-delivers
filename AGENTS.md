@@ -4,3 +4,4 @@
 - Server-function modules live in `src/lib/*.functions.ts`, never under a `server/` folder — TanStack import protection blocks client imports from `**/server/**` and breaks the page.
 - Invalidate selected coordinates on typed address edits via PlaceAutocomplete.onEdit; pin/search selection may restore them — prevents stale address/location pairs in every booking flow.
 - Ignore obsolete role responses with an identity generation guard — prevents account switches or sign-out from retaining another user's UI permissions.
+- Parent screens with nested paths render Outlet through a separate route wrapper, not the parent page — checkout outcomes, rider wallet and restaurant management must remain reachable without mounting parent effects.

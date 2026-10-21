@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   Loader2,
@@ -44,8 +44,14 @@ export const Route = createFileRoute("/checkout/$orderId")({
       { name: "twitter:card", content: "summary" }
     ],
   }),
-  component: CheckoutPage,
+  component: CheckoutRoute,
 });
+
+function CheckoutRoute() {
+  const { orderId } = Route.useParams();
+  const { pathname } = useLocation();
+  return pathname === `/checkout/${orderId}` ? <CheckoutPage /> : <Outlet />;
+}
 
 function CheckoutPage() {
   const { orderId } = Route.useParams();

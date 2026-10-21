@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Plus, Pencil, ArrowLeft, Store, Eye, EyeOff, ShieldCheck, Download, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
@@ -26,8 +26,13 @@ export const Route = createFileRoute("/admin/restaurants")({
       { name: "twitter:card", content: "summary" }
     ],
   }),
-  component: AdminRestaurantsPage,
+  component: AdminRestaurantsRoute,
 });
+
+function AdminRestaurantsRoute() {
+  const { pathname } = useLocation();
+  return pathname === '/admin/restaurants' ? <AdminRestaurantsPage /> : <Outlet />;
+}
 
 function AdminRestaurantsPage() {
   const { isAdmin, loading } = useAuth();

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Bell, BellOff, Bike, Check, Loader2, MapPin, MessageCircle, Navigation, Phone, Power, ShieldAlert, User, Wallet, Zap } from "lucide-react";
@@ -38,8 +38,13 @@ export const Route = createFileRoute("/driver")({
       { name: "twitter:card", content: "summary" }
     ],
   }),
-  component: DriverPage,
+  component: DriverRoute,
 });
+
+function DriverRoute() {
+  const { pathname } = useLocation();
+  return pathname === '/driver' ? <DriverPage /> : <Outlet />;
+}
 
 type TripStage = "enroute_pickup" | "arrived_pickup" | "picked_up" | "completed";
 
