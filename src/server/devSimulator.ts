@@ -1,6 +1,20 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+/**
+ * Server-side guard: the simulator only runs for admins, and never in a
+ * production build. Hiding the panel in the UI is not enough.
+ */
+async function requireDevAdmin(context: { supabase: { rpc: (...a: never[]) => unknown }; userId: string }) {
+  if (process.env.NODE_ENV === "production") throw new Error("Simulator disabled in production");
+  const { data: isAdmin } = await (context.supabase.rpc as unknown as (
+    f: string,
+    a: Record<string, unknown>,
+  ) => Promise<{ data: boolean | null }>)("has_role", { _user_id: context.userId, _role: "admin" });
+  if (!isAdmin) throw new Error("Admins only");
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return supabaseAdmin;
+}
 
 /**
  * Dev-only: assign the current authenticated user as the rider for one of
@@ -18,6 +32,7 @@ export const devAssignSelfAsRider = createServerFn({ method: "POST" })
     return input;
   })
   .handler(async ({ data, context }) => {
+    const supabaseAdmin = await requireDevAdmin(context as never);
     const { userId } = context;
 
     // Verify ownership via user-scoped client (RLS enforced)
@@ -64,6 +79,7 @@ export const devPushLocation = createServerFn({ method: "POST" })
     },
   )
   .handler(async ({ data, context }) => {
+    const supabaseAdmin = await requireDevAdmin(context as never);
     const { userId } = context;
     const { data: order, error } = await context.supabase
       .from("orders")
@@ -105,6 +121,7 @@ export const devAdvanceStatus = createServerFn({ method: "POST" })
     },
   )
   .handler(async ({ data, context }) => {
+    const supabaseAdmin = await requireDevAdmin(context as never);
     const { userId } = context;
     const { data: order, error } = await context.supabase
       .from("orders")

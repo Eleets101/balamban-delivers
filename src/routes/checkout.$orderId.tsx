@@ -13,6 +13,7 @@ import gcashIcon from "@/assets/pay-gcash.png";
 import codIcon from "@/assets/pay-cod.png";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { setPaymentMethod } from "@/lib/orderApi";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
@@ -98,15 +99,14 @@ function CheckoutPage() {
 
   const chooseCOD = async () => {
     setBusy(true);
-    const { error } = await supabase
-      .from("orders")
-      .update({ payment_method: "cod", payment_status: "cod" })
-      .eq("id", order.id);
-    setBusy(false);
-    if (error) {
-      toast.error(error.message);
+    try {
+      await setPaymentMethod(order.id, "cod");
+    } catch (err) {
+      setBusy(false);
+      toast.error((err as Error).message);
       return;
     }
+    setBusy(false);
     toast.success("Cash on delivery selected. Pay the rider upon arrival.");
     navigate({ to: "/checkout/$orderId/success", params: { orderId } });
   };

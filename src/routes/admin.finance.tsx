@@ -24,6 +24,7 @@ import {
   Wallet2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { adminDecideSettlement, adminRecordSettlement } from "@/lib/orderApi";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
 import { Badge } from "@/components/ui/badge";
@@ -257,12 +258,7 @@ function AdminFinancePage() {
     if (!user) return;
     setActingId(id);
     try {
-      const { error } = await supabase.from("settlements").update({
-        status,
-        admin_id: user.id,
-        approved_at: status === "approved" ? new Date().toISOString() : null,
-      }).eq("id", id);
-      if (error) throw error;
+      await adminDecideSettlement(id, status === "approved");
       toast.success(status === "approved" ? "Marked paid" : "Rejected");
       void refresh();
     } catch (err) {
@@ -281,16 +277,7 @@ function AdminFinancePage() {
   ) => {
     if (!user) return;
     try {
-      const { error } = await supabase.from("settlements").insert({
-        rider_id: riderId,
-        type,
-        amount,
-        status: "approved",
-        admin_id: user.id,
-        approved_at: new Date().toISOString(),
-        notes: notes ?? `Logged by admin`,
-      });
-      if (error) throw error;
+      await adminRecordSettlement(riderId, type, amount, notes ?? "Logged by admin");
       toast.success("Recorded");
       void refresh();
     } catch (err) {

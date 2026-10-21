@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Phone, MessageCircle, Star, Bike } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { getOrderContacts } from "@/lib/orderApi";
 import { Button } from "@/components/ui/button";
 
 interface RiderInfoCardProps {
+  orderId: string;
   riderId: string;
 }
 
@@ -13,23 +14,22 @@ interface RiderProfile {
   avatar_url: string | null;
 }
 
-export function RiderInfoCard({ riderId }: RiderInfoCardProps) {
+export function RiderInfoCard({ orderId, riderId }: RiderInfoCardProps) {
   const [rider, setRider] = useState<RiderProfile | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    supabase
-      .from("profiles")
-      .select("full_name, phone, avatar_url")
-      .eq("id", riderId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!cancelled && data) setRider(data as RiderProfile);
-      });
+    // Contact details come from a guarded lookup that only answers the
+    // order's customer, its assigned rider, or an admin.
+    getOrderContacts(orderId)
+      .then((c) => {
+        if (!cancelled && c) setRider({ full_name: c.rider_name, phone: c.rider_phone, avatar_url: c.rider_avatar_url });
+      })
+      .catch(() => undefined);
     return () => {
       cancelled = true;
     };
-  }, [riderId]);
+  }, [orderId, riderId]);
 
   const name = rider?.full_name?.split(" ")[0] || "Your rider";
   const phone = rider?.phone;

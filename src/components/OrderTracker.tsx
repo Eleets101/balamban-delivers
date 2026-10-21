@@ -185,7 +185,7 @@ export function OrderTracker({ orderId, riderId, pickup, dropoff, status }: Orde
       )}
 
       {/* Rider info — name, vehicle, rating, call & chat */}
-      {isActive && riderId && <RiderInfoCard riderId={riderId} />}
+      {isActive && riderId && <RiderInfoCard orderId={orderId} riderId={riderId} />}
 
       {/* Live ETA banner */}
       {isActive && (

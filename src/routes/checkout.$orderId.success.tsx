@@ -100,11 +100,16 @@ function SuccessPage() {
   }
 
   const isCOD = order.payment_status === "cod";
-  const title = isCOD ? "Order confirmed ✅" : "Payment Successful ✅";
+  const isPaid = order.payment_status === "paid";
+  // Until a payment provider is connected, e-wallet payments are confirmed by HatodGo staff.
+  const awaiting = !isCOD && !isPaid;
+  const title = isCOD ? "Order confirmed ✅" : isPaid ? "Payment Successful ✅" : "Order placed — awaiting payment confirmation";
   const methodLabel = formatMethodLabel(order.payment_method, order.payment_status);
   const subtitle = isCOD
     ? "Please have cash ready when your rider arrives."
-    : `Paid via ${methodLabel}. Your receipt is saved in My Orders.`;
+    : isPaid
+      ? `Paid via ${methodLabel}. Your receipt is saved in My Orders.`
+      : `You chose ${methodLabel}. HatodGo will confirm your payment manually — it is not marked paid yet.`;
 
   const breakdown: FareBreakdown | null = isFareBreakdown(order.details?.fare_breakdown)
     ? (order.details!.fare_breakdown as FareBreakdown)
@@ -138,7 +143,7 @@ function SuccessPage() {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
     doc.setTextColor(isCOD ? 180 : 30, isCOD ? 110 : 130, isCOD ? 20 : 60);
-    doc.text(isCOD ? "Cash on Delivery" : "Payment Successful", marginX, y);
+    doc.text(isCOD ? "Cash on Delivery" : isPaid ? "Payment Successful" : "Awaiting payment confirmation", marginX, y);
     y += 28;
 
     // Line item helper
@@ -183,7 +188,7 @@ function SuccessPage() {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(60, 60, 70);
-    doc.text(isCOD ? "Amount due" : "Total paid", marginX, y);
+    doc.text(isCOD || awaiting ? "Amount due" : "Total paid", marginX, y);
     doc.setFontSize(18);
     doc.setTextColor(90, 40, 170);
     doc.text(`PHP ${total.toFixed(2)}`, pageWidth - marginX, y, { align: "right" });
@@ -266,7 +271,7 @@ function SuccessPage() {
 
             <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-3">
               <dt className="font-display text-base font-semibold">
-                {isCOD ? "Amount due" : "Total paid"}
+                {isCOD || awaiting ? "Amount due" : "Total paid"}
               </dt>
               <dd className="font-display text-xl font-bold text-primary-glow">
                 ₱{total.toFixed(2)}

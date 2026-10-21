@@ -1,0 +1,2 @@
+- Orders, payment-method choice, cancellation, rider accept/trip steps and settlement decisions are written only through the SECURITY DEFINER RPCs wrapped in `src/lib/orderApi.ts`; never add direct client `insert`/`update` on `orders` or `settlements` — the database is the security boundary for price, status and contact data.
+- Database changes awaiting owner review live in `supabase/pending/` with a matching `.rollback.sql` and are verified with `supabase/tests/` on a scratch PGlite database before being applied.

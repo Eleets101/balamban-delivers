@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Bell, BellOff, Bike, Check, Loader2, MapPin, MessageCircle, Navigation, Phone, Power, ShieldAlert, User, Wallet, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { acceptOrder as acceptOrderRpc, advanceTrip, getOrderContacts, listAvailableJobs } from "@/lib/orderApi";
 import { useAuth } from "@/hooks/useAuth";
 import { PageShell } from "@/components/PageShell";
 import { Button } from "@/components/ui/button";
@@ -83,6 +84,7 @@ function DriverPage() {
   const watchIdRef = useRef<number | null>(null);
   const activeOrderIdRef = useRef<string | null>(null);
   const seenOrderIdsRef = useRef<Set<string>>(new Set());
+  const jobsLoadedRef = useRef(false);
   const soundOnRef = useRef(true);
 
   const allowed = isRider || isAdmin;
@@ -109,14 +111,18 @@ function DriverPage() {
     const missing = activeIds.filter((id) => !customers[id]);
     if (missing.length === 0) return;
     (async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, full_name, phone")
-        .in("id", missing);
-      if (!data) return;
+      // Guarded lookup: only answers for trips assigned to this rider.
+      const data: CustomerProfile[] = [];
+      for (const cid of missing) {
+        const o = orders.find((x) => x.customer_id === cid && x.rider_id === user.id);
+        if (!o) continue;
+        const c = await getOrderContacts(o.id).catch(() => null);
+        if (c) data.push({ id: cid, full_name: c.customer_name, phone: c.customer_phone } as CustomerProfile);
+      }
+      if (data.length === 0) return;
       setCustomers((prev) => {
         const next = { ...prev };
-        for (const p of data) next[p.id] = p as CustomerProfile;
+        for (const p of data) next[p.id] = p;
         return next;
       });
     })();
@@ -138,16 +144,41 @@ function DriverPage() {
 
   const refresh = async () => {
     // Available (pending, no rider) + my assigned active orders
-    const { data } = await supabase
-      .from("orders")
-      .select("id, customer_id, rider_id, service_type, status, pickup_address, dropoff_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, estimated_price, payment_method, details, notes, created_at")
-      .or(`status.eq.pending,rider_id.eq.${user?.id ?? "00000000-0000-0000-0000-000000000000"}`)
-      .order("created_at", { ascending: false })
-      .limit(50);
-    const list = (data as DriverOrder[]) ?? [];
-    // Seed seen-set on first load so we don't alert for pre-existing orders
-    if (seenOrderIdsRef.current.size === 0 && list.length > 0) {
-      list.forEach((o) => seenOrderIdsRef.current.add(o.id));
+    // Open jobs come from a sanitized list (no customer contact or notes);
+    // full details are only readable for trips assigned to me.
+    const [jobs, mine] = await Promise.all([
+      listAvailableJobs().catch((e: Error) => {
+        console.error("job list failed", e.message);
+        return [];
+      }),
+      supabase
+        .from("orders")
+        .select("id, customer_id, rider_id, service_type, status, pickup_address, dropoff_address, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, estimated_price, payment_method, details, notes, created_at")
+        .eq("rider_id", user?.id ?? "00000000-0000-0000-0000-000000000000")
+        .order("created_at", { ascending: false })
+        .limit(50),
+    ]);
+    const open: DriverOrder[] = jobs.map((j) => ({
+      ...j,
+      customer_id: "",
+      rider_id: null,
+      notes: null,
+      details: j.details as DriverOrder["details"],
+    }));
+    const list = [...open, ...(((mine.data as DriverOrder[]) ?? []))];
+    const firstLoad = !jobsLoadedRef.current;
+    jobsLoadedRef.current = true;
+    let hasNew = false;
+    for (const o of open) {
+      if (!seenOrderIdsRef.current.has(o.id)) {
+        seenOrderIdsRef.current.add(o.id);
+        if (!firstLoad) hasNew = true;
+      }
+    }
+    if (firstLoad) list.forEach((o) => seenOrderIdsRef.current.add(o.id));
+    if (hasNew) {
+      playNewOrderAlert({ sound: soundOnRef.current, vibrate: true });
+      toast.success("New order available!", { duration: 6000 });
     }
     setOrders(list);
   };
@@ -160,6 +191,7 @@ function DriverPage() {
     }
     if (!allowed) return;
     refresh();
+    const poll = window.setInterval(() => void refresh(), 10_000);
 
     const channel = supabase
       .channel("driver-orders")
@@ -206,6 +238,7 @@ function DriverPage() {
       .subscribe();
 
     return () => {
+      window.clearInterval(poll);
       supabase.removeChannel(channel);
       supabase.removeChannel(notifChannel);
     };
@@ -269,26 +302,14 @@ function DriverPage() {
 
   const acceptOrder = async (o: DriverOrder) => {
     if (!user) return;
-    const { error } = await supabase
-      .from("orders")
-      .update({ status: "accepted", rider_id: user.id })
-      .eq("id", o.id)
-      .eq("status", "pending");
-    if (error) {
-      toast.error(error.message);
+    try {
+      await acceptOrderRpc(o.id);
+    } catch (err) {
+      toast.error((err as Error).message);
+      refresh();
       return;
     }
     toast.success("Order accepted");
-    refresh();
-  };
-
-  const updateStatus = async (id: string, status: OrderStatus) => {
-    const { error } = await supabase.from("orders").update({ status }).eq("id", id);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success(`Order marked ${STATUS_LABELS[status]}`);
     refresh();
   };
 
@@ -300,13 +321,11 @@ function DriverPage() {
   };
 
   const advanceStage = async (o: DriverOrder, next: TripStage) => {
-    const newDetails = { ...(o.details ?? {}), trip_stage: next };
-    const patch: { details: typeof newDetails; status?: OrderStatus } = { details: newDetails };
-    if (next === "picked_up") patch.status = "in_progress";
-    if (next === "completed") patch.status = "completed";
-    const { error } = await supabase.from("orders").update(patch).eq("id", o.id);
-    if (error) {
-      toast.error(error.message);
+    try {
+      await advanceTrip(o.id, next);
+    } catch (err) {
+      toast.error((err as Error).message);
+      refresh();
       return;
     }
     toast.success(STAGE_LABELS[next]);

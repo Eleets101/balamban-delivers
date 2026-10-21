@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { createOrder } from "@/lib/orderApi";
 import { useAuth } from "@/hooks/useAuth";
 import {
   calculateRideFare,
@@ -216,38 +216,34 @@ function RidePage() {
     }
     setStage("searching");
 
-    const { data, error } = await supabase
-      .from("orders")
-      .insert({
-        customer_id: user.id,
-        service_type: "ride",
-        pickup_address: pickup,
-        dropoff_address: dropoff,
-        pickup_lat: pickupCoords.lat,
-        pickup_lng: pickupCoords.lng,
-        dropoff_lat: dropoffCoords.lat,
-        dropoff_lng: dropoffCoords.lng,
-        details: JSON.parse(JSON.stringify({
+    let newId: string;
+    try {
+      newId = await createOrder({
+        serviceType: "ride",
+        pickupAddress: pickup,
+        dropoffAddress: dropoff,
+        pickupLat: pickupCoords.lat,
+        pickupLng: pickupCoords.lng,
+        dropoffLat: dropoffCoords.lat,
+        dropoffLng: dropoffCoords.lng,
+        notes: null,
+        details: {
           description: `Ride · ${rideType}`,
           ride_type: rideType,
           estimated_eta_min: tripEta,
           fare_breakdown: fareBreakdown,
-        })),
-        estimated_price: fare,
-        payment_method: "pending",
-      })
-      .select("id")
-      .single();
-
-    if (error || !data) {
-      toast.error(error?.message ?? "Could not create ride.");
+        },
+        estimatedPrice: fare,
+      });
+    } catch (err) {
+      toast.error((err as Error).message || "Could not create ride.");
       setStage("form");
       return;
     }
-    setOrderId(data.id);
+    setOrderId(newId);
     // Short UX delay to match the "preparing your ride" vibe, then jump to checkout
     setTimeout(() => {
-      navigate({ to: "/checkout/$orderId", params: { orderId: data.id } });
+      navigate({ to: "/checkout/$orderId", params: { orderId: newId } });
     }, 900);
   };
 
